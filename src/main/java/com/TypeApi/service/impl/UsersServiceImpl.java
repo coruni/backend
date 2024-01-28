@@ -58,7 +58,7 @@ public class UsersServiceImpl implements UsersService {
 	}
 
 	@Override
-	public PageList<Users> selectPage(Users users, Integer offset, Integer pageSize , String searchKey, String order) {
+	public PageList<Users> selectPage(Users users, Integer offset, Integer pageSize , String searchKey, String order,Integer random) {
 		PageList<Users> pageList = new PageList<>();
 
 		int total = this.total(users,searchKey);
@@ -72,7 +72,7 @@ public class UsersServiceImpl implements UsersService {
 
 		int page = (offset - 1) * pageSize;
 
-		List<Users> list = dao.selectPage(users, page, pageSize,searchKey,order);
+		List<Users> list = dao.selectPage(users, page, pageSize,searchKey,order,random);
 
 		pageList.setList(list);
 		pageList.setStartPageNo(offset);

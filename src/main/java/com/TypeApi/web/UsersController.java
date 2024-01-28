@@ -135,14 +135,16 @@ public class UsersController {
                            @RequestParam(value = "params", required = false) String params,
                            @RequestParam(value = "searchKey", required = false) String searchKey,
                            @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
+                           @RequestParam(value = "random", required = false, defaultValue = "1") Integer random,
                            HttpServletRequest request) {
         try {
             limit = limit > 50 ? 50 : limit;
             String token = request.getHeader("Authorization");
             Boolean permission = false;
+            Users user = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
-                Users user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
             }
             // 获取查询参数
@@ -151,30 +153,41 @@ public class UsersController {
                 query = JSONObject.parseObject(params, Users.class);
             }
             //查询
-            PageList<Users> userPage = service.selectPage(query, page, limit, searchKey, order);
+            PageList<Users> userPage = service.selectPage(query, page, limit, searchKey, order, random);
             List<Users> userList = userPage.getList();
             JSONArray dataList = new JSONArray();
-            for (Users user : userList) {
+            for (Users item : userList) {
                 // 转Map数据
-                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), new TypeReference<Map<String, Object>>() {
+                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(item), new TypeReference<Map<String, Object>>() {
                 });
                 // 格式化数据
                 JSONObject opt = new JSONObject();
                 JSONArray head_pircture = new JSONArray();
                 JSONObject address = new JSONObject();
-                opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt().toString()) : null;
-                address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress().toString()) : null;
+                opt = item.getOpt() != null && !item.getOpt().toString().isEmpty() ? JSONObject.parseObject(item.getOpt().toString()) : null;
+                address = item.getAddress() != null && !item.getAddress().toString().isEmpty() ? JSONObject.parseObject(item.getAddress().toString()) : null;
                 // 处理头像框
                 // 加入其他数据等级等
-                List result = baseFull.getLevel(user.getExperience());
+                List result = baseFull.getLevel(item.getExperience());
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
 
+                // 处理会员
+                Integer isVip = 0;
+                if (System.currentTimeMillis() / 1000 > item.getVip()) isVip = 1;
+
+                // 处理关注
+                Userlog userlog = new Userlog();
+                userlog.setUid(user.getUid());
+                userlog.setToid(item.getUid());
+                Integer isFollow = userlogService.total(userlog);
 
                 // 加入数据
                 data.put("address", address);
                 data.put("opt", opt);
+                data.put("isFollow",isFollow);
                 data.put("level", level);
+                data.put("isVip", isVip);
                 data.put("nextLevel", nextLevel);
                 // 移除铭感数据
                 data.remove("password");
@@ -1166,6 +1179,7 @@ public class UsersController {
             return false;
         }
     }
+
     /***
      * 管理员修改用户
      */
@@ -1689,7 +1703,7 @@ public class UsersController {
             data.put("comments", comments);
             data.put("system", systems);
             data.put("finances", finances);
-            data.put("total",comments+systems+finances);
+            data.put("total", comments + systems + finances);
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();

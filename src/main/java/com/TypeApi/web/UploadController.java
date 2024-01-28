@@ -130,7 +130,6 @@ public class UploadController {
 
         //验证上传大小结束
 
-
         if (apiconfig.getUploadType().equals("cos")) {
             result = uploadService.cosUpload(file, this.dataprefix, apiconfig, uid);
         }

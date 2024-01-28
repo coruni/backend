@@ -50,7 +50,7 @@ public interface UsersService {
     /**
      * [分页条件查询]
      **/
-    PageList<Users> selectPage (Users users, Integer page, Integer pageSize, String searchKey, String order);
+    PageList<Users> selectPage (Users users, Integer page, Integer pageSize, String searchKey, String order,Integer random);
 
     /**
      * [总量查询]

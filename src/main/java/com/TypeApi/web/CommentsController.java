@@ -338,6 +338,7 @@ public class CommentsController {
             comments.setCreated(Math.toIntExact(timeStamp));
             comments.setCid(article.getCid());
             comments.setUid(user.getUid());
+            comments.setType(0);
 
             service.insert(comments);
             // 给用户发消息

@@ -55,7 +55,7 @@ public interface UsersDao {
     /**
      * [分页条件查询]
      **/
-    List<Users> selectPage (@Param("users") Users users, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey, @Param("order") String order);
+    List<Users> selectPage (@Param("users") Users users, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey, @Param("order") String order,@Param("random") Integer random);
 
     /**
      * [总量查询]
