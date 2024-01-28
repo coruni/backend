@@ -1,9 +1,6 @@
 package com.TypeApi.service.impl;
 
-import com.TypeApi.common.EditFile;
-import com.TypeApi.common.ResultAll;
-import com.TypeApi.common.ImageUtils;
-import com.TypeApi.common.baseFull;
+import com.TypeApi.common.*;
 import com.TypeApi.entity.Apiconfig;
 import com.TypeApi.service.UploadService;
 import com.aliyun.oss.OSS;
@@ -196,24 +193,8 @@ public class UploadServiceImpl implements UploadService {
         }
 
         // 创建缩略图
-        // 将图像压缩为 byte 数组
-        try {
-            byte[] compressedImageData = ImageUtils.compressImage(file.getBytes(), "jpg", 0.8f);
-            // 处理压缩后的图像数据
-            // 创建一个新文件来存储压缩后的图像
-            File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + randomName + "_compress" + filetype);
-
-            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-                fos.write(compressedImageData);  // 将压缩后的图像数据写入文件
-            }
-            // 写入文件
-            if (!outputFile.exists()) {
-                outputFile.mkdirs();
-            }
-        } catch (IOException e) {
-            // 处理异常
-            e.printStackTrace(); // 打印异常信息
-        }
+        // 执行异步压缩和保存图像操作
+        new ImageProcessor().compressAndSaveImage(file, decodeClassespath, filetype, randomName, year, month, day);
         try {
             file.transferTo(file1);
             Map<String, String> info = new HashMap<String, String>();
