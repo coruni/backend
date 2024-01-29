@@ -198,7 +198,7 @@ public class UploadServiceImpl implements UploadService {
         // 执行异步压缩和保存图像操作
         String finalDecodeClassespath = decodeClassespath;
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            new ImageProcessor().compressAndSaveImage(file, finalDecodeClassespath,newfile, year, month, day);
+            new ImageProcessor().compressAndSaveImage(file, finalDecodeClassespath, newfile, year, month, day);
         });
         future.thenRun(() -> {
             try {
@@ -211,7 +211,7 @@ public class UploadServiceImpl implements UploadService {
             Map<String, String> info = new HashMap<String, String>();
             // 这里加个选择 是否返回压缩的图片
             String compressType = "_compress.webp";
-            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + randomName + compressType;
+            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + compressType;
             info.put("url", url);
             editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
             return Result.getResultJson(200, "上传成功", info);
