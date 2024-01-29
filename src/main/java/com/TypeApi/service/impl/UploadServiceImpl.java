@@ -198,7 +198,7 @@ public class UploadServiceImpl implements UploadService {
         // 执行异步压缩和保存图像操作
         String finalDecodeClassespath = decodeClassespath;
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            new ImageProcessor().compressAndSaveImage(file, finalDecodeClassespath, randomName, year, month, day);
+            new ImageProcessor().compressAndSaveImage(file, finalDecodeClassespath,newfile, year, month, day);
         });
         future.thenRun(() -> {
             try {
