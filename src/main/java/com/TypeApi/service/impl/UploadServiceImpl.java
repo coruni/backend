@@ -198,7 +198,10 @@ public class UploadServiceImpl implements UploadService {
         try {
             file.transferTo(file1);
             Map<String, String> info = new HashMap<String, String>();
-            info.put("url", apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + randomName + filetype);
+            // 这里加个选择 是否返回压缩的图片
+            String compressType = "_compress.webp";
+            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + randomName + compressType;
+            info.put("url", url);
             editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
             return Result.getResultJson(200, "上传成功", info);
         } catch (IOException e) {

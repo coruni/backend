@@ -11,7 +11,7 @@ public class ImageProcessor {
         executor.submit(() -> {
             try {
                 byte[] compressedImageData = ImageUtils.compressImage(file.getBytes(), 0.8f);
-                File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile + ".webp");
+                File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile + "_compress.webp");
                 try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                     fos.write(compressedImageData);
                 }
