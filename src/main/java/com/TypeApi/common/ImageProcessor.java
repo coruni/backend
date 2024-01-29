@@ -13,8 +13,18 @@ public class ImageProcessor {
         executor.submit(() -> {
             try {
                 // 使用输入流来处理MultipartFile
-                try (InputStream inputStream = file.getInputStream()) {
-                    byte[] compressedImageData = ImageUtils.compressImage(IOUtils.toByteArray(inputStream), 0.8f);
+                try (InputStream inputStream = file.getInputStream();
+                     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+
+                    // 将输入流中的数据读取到 ByteArrayOutputStream 中
+                    byte[] buffer = new byte[1024];
+                    int len;
+                    while ((len = inputStream.read(buffer)) != -1) {
+                        byteArrayOutputStream.write(buffer, 0, len);
+                    }
+
+                    // 进行压缩处理
+                    byte[] compressedImageData = ImageUtils.compressImage(byteArrayOutputStream.toByteArray(), 0.8f);
                     File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile + "_compress.webp");
                     try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                         fos.write(compressedImageData);
@@ -28,5 +38,4 @@ public class ImageProcessor {
                 e.printStackTrace();
             }
         });
-    }
-}
+    }}
