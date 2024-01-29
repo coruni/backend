@@ -204,11 +204,12 @@ public class InstallController {
                     "  `slug` varchar(200) DEFAULT NULL," +
                     "  `type` varchar(32) NOT NULL," +
                     "  `description` varchar(200) DEFAULT NULL," +
-                    "  `count` int(10) unsigned DEFAULT '0'," +
-                    "  `order` int(10) unsigned DEFAULT '0'," +
-                    "  `iswaterfall` int DEFAULT '0'," +
-                    "  `isrecommend` int DEFAULT '0'," +
-                    "  `parent` int(10) unsigned DEFAULT '0'," +
+                    "  `count` int(10) unsigned DEFAULT 0," +
+                    "  `order` int(10) unsigned DEFAULT 0," +
+                    "  `iswaterfall` int DEFAULT 0," +
+                    "  `follows` int DEFAULT 0," +
+                    "  `isrecommend` int DEFAULT 0," +
+                    "  `parent` int(10) unsigned DEFAULT 0," +
                     "  PRIMARY KEY (`mid`)," +
                     "  KEY `slug` (`slug`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
@@ -351,6 +352,15 @@ public class InstallController {
             text += "内容模块，字段iswaterfall添加完成。";
         } else {
             text += "内容模块，字段iswaterfall已经存在，无需添加。";
+        }
+
+        //查询分类表是否存在follows字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_metas' and column_name = 'follows';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_metas ADD follows INT DEFAULT 0;");
+            text += "内容模块，字段follows添加完成。";
+        } else {
+            text += "内容模块，字段follows已经存在，无需添加。";
         }
 
         //查询文章表是否存在images字段

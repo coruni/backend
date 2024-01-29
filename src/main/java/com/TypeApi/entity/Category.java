@@ -71,4 +71,9 @@ public class Category implements Serializable {
      * isrecommend
      */
     private Integer isrecommend;
+
+    /***
+     * 关注
+     */
+    private Integer follows;
 }

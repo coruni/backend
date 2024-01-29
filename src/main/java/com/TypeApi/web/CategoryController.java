@@ -59,6 +59,9 @@ public class CategoryController {
     private ApiconfigService apiconfigService;
 
     @Autowired
+    private UserlogService userlogService;
+
+    @Autowired
     private RedisTemplate redisTemplate;
 
     @Value("${webinfo.contentCache}")
@@ -91,6 +94,12 @@ public class CategoryController {
                                HttpServletRequest request) {
         try {
             Category query = new Category();
+            Users user = new Users();
+            String token = request.getHeader("Authorization");
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            }
             if (params != null && !params.isEmpty()) {
                 query = JSON.parseObject(params, Category.class);
             }
@@ -103,11 +112,21 @@ public class CategoryController {
                 // 格式化信息
                 JSONObject opt = new JSONObject();
                 opt = category.getOpt() != null && !category.getOpt().toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
-                // 查询文章数量
-                Article article = new Article();
-                article.setMid(category.getMid());
+                // 查询是否关注
+                Integer isFollow = 0;
+                Userlog userlog = new Userlog();
+                userlog.setNum(category.getMid());
+                userlog.setType("category");
+                if (user != null && !user.toString().isEmpty()) {
+                    userlog.setUid(user.getUid());
+                    List<Userlog> userlogList = userlogService.selectList(userlog);
+                    if (userlogList.size() > 0) isFollow = 1;
+                }
+                // 去除uid查询 查询所有关注数量
+                userlog.setUid(null);
                 data.put("opt", opt);
-                data.put("articles", contentsService.total(article, null));
+                data.put("isFollow", isFollow);
+
                 dataList.add(data);
             }
             Map<String, Object> data = new HashMap<>();
@@ -131,6 +150,12 @@ public class CategoryController {
     public String info(@RequestParam(value = "id") Integer id,
                        HttpServletRequest request) {
         try {
+            Users user = new Users();
+            String token = request.getHeader("Authorization");
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            }
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
@@ -138,11 +163,20 @@ public class CategoryController {
             JSONObject opt = new JSONObject();
             opt = category.getOpt() != null && !category.toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
 
-            // 查询文章数量
-            Article article = new Article();
-            article.setMid(category.getMid());
+            // 查询是否关注
+            Integer isFollow = 0;
+            Userlog userlog = new Userlog();
+            userlog.setNum(category.getMid());
+            userlog.setType("category");
+            if (user != null && !user.toString().isEmpty()) {
+                userlog.setUid(user.getUid());
+                List<Userlog> userlogList = userlogService.selectList(userlog);
+                if (userlogList.size() > 0) isFollow = 1;
+            }
+            // 去除uid查询 查询所有关注数量
+            userlog.setUid(null);
             data.put("opt", opt);
-            data.put("articles", contentsService.total(article, null));
+            data.put("isFollow", isFollow);
 
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
@@ -236,6 +270,7 @@ public class CategoryController {
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
             if (type.equals("recommend")) category.setIsrecommend(category.getIsrecommend() > 0 ? 0 : 1);
             if (type.equals("waterfall")) category.setIswaterfall(category.getIswaterfall() > 0 ? 0 : 1);
+            service.update(category);
             return Result.getResultJson(200, "操作成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -282,9 +317,28 @@ public class CategoryController {
             }
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
+            // 使用userlog 来存储关注分类
+            Userlog userlog = new Userlog();
 
-            /*暂无对应存储表 搁置*/
-            return "接口未完成";
+            userlog.setType("category");
+            userlog.setUid(user.getUid());
+            userlog.setNum(category.getMid());
+            // 查询是否存在记录
+            List<Userlog> userlogList = userlogService.selectList(userlog);
+            category.setFollows(category.getFollows() + 1);
+            // 存在就删除记录并返回取消关注成功
+            if (userlogList.size() > 0) {
+                category.setFollows(category.getFollows() > 0 ? category.getFollows() - 1 : 0);
+                userlogService.delete(userlogList.get(0).getId());
+                service.update(category);
+                return Result.getResultJson(200, "取消关注成功", null);
+            }
+            // 不存在就继续下一步写入数据库并返回关注成功
+            userlog.setCreated((int) (System.currentTimeMillis() / 1000));
+            // 写入数据库
+            service.update(category);
+            userlogService.insert(userlog);
+            return Result.getResultJson(200, "关注成功", null);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);

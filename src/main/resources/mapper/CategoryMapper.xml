@@ -17,6 +17,7 @@
         <result column="opt" property="opt" />
         <result column="iswaterfall" property="iswaterfall" />
         <result column="isrecommend" property="isrecommend" />
+        <result column="follows" property="follows" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -31,7 +32,8 @@
         `imgurl`,
         `opt`,
         `iswaterfall`,
-        `isrecommend`
+        `isrecommend`,
+        `follows`
     </sql>
 
     <!-- 插入数据 -->
@@ -71,6 +73,9 @@
             <if test ='null != imgurl'>
                 `imgurl`
             </if>
+            <if test ='null != follows'>
+                `follows`
+            </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test ='null != mid'>
@@ -106,6 +111,9 @@
             <if test ='null != imgurl'>
                 #{imgurl}
             </if>
+            <if test ='null != follows'>
+                #{follows}
+            </if>
         </trim>
     </insert>
 
@@ -122,7 +130,8 @@
                 #{curr.count},
                 #{curr.opt},
                 #{curr.orderKey},
-                #{curr.parent}
+                #{curr.parent},
+                #{curr.follows}
             )
         </foreach>
     </insert>
@@ -141,6 +150,7 @@
             <if test ='opt != null'>`opt` = #{opt},</if>
             <if test ='iswaterfall != null'>`iswaterfall` = #{iswaterfall},</if>
             <if test ='isrecommend != null'>`isrecommend` = #{isrecommend}</if>
+            <if test ='follows != null'>`follows` = #{follows}</if>
         </set>
         WHERE `mid` = #{mid}
     </update>
@@ -210,6 +220,9 @@
             </if>
             <if test ='null != isrecommend'>
                 and `isrecommend` = #{isrecommend}
+            </if>
+            <if test ='null != follows'>
+                and `follows` = #{follows}
             </if>
         </where>
     </select>

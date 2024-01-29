@@ -194,11 +194,11 @@ public class UploadServiceImpl implements UploadService {
 
         // 创建缩略图
         // 执行异步压缩和保存图像操作
-        new ImageProcessor().compressAndSaveImage(file, decodeClassespath, filetype, randomName, year, month, day);
+        new ImageProcessor().compressAndSaveImage(file, decodeClassespath, randomName, year, month, day);
         try {
             file.transferTo(file1);
             Map<String, String> info = new HashMap<String, String>();
-            info.put("url", apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile);
+            info.put("url", apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + randomName + filetype);
             editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
             return Result.getResultJson(200, "上传成功", info);
         } catch (IOException e) {

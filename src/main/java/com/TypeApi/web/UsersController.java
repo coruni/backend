@@ -323,7 +323,7 @@ public class UsersController {
             address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : null;
 
             // 处理会员
-            if (user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
+            if (user!=null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
             // 加入数据
             data.put("address", address);

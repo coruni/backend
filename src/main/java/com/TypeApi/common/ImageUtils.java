@@ -7,19 +7,16 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 public class ImageUtils {
     /**
      * 图片尺寸不变，压缩图片文件大小
      *
      * @param bytes     图片文件二进制流
-     * @param imageType 图片格式
      * @param quality   质量因子 1为最高质量
      * @return
      */
-    public static byte[] compressImage(byte[] bytes, String imageType, float quality) {
+    public static byte[] compressImage(byte[] bytes, float quality) {
         InputStream in = null;
         ByteArrayOutputStream bout = null;
         try {
@@ -27,12 +24,13 @@ public class ImageUtils {
             bout = new ByteArrayOutputStream(1024);
 
             // 图片尺寸不变，压缩图片文件大小outputQuality实现，参数1为最高质量
-            Thumbnails.of(in).scale(1f).outputFormat(imageType).outputQuality(quality).toOutputStream(bout);
+            Thumbnails.of(in).scale(1f).outputFormat("webp").outputQuality(quality).toOutputStream(bout);
 
             byte[] compressiondata = bout.toByteArray();
 
             return compressiondata;
         } catch (Exception ex) {
+            ex.printStackTrace();
             throw new RuntimeException(ex);
         } finally {
             try {

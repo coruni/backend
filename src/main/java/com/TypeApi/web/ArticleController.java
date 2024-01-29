@@ -509,7 +509,7 @@ public class ArticleController {
                 }
                 // 封禁
                 if (user.getBantime() != null && user.getBantime() > System.currentTimeMillis() / 1000) {
-                    return Result.getResultJson(201, "封禁中", null);
+                    return Result.getResultJson(201, "用户封禁中", null);
                 }
             }
             // 判断
@@ -523,6 +523,11 @@ public class ArticleController {
             }
             if (category == null) {
                 return Result.getResultJson(201, "请选择分类", null);
+            }
+            // 查询分类是否存在
+            Category _category = metasService.selectByKey(category);
+            if (_category == null || _category.toString().isEmpty()) {
+                return Result.getResultJson(201, "分类不存在", null);
             }
             // 写入文章信息
             Article article = new Article();
@@ -563,9 +568,7 @@ public class ArticleController {
 
             // 写入Tag和分类
             Integer articleId = service.insert(article);
-            if (articleId == null) {
-                return Result.getResultJson(201, "发布失败", null);
-            }
+            _category.setCount(_category.getCount() + 1);
             Relationships related = new Relationships();
             related.setCid(article.getCid());
             related.setMid(category);
@@ -583,7 +586,7 @@ public class ArticleController {
                 //如果能直接发布就加经验
                 postAddExp(user);
             }
-
+            metasService.update(_category);
             return Result.getResultJson(200, permission ? "发布成功" : "发布成功，请等待审核", null);
         } catch (Exception e) {
             e.printStackTrace();
