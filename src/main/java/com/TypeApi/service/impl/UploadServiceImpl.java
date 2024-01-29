@@ -22,6 +22,7 @@ import com.qiniu.util.Auth;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.boot.system.ApplicationHome;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +34,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class UploadServiceImpl implements UploadService {
@@ -194,16 +196,26 @@ public class UploadServiceImpl implements UploadService {
 
         // 创建缩略图
         // 执行异步压缩和保存图像操作
-        new ImageProcessor().compressAndSaveImage(file, decodeClassespath, randomName, year, month, day);
+        String finalDecodeClassespath = decodeClassespath;
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            new ImageProcessor().compressAndSaveImage(file, finalDecodeClassespath, randomName, year, month, day);
+        });
+        future.thenRun(() -> {
+            try {
+                file.transferTo(file1); // 在 lambda 表达式中使用 finalFile
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         try {
             Map<String, String> info = new HashMap<String, String>();
             // 这里加个选择 是否返回压缩的图片
             String compressType = "_compress.webp";
             String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + randomName + compressType;
-            file.transferTo(file1);
+            info.put("url", url);
             editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
             return Result.getResultJson(200, "上传成功", info);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         editFile.setLog("用户" + uid + "通过localUpload上传图片失败");
