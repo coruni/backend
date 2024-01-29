@@ -174,7 +174,6 @@ public class UploadServiceImpl implements UploadService {
         File jarF = h.getSource();
         /* 配置文件路径 */
         String classespath = jarF.getParentFile().toString() + "/files";
-
         String decodeClassespath = null;
         try {
             decodeClassespath = URLDecoder.decode(classespath, "utf-8");
@@ -196,19 +195,11 @@ public class UploadServiceImpl implements UploadService {
 
         // 创建缩略图
         // 执行异步压缩和保存图像操作
-        String finalDecodeClassespath = decodeClassespath;
-        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            new ImageProcessor().compressAndSaveImage(file, finalDecodeClassespath, newfile, year, month, day);
-        });
-        future.thenRun(() -> {
-            try {
-                file.transferTo(file1); // 在 lambda 表达式中使用 finalFile
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        new ImageProcessor().compressAndSaveImage(file, decodeClassespath, newfile, year, month, day);
+
         try {
             Map<String, String> info = new HashMap<String, String>();
+            file.transferTo(file1);
             // 这里加个选择 是否返回压缩的图片
             String compressType = "_compress.webp";
             String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + compressType;
