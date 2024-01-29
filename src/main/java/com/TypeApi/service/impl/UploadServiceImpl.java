@@ -198,7 +198,7 @@ public class UploadServiceImpl implements UploadService {
         try {
             file.transferTo(file1);
             Map<String, String> info = new HashMap<String, String>();
-            // 这里加个选择 是否返回压缩的图片 // 需要写接口
+            // 这里加个选择 是否返回压缩的图片
             String compressType = "_compress.webp";
             String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + randomName + compressType;
             info.put("url", url);
