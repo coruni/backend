@@ -27,7 +27,7 @@ jobs:
       with:
         repositories: ''
         servers: ''
-    - name: "将webp安装包本地仓库"
+    - name: "Install local jar"
       run: |
         mvn install:install-file -Dfile=lib/webp-imageio-core-0.1.3.jar -DgroupId=your.group.id -DartifactId=your-artifact-id -Dversion=1.0 -Dpackaging=jar
 # Maven 打包 

@@ -281,7 +281,6 @@ public class UploadServiceImpl implements UploadService {
         String url = apiconfig.getAliyunUrlPrefix() + key;
         Map<String, String> info = new HashMap<String, String>();
         info.put("url", url);
-
         editFile.setLog("用户" + uid + "通过ossUpload成功上传了图片");
         return Result.getResultJson(200, "上传成功", info);
     }
