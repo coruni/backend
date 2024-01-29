@@ -2,15 +2,7 @@ package com.TypeApi.common;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import com.TypeApi.entity.Apiconfig;
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URLDecoder;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
 public class ImageProcessor {
     private ExecutorService executor = Executors.newFixedThreadPool(5); // 创建一个拥有5个线程的线程池
