@@ -188,7 +188,7 @@ public class UploadServiceImpl implements UploadService {
         String compressType = "_compress.webp";
         // 创建缩略图
         // 如果开启本地压缩才执行压缩
-        if (apiconfig.getCompress().equals(1)) {
+        if (apiconfig.getCompress() == 1) {
             try {
                 byte[] compressedImageData = ImageUtils.compressImage(file.getBytes(), apiconfig.getQuality());
                 File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile + compressType);
@@ -205,7 +205,7 @@ public class UploadServiceImpl implements UploadService {
         /**/
         File file1 = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile);
         if (!file1.exists()) {
-            file1.mkdirs();
+            file1.getParentFile().mkdirs();
         }
         try {
             Map<String, String> info = new HashMap<String, String>();
