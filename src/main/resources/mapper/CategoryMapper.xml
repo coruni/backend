@@ -149,7 +149,7 @@
             <if test ='imgurl != null'>`imgurl` = #{imgurl},</if>
             <if test ='opt != null'>`opt` = #{opt},</if>
             <if test ='iswaterfall != null'>`iswaterfall` = #{iswaterfall},</if>
-            <if test ='isrecommend != null'>`isrecommend` = #{isrecommend}</if>
+            <if test ='isrecommend != null'>`isrecommend` = #{isrecommend},</if>
             <if test ='follows != null'>`follows` = #{follows}</if>
         </set>
         WHERE `mid` = #{mid}
