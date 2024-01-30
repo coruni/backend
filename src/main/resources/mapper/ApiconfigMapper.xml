@@ -497,7 +497,13 @@
                 `uploadMediaMax`,
             </if>
             <if test ='null != uploadFilesMax'>
-                `uploadFilesMax`
+                `uploadFilesMax`,
+            </if>
+            <if test ='null != compress'>
+                `compress`,
+            </if>
+            <if test ='null != quality'>
+                `quality`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -891,7 +897,7 @@
             <if test ='null != uploadPicMax'>`uploadPicMax` = #{uploadPicMax},</if>
             <if test ='null != uploadMediaMax'>`uploadMediaMax` = #{uploadMediaMax},</if>
             <if test ='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax},</if>
-            <if test ='null != quality'>`quality` = #{quality}</if>
+            <if test ='null != quality'>`quality` = #{quality},</if>
             <if test ='null != compress'>`compress` = #{compress}</if>
 
         </set>
