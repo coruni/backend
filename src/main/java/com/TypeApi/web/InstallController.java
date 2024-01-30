@@ -931,6 +931,8 @@ public class InstallController {
                     "  `wxpayMchId` varchar(255) NOT NULL DEFAULT ''," +
                     "  `wxpayKey` text," +
                     "  `wxpayNotifyUrl` varchar(500) DEFAULT ''," +
+                    "  `compress` INT DEFAULT 0," +
+                    "  `quality` FLOAT DEFAULT 0.8," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='api配置信息表';");
             text += "API配置中心模块创建完成。";
@@ -952,6 +954,25 @@ public class InstallController {
         } else {
             text += "配置中心模块，字段auditlevel已经存在，无需添加。";
         }
+
+        //查询配置中心表是否存在compress字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'compress';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD compress INT DEFAULT 0;");
+            text += "配置中心模块，字段compress添加完成。";
+        } else {
+            text += "配置中心模块，字段compress已经存在，无需添加。";
+        }
+
+        //查询配置中心表是否存在quality字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'quality';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD quality FLOAT DEFAULT 0.8;");
+            text += "配置中心模块，字段quality添加完成。";
+        } else {
+            text += "配置中心模块，字段quality已经存在，无需添加。";
+        }
+
         //查询配置中心表是否存在forbidden字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'forbidden';", Integer.class);
         if (i == 0) {

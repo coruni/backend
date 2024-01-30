@@ -38,7 +38,6 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class UploadServiceImpl implements UploadService {
-
     ResultAll Result = new ResultAll();
     baseFull baseFull = new baseFull();
     EditFile editFile = new EditFile();
@@ -188,31 +187,32 @@ public class UploadServiceImpl implements UploadService {
         int day = cal.get(Calendar.DATE);
         String compressType = "_compress.webp";
         // 创建缩略图
-        try{
-            byte[] compressedImageData = ImageUtils.compressImage(file.getBytes(), 0.8f);
-            File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile + compressType);
-            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-                fos.write(compressedImageData);
+        // 如果开启本地压缩才执行压缩
+        if (apiconfig.getCompress().equals(1)) {
+            try {
+                byte[] compressedImageData = ImageUtils.compressImage(file.getBytes(), apiconfig.getQuality());
+                File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile + compressType);
+                try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+                    fos.write(compressedImageData);
+                }
+                if (!outputFile.getParentFile().exists()) {
+                    outputFile.getParentFile().mkdirs();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            if (!outputFile.getParentFile().exists()) {
-                outputFile.getParentFile().mkdirs();
-            }
-        }catch (Exception e){
-            e.printStackTrace();
         }
-
         /**/
         File file1 = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile);
         if (!file1.exists()) {
             file1.mkdirs();
         }
-
         try {
             Map<String, String> info = new HashMap<String, String>();
             file.transferTo(file1);
             // 这里加个选择 是否返回压缩的图片
 
-            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + compressType;
+            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + (apiconfig.getCompress() == 1 ? compressType : filetype);
             info.put("url", url);
             editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
             return Result.getResultJson(200, "上传成功", info);

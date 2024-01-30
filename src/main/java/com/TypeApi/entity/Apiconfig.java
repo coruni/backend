@@ -478,4 +478,14 @@ public class Apiconfig implements Serializable {
      */
     private Integer uploadFilesMax;
 
+    /***
+     * 压缩配置
+     */
+    private Integer compress;
+
+    /***
+     * 压缩质量
+     */
+    private Float quality;
+
 }
