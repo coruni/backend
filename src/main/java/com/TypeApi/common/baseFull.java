@@ -248,12 +248,12 @@ public class baseFull {
             return 0;
         }
     }
-    public static Integer isVideo(String type){
+    public static Boolean isVideo(String type){
         String lowerCaseType = type.toLowerCase();
         if (lowerCaseType.equals(".mp4") || lowerCaseType.equals(".avi") || lowerCaseType.equals(".mkv")) {
-            return 1; // 是视频
+            return true; // 是视频
         } else {
-            return 0; // 不是视频
+            return false; // 不是视频
         }
     }
     public static Integer isMedia(String type){
