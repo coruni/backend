@@ -139,6 +139,7 @@ public class UploadServiceImpl implements UploadService {
         String newfile = randomName + filetype;
         //根据权限等级检查是否为图片
         Integer uploadLevel = apiconfig.getUploadLevel();
+        Integer isVideo = baseFull.isVideo(filetype);
         if (uploadLevel.equals(1)) {
             return Result.getResultJson(201, "管理员已关闭上传功能", null);
         }
@@ -162,7 +163,7 @@ public class UploadServiceImpl implements UploadService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            Integer isVideo = baseFull.isVideo(filetype);
+
             if (bi == null && !filetype.equals(".WEBP") && !filetype.equals(".webp") && !isVideo.equals(1)) {
                 return Result.getResultJson(201, "请上传图片或者视频文件", null);
             }
@@ -212,7 +213,7 @@ public class UploadServiceImpl implements UploadService {
             file.transferTo(file1);
             // 这里加个选择 是否返回压缩的图片
 
-            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + (apiconfig.getCompress() == 1 ? compressType : filetype);
+            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + (apiconfig.getCompress() == 1 && isVideo != 1 ? compressType : filetype);
             info.put("url", url);
             editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
             return Result.getResultJson(200, "上传成功", info);
