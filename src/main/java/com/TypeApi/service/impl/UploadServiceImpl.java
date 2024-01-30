@@ -213,7 +213,7 @@ public class UploadServiceImpl implements UploadService {
             file.transferTo(file1);
             // 这里加个选择 是否返回压缩的图片
 
-            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + (apiconfig.getCompress() == 1 && !isVideo ? compressType : filetype);
+            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + (apiconfig.getCompress() == 1 && !isVideo ? compressType : "");
             info.put("url", url);
             editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
             return Result.getResultJson(200, "上传成功", info);
