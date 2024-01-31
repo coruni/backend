@@ -406,7 +406,12 @@ public class ArticleController {
 
                 // 加入作者信息
                 Users info = usersService.selectByKey(article.getAuthorId());
-                Map<String, Object> authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
+                Map<String, Object> authorInfo;
+                if (info == null || info.toString().isEmpty()) {
+                    authorInfo = new HashMap<>();
+                } else {
+                    authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
+                }
                 if (info != null && !info.toString().isEmpty()) {
                     List result = baseFull.getLevel(info.getExperience());
                     Integer level = (Integer) result.get(0);
