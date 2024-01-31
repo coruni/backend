@@ -241,31 +241,46 @@ public class ArticleController {
 
             // 加入作者信息
             Users info = usersService.selectByKey(article.getAuthorId());
-            Map<String, Object> authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-            List result = baseFull.getLevel(info.getExperience());
-            Integer level = (Integer) result.get(0);
-            Integer nextLevel = (Integer) result.get(1);
-            JSONObject authorOpt = new JSONObject();
-            authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
+            Map<String, Object> authorInfo;
+            if (info == null || info.toString().isEmpty()) {
+                authorInfo = new HashMap<>();
+            } else {
+                authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
+            }
+            if(info!=null && !info.toString().isEmpty()){
+                List result = baseFull.getLevel(info.getExperience());
+                Integer level = (Integer) result.get(0);
+                Integer nextLevel = (Integer) result.get(1);
+                JSONObject authorOpt = new JSONObject();
+                authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
 
-            // 是否VIP
-            Integer isVip = info.getVip() > System.currentTimeMillis() / 1000 ? 1 : 0;
-            // 获取关注
-            Fan fan = new Fan();
-            fan.setUid(uid);
-            fan.setTouid(article.getAuthorId());
-            Integer isFollow = fanService.total(fan);
+                // 是否VIP
+                Integer isVip = info.getVip() > System.currentTimeMillis() / 1000 ? 1 : 0;
+                // 获取关注
+                Fan fan = new Fan();
+                fan.setUid(uid);
+                fan.setTouid(article.getAuthorId());
+                Integer isFollow = fanService.total(fan);
 
-            //加入信息
-            authorInfo.put("isFollow", isFollow);
-            authorInfo.put("level", level);
-            authorInfo.put("nextLevel", nextLevel);
-            authorInfo.put("opt", authorOpt);
-            authorInfo.put("isVip", isVip);
-            // 移除敏感信息
-            authorInfo.remove("address");
-            authorInfo.remove("assets");
-            authorInfo.remove("password");
+                //加入信息
+                authorInfo.put("isFollow", isFollow);
+                authorInfo.put("level", level);
+                authorInfo.put("nextLevel", nextLevel);
+                authorInfo.put("opt", authorOpt);
+                authorInfo.put("isVip", isVip);
+                // 移除敏感信息
+                authorInfo.remove("address");
+                authorInfo.remove("assets");
+                authorInfo.remove("password");
+            }else{
+                //加入信息
+                authorInfo.put("isFollow", 0);
+                authorInfo.put("level", 0);
+                authorInfo.put("nextLevel", 0);
+                authorInfo.put("isVip", 0);
+                authorInfo.put("screenName", "账户已注销");
+            }
+
 
             // 返回信息
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
