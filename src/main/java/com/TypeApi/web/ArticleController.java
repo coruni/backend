@@ -407,30 +407,40 @@ public class ArticleController {
                 // 加入作者信息
                 Users info = usersService.selectByKey(article.getAuthorId());
                 Map<String, Object> authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-                List result = baseFull.getLevel(info.getExperience());
-                Integer level = (Integer) result.get(0);
-                Integer nextLevel = (Integer) result.get(1);
-                JSONObject authorOpt = new JSONObject();
-                authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
-                // 是否VIP
-                Integer isVip = 0;
-                if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
-                // 获取关注
-                Fan fan = new Fan();
-                fan.setUid(uid);
-                fan.setTouid(article.getAuthorId());
-                Integer isFollow = fanService.total(fan);
+                if (info != null && !info.toString().isEmpty()) {
+                    List result = baseFull.getLevel(info.getExperience());
+                    Integer level = (Integer) result.get(0);
+                    Integer nextLevel = (Integer) result.get(1);
+                    JSONObject authorOpt = new JSONObject();
+                    authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
+                    // 是否VIP
+                    Integer isVip = 0;
+                    if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
+                    // 获取关注
+                    Fan fan = new Fan();
+                    fan.setUid(uid);
+                    fan.setTouid(article.getAuthorId());
+                    Integer isFollow = fanService.total(fan);
 
-                //加入信息
-                authorInfo.put("isFollow", isFollow);
-                authorInfo.put("level", level);
-                authorInfo.put("nextLevel", nextLevel);
-                authorInfo.put("isVip", isVip);
-                authorInfo.put("opt", authorOpt);
-                // 移除敏感信息
-                authorInfo.remove("address");
-                authorInfo.remove("assets");
-                authorInfo.remove("password");
+                    //加入信息
+                    authorInfo.put("isFollow", isFollow);
+                    authorInfo.put("level", level);
+                    authorInfo.put("nextLevel", nextLevel);
+                    authorInfo.put("isVip", isVip);
+                    authorInfo.put("opt", authorOpt);
+
+                    // 移除敏感信息
+                    authorInfo.remove("address");
+                    authorInfo.remove("assets");
+                    authorInfo.remove("password");
+                } else {
+                    //加入信息
+                    authorInfo.put("isFollow", 0);
+                    authorInfo.put("level", 0);
+                    authorInfo.put("nextLevel", 0);
+                    authorInfo.put("isVip", 0);
+                    authorInfo.put("screenName", "账户已注销");
+                }
 
                 // 是否点赞或者是否收藏
                 Userlog userlog = new Userlog();
