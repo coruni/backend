@@ -141,6 +141,7 @@ public class CommentsController {
                     }else{
                         dataUser = new HashMap<>();
                         dataUser.put("screenName","账户已注销");
+                        dataUser.put("avatar",null);
                         dataUser.put("level",0);
                         dataUser.put("nextExp",0);
                         dataUser.put("isFollow",0);
