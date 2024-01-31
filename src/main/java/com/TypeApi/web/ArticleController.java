@@ -855,6 +855,7 @@ public class ArticleController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if(user==null || user.toString().isEmpty()) return Result.getResultJson(201,"用户不存在",null);
                 if (user.getVip() > timeStamp) vip = true;
             }
             // 文章信息
@@ -903,7 +904,7 @@ public class ArticleController {
 
             //给作者写入站内信息
             Inbox inbox = new Inbox();
-            inbox.setText("出售文章[" + article.getTitle() + "],获得" + article.getTitle());
+            inbox.setText("出售文章[" + article.getTitle() + "],获得" + price);
             inbox.setValue(article.getCid());
             inbox.setTouid(article.getAuthorId());
             inbox.setType("finance");
