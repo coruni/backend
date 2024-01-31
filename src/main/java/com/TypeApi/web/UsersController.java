@@ -1648,7 +1648,7 @@ public class UsersController {
                         dataReply.put("images", images);
                         // 查询评论的用户
                         Users replyUser = service.selectByKey(reply.getUid());
-                        Map<String, Object> dataReplyUser = JSONObject.parseObject(JSONObject.toJSONString(sender));
+                        Map<String, Object> dataReplyUser = JSONObject.parseObject(JSONObject.toJSONString(replyUser));
                         if (replyUser != null && !replyUser.toString().isEmpty()) {
                             dataReplyUser.remove("password");
                             dataReplyUser.remove("address");
