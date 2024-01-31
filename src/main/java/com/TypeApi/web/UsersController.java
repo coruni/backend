@@ -1635,20 +1635,20 @@ public class UsersController {
 
                     // 查询回复的评论
                     Comments reply = commentsService.selectByKey(_inbox.getValue());
-                    Map<String, Object> dataReply;
+                    Map<String, Object> dataReply = JSONObject.parseObject(JSONObject.toJSONString(reply));
                     Map<String, Object> articleData = new HashMap<>();
-                    if(reply!=null && !reply.toString().isEmpty()){
-                        dataReply = JSONObject.parseObject(JSONObject.toJSONString(reply));
-                    }else{
-                        dataReply = new HashMap<>();
-                    }
                     if (reply != null && !reply.toString().isEmpty()) {
                         JSONArray images = new JSONArray();
                         images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
                         dataReply.put("images", images);
                         // 查询评论的用户
                         Users replyUser = service.selectByKey(reply.getUid());
-                        Map<String, Object> dataReplyUser = JSONObject.parseObject(JSONObject.toJSONString(replyUser));
+                        Map<String, Object> dataReplyUser;
+                        if(replyUser!=null && !replyUser.toString().isEmpty()){
+                            dataReplyUser = JSONObject.parseObject(JSONObject.toJSONString(replyUser),Map.class);
+                        }else{
+                            dataReplyUser = new HashMap<>();
+                        }
                         if (replyUser != null && !replyUser.toString().isEmpty()) {
                             dataReplyUser.remove("password");
                             dataReplyUser.remove("address");
