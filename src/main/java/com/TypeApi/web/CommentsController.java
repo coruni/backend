@@ -125,7 +125,6 @@ public class CommentsController {
             PageList<Comments> commentsPageList = service.selectPage(comments, page, limit, searchKey, order);
             List<Comments> commentsList = commentsPageList.getList();
 
-
             JSONArray dataList = new JSONArray();
             for (Comments _comments : commentsList) {
                 if (_comments != null && !_comments.toString().isEmpty()) {
@@ -135,7 +134,17 @@ public class CommentsController {
 
                     // 查询用户信息
                     Users commentUser = usersService.selectByKey(_comments.getUid());
-                    Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
+                    Map<String, Object> dataUser;
+
+                    if(commentUser!=null && !commentUser.toString().isEmpty()){
+                        dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
+                    }else{
+                        dataUser = new HashMap<>();
+                        dataUser.put("screenName","账户已注销");
+                        dataUser.put("level",0);
+                        dataUser.put("nextExp",0);
+                        dataUser.put("isFollow",0);
+                    }
                     JSONObject opt = new JSONObject();
                     if (commentUser != null && !commentUser.toString().isEmpty()) {
                         //移除信息
@@ -143,7 +152,6 @@ public class CommentsController {
                         dataUser.remove("address");
                         // 格式化信息
                         opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
-
                         // 加入信息
                         dataUser.put("opt", opt);
                         // 获取等级
