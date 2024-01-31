@@ -69,7 +69,7 @@ public class UploadController {
         if (token != null && !token.isEmpty()) {
             DecodedJWT verify = JWT.verify(token);
             user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在，请重新登录", null);
             uid = user.getUid();
         }
         if (file == null || file.isEmpty()) return Result.getResultJson(201, "请上传文件", null);

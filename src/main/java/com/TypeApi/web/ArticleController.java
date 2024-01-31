@@ -533,6 +533,7 @@ public class ArticleController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if(user==null || user.toString().isEmpty()) return  Result.getResultJson(201,"用户不存在，请重新登录",null);
                 uid = user.getUid();
                 if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
                     permission = true;

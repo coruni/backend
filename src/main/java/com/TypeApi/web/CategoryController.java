@@ -313,7 +313,7 @@ public class CategoryController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在,请重新登录", null);
             }
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);

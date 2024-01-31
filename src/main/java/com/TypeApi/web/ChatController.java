@@ -139,7 +139,7 @@ public class ChatController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null && user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+                if (user == null && user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
             // 查询接收者信息
             Users recevierUser = usersService.selectByKey(id);

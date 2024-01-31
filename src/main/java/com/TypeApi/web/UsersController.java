@@ -1600,6 +1600,7 @@ public class UsersController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if(user ==null || user.toString().isEmpty()) return  Result.getResultJson(201,"用户不存在，请重新登录",null);
             }
             Inbox query = new Inbox();
             query.setType(type);
@@ -1612,7 +1613,12 @@ public class UsersController {
                     Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_inbox), Map.class);
                     // 查询发送方信息
                     Users sender = service.selectByKey(_inbox.getUid());
-                    Map<String, Object> dataSender = JSONObject.parseObject(JSONObject.toJSONString(sender));
+                    Map<String, Object> dataSender;
+                    if(sender!=null && !sender.toString().isEmpty()){
+                        dataSender  = JSONObject.parseObject(JSONObject.toJSONString(sender));
+                    }else{
+                        dataSender = new HashMap<>();
+                    }
                     if (sender != null && !sender.toString().isEmpty()) {
                         dataSender.remove("password");
                         dataSender.remove("address");
@@ -1620,12 +1626,22 @@ public class UsersController {
                         dataSender.remove("opt");
                         dataSender.remove("head_picture");
                         dataSender.remove("mail");
+                    }else{
+                        dataSender.put("screenName","用户已注销");
+                        dataSender.put("isFollow",0);
+                        dataSender.put("isVip",0);
+                        dataSender.put("avatar",null);
                     }
 
                     // 查询回复的评论
                     Comments reply = commentsService.selectByKey(_inbox.getValue());
-                    Map<String, Object> dataReply = JSONObject.parseObject(JSONObject.toJSONString(reply));
+                    Map<String, Object> dataReply;
                     Map<String, Object> articleData = new HashMap<>();
+                    if(reply!=null && !reply.toString().isEmpty()){
+                        dataReply = JSONObject.parseObject(JSONObject.toJSONString(reply));
+                    }else{
+                        dataReply = new HashMap<>();
+                    }
                     if (reply != null && !reply.toString().isEmpty()) {
                         JSONArray images = new JSONArray();
                         images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
@@ -1640,6 +1656,11 @@ public class UsersController {
                             dataReplyUser.remove("opt");
                             dataReplyUser.remove("head_picture");
                             dataReplyUser.remove("mail");
+                        }else{
+                            dataReplyUser.put("screenName","用户已注销");
+                            dataReplyUser.put("isFollow",0);
+                            dataReplyUser.put("isVip",0);
+                            dataReplyUser.put("avatar",null);
                         }
 
                         Article article = contentsService.selectByKey(reply.getCid());
@@ -1725,6 +1746,7 @@ public class UsersController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if(user == null || user.toString().isEmpty()) return Result.getResultJson(201,"用户不存在，请重新登录",null);
             }
             String sql = "UPDATE " + prefix + "_inbox SET isread = 1 WHERE touid = ?";
             if (type != null) {
