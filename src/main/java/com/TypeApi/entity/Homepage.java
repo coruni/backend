@@ -13,6 +13,12 @@ public class Homepage implements Serializable {
      * page 路径
      */
     private String page;
+
+    /***
+     * name 名称
+     */
+    private String name;
+
     /***
      * type 类型 0 page 1url
      */

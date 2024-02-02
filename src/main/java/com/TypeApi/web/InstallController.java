@@ -843,6 +843,7 @@ public class InstallController {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_appHomepage` (" +
                     "  `id` INT NOT NULL AUTO_INCREMENT," +
                     "  `page` text NOT NULL COMMENT '路径'," +
+                    "  `name` varchar(16) NOT NULL COMMENT '名称'," +
                     "  `type` INT NOT NULL DEFAULT 0 COMMENT '类型'," +
                     "  `image` text COMMENT '图片'," +
                     "  `enable` INT NOT NULL DEFAULT 1 COMMENT '启动'," +

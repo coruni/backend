@@ -293,6 +293,7 @@ public class SystemController {
     @ResponseBody
     public String appHomepage(@RequestParam(value = "page") String page,
                               @RequestParam(value = "type", required = false, defaultValue = "0") Integer type,
+                              @RequestParam(value = "name") String name,
                               @RequestParam(value = "image", required = false) String image,
                               @RequestParam(value = "enable", required = false, defaultValue = "1") Integer enable,
                               HttpServletRequest request) {
@@ -302,6 +303,7 @@ public class SystemController {
             Homepage homepage = new Homepage();
             homepage.setType(type);
             homepage.setEnable(enable);
+            homepage.setName(name);
             homepage.setPage(page);
             homepage.setImage(image);
             homepage.setCreated((int) (System.currentTimeMillis() / 1000));

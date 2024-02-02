@@ -6,6 +6,7 @@
     <resultMap id="BaseResultMap" type="com.TypeApi.entity.Homepage" >
         <result column="id" property="id" />
         <result column="page" property="page" />
+        <result column="name" property="name" />
         <result column="type" property="type" />
         <result column="image" property="image" />
         <result column="enable" property="enable" />
@@ -15,6 +16,7 @@
     <sql id="Base_Column_List">
         `id`,
         `page`,
+        `name`,
         `type`,
         `image`,
         `enable`,
@@ -30,6 +32,9 @@
             </if>
             <if test ='null != page'>
                 `page`,
+            </if>
+            <if test ='null != name'>
+                `name`,
             </if>
             <if test ='null != type'>
                 `type`,
@@ -50,6 +55,9 @@
             </if>
             <if test ='null != page'>
                 #{page},
+            </if>
+            <if test ='null != name'>
+                #{name},
             </if>
             <if test ='null != type'>
                 #{type},
@@ -73,6 +81,7 @@
             (
             #{curr.id},
             #{curr.page},
+            #{curr.name},
             #{curr.type},
             #{curr.image},
             #{curr.enable},
@@ -86,6 +95,7 @@
         UPDATE ${prefix}_appHomepage
         <set>
             <if test ='null != page'>`page` = #{page},</if>
+            <if test ='null != name'>`name` = #{name},</if>
             <if test ='null != type'>`type` = #{type},</if>
             <if test ='null != image'>`image` = #{image},</if>
             <if test ='null != enable'>`enable` = #{enable},</if>
@@ -126,6 +136,9 @@
             <if test ='null != page'>
                 and `page` = #{page}
             </if>
+            <if test ='null != name'>
+                and `name` = #{name}
+            </if>
             <if test ='null != type'>
                 and `type` = #{type}
             </if>
@@ -148,6 +161,9 @@
             </if>
             <if test ='null != homepage.page'>
                 and `page` = #{homepage.page}
+            </if>
+            <if test ='null != homepage.name'>
+                and `name` = #{homepage.name}
             </if>
             <if test ='null != homepage.type'>
                 and `type` = #{homepage.type}
@@ -174,6 +190,9 @@
             </if>
             <if test ='null != page'>
                 and `page` = #{page}
+            </if>
+            <if test ='null != name'>
+                and `name` = #{name}
             </if>
             <if test ='null != type'>
                 and `type` = #{type}
