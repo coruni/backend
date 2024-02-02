@@ -185,7 +185,7 @@ public class UsersController {
                 // 加入数据
                 data.put("address", address);
                 data.put("opt", opt);
-                data.put("isFollow",isFollow);
+                data.put("isFollow", isFollow);
                 data.put("level", level);
                 data.put("isVip", isVip);
                 data.put("nextLevel", nextLevel);
@@ -323,7 +323,13 @@ public class UsersController {
             address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : null;
 
             // 处理会员
-            if (user!=null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
+            if (user != null && user.getVip() != null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
+
+            // 处理等级
+            List levelInfo = baseFull.getLevel(user.getExperience());
+            Integer level = Integer.parseInt(levelInfo.get(0).toString());
+            Integer nextExp = Integer.parseInt(levelInfo.get(1).toString());
+
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
             // 加入数据
             data.put("address", address);
@@ -331,6 +337,8 @@ public class UsersController {
             data.put("isFollow", isFollow);
             data.put("related", related);
             data.put("isVip", isVip);
+            data.put("level", level);
+            data.put("nextExp", nextExp);
             // 移除敏感数据
             data.remove("password");
             if (!own.getUid().equals(user.getUid()) &&
@@ -1600,7 +1608,8 @@ public class UsersController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if(user ==null || user.toString().isEmpty()) return  Result.getResultJson(201,"用户不存在，请重新登录",null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
             Inbox query = new Inbox();
             query.setType(type);
@@ -1614,9 +1623,9 @@ public class UsersController {
                     // 查询发送方信息
                     Users sender = service.selectByKey(_inbox.getUid());
                     Map<String, Object> dataSender;
-                    if(sender!=null && !sender.toString().isEmpty()){
-                        dataSender  = JSONObject.parseObject(JSONObject.toJSONString(sender));
-                    }else{
+                    if (sender != null && !sender.toString().isEmpty()) {
+                        dataSender = JSONObject.parseObject(JSONObject.toJSONString(sender));
+                    } else {
                         dataSender = new HashMap<>();
                     }
                     if (sender != null && !sender.toString().isEmpty()) {
@@ -1626,11 +1635,11 @@ public class UsersController {
                         dataSender.remove("opt");
                         dataSender.remove("head_picture");
                         dataSender.remove("mail");
-                    }else{
-                        dataSender.put("screenName","用户已注销");
-                        dataSender.put("isFollow",0);
-                        dataSender.put("isVip",0);
-                        dataSender.put("avatar",null);
+                    } else {
+                        dataSender.put("screenName", "用户已注销");
+                        dataSender.put("isFollow", 0);
+                        dataSender.put("isVip", 0);
+                        dataSender.put("avatar", null);
                     }
 
                     // 查询回复的评论
@@ -1644,9 +1653,9 @@ public class UsersController {
                         // 查询评论的用户
                         Users replyUser = service.selectByKey(reply.getUid());
                         Map<String, Object> dataReplyUser;
-                        if(replyUser!=null && !replyUser.toString().isEmpty()){
-                            dataReplyUser = JSONObject.parseObject(JSONObject.toJSONString(replyUser),Map.class);
-                        }else{
+                        if (replyUser != null && !replyUser.toString().isEmpty()) {
+                            dataReplyUser = JSONObject.parseObject(JSONObject.toJSONString(replyUser), Map.class);
+                        } else {
                             dataReplyUser = new HashMap<>();
                         }
                         if (replyUser != null && !replyUser.toString().isEmpty()) {
@@ -1656,11 +1665,11 @@ public class UsersController {
                             dataReplyUser.remove("opt");
                             dataReplyUser.remove("head_picture");
                             dataReplyUser.remove("mail");
-                        }else{
-                            dataReplyUser.put("screenName","用户已注销");
-                            dataReplyUser.put("isFollow",0);
-                            dataReplyUser.put("isVip",0);
-                            dataReplyUser.put("avatar",null);
+                        } else {
+                            dataReplyUser.put("screenName", "用户已注销");
+                            dataReplyUser.put("isFollow", 0);
+                            dataReplyUser.put("isVip", 0);
+                            dataReplyUser.put("avatar", null);
                         }
 
                         Article article = contentsService.selectByKey(reply.getCid());
@@ -1746,7 +1755,8 @@ public class UsersController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if(user == null || user.toString().isEmpty()) return Result.getResultJson(201,"用户不存在，请重新登录",null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
             String sql = "UPDATE " + prefix + "_inbox SET isread = 1 WHERE touid = ?";
             if (type != null) {
