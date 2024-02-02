@@ -5,9 +5,9 @@ import java.io.Serializable;
 import lombok.Data;
 
 /**
- * TypechoHeadpicture
+ * Homepage
  *
- * @author Maplene 2023/11/20
+ * @author Maplene 2024/02/02
  */
 @Data
 public class Headpicture implements Serializable {

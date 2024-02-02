@@ -310,6 +310,7 @@ public class InstallController {
         } else {
             text += "内容模块，字段discount已经存在，无需添加。";
         }
+
         //查询文章表是否存在 marks 字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'marks';", Integer.class);
         if (i == 0) {
@@ -834,6 +835,23 @@ public class InstallController {
             text += "评论点赞表创建完成。";
         } else {
             text += "评论点赞表已存在，无需安装。";
+        }
+
+        //安装APP首页配置表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_appHomepage';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_appHomepage` (" +
+                    "  `id` INT NOT NULL AUTO_INCREMENT," +
+                    "  `page` text NOT NULL COMMENT '路径'," +
+                    "  `type` INT NOT NULL DEFAULT 0 COMMENT '类型'," +
+                    "  `image` text COMMENT '图片'," +
+                    "  `enable` INT NOT NULL DEFAULT 1 COMMENT '启动'," +
+                    "  `created` INT  COMMENT '创建时间'," +
+                    "  PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='应用首页配置';");
+            text += "应用首页表创建完成。";
+        } else {
+            text += "应用首页表已存在，无需安装。";
         }
 
         //判断充值记录表是否存在

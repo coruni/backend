@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TypeApi.dao.HomepageDao">
+
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Homepage" >
+        <result column="id" property="id" />
+        <result column="page" property="page" />
+        <result column="type" property="type" />
+        <result column="image" property="image" />
+        <result column="enable" property="enable" />
+        <result column="created" property="created" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `id`,
+        `page`,
+        `type`,
+        `image`,
+        `enable`,
+        `created`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.TypeApi.entity.Homepage" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO ${prefix}_appHomepage
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                `id`,
+            </if>
+            <if test ='null != page'>
+                `page`,
+            </if>
+            <if test ='null != type'>
+                `type`,
+            </if>
+            <if test ='null != image'>
+                `image`,
+            </if>
+            <if test ='null != enable'>
+                `enable`,
+            </if>
+            <if test ='null != created'>
+                `created`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                #{id},
+            </if>
+            <if test ='null != page'>
+                #{page},
+            </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
+            <if test ='null != image'>
+                #{image},
+            </if>
+            <if test ='null != enable'>
+                #{enable},
+            </if>
+            <if test ='null != created'>
+                #{created}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ${prefix}_appHomepage ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+            #{curr.id},
+            #{curr.page},
+            #{curr.type},
+            #{curr.image},
+            #{curr.enable},
+            #{curr.created}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.TypeApi.entity.Homepage">
+        UPDATE ${prefix}_appHomepage
+        <set>
+            <if test ='null != page'>`page` = #{page},</if>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != image'>`image` = #{image},</if>
+            <if test ='null != enable'>`enable` = #{enable},</if>
+            <if test ='null != created'>`created` = #{created}</if>
+        </set>
+        WHERE `id` = #{id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_appHomepage
+        WHERE `id` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM ${prefix}_appHomepage WHERE id IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_appHomepage
+        WHERE `id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_appHomepage
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != page'>
+                and `page` = #{page}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != image'>
+                and `image` = #{image}
+            </if>
+            <if test ='null != enable'>
+                and `enable` = #{enable}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_appHomepage
+        <where>
+            <if test ='null != homepage.id'>
+                and `id` = #{homepage.id}
+            </if>
+            <if test ='null != homepage.page'>
+                and `page` = #{homepage.page}
+            </if>
+            <if test ='null != homepage.type'>
+                and `type` = #{homepage.type}
+            </if>
+            <if test ='null != homepage.enable'>
+                and `enable` = #{homepage.enable}
+            </if>
+            <!--            <if test ='null != searchKey'>-->
+            <!--                and CONCAT(IFNULL(`name`, ''), IFNULL(`permission`, '')) LIKE CONCAT('%', #{searchKey}, '%')-->
+            <!--            </if>-->
+        </where>
+        <if test="order != null and order != ''">
+            order by CONCAT('`', #{order}, '`')
+        </if>
+        limit ${page}, ${pageSize}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_appHomepage
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != page'>
+                and `page` = #{page}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != image'>
+                and `image` = #{image}
+            </if>
+            <if test ='null != enable'>
+                and `enable` = #{enable}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+        </where>
+    </select>
+</mapper>

@@ -8,32 +8,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
-/**
- * 业务层实现类
- * TypechoContentsServiceImpl
- *
- * @author buxia97
- * @date 2021/11/29
- */
 @Service
-public class HeadpictureServiceImpl implements HeadpictureService {
+public class HomepageServiceImpl implements HomepageService {
 
     @Autowired
-    HeadpictureDao dao;
+    HomepageDao dao;
 
     @Override
-    public int insert(Headpicture Headpicture) {
-        return dao.insert(Headpicture);
+    public int insert(Homepage homepage) {
+        return dao.insert(homepage);
     }
 
     @Override
-    public int batchInsert(List<Headpicture> list) {
+    public int batchInsert(List<Homepage> list) {
         return dao.batchInsert(list);
     }
 
     @Override
-    public int update(Headpicture Headpicture) {
-        return dao.update(Headpicture);
+    public int update(Homepage homepage) {
+        return dao.update(homepage);
     }
 
     @Override
@@ -47,18 +40,18 @@ public class HeadpictureServiceImpl implements HeadpictureService {
     }
 
     @Override
-    public Headpicture selectByKey(Object key) { return dao.selectByKey(key);}
+    public Homepage selectByKey(Object key) { return dao.selectByKey(key);}
 
     @Override
-    public List<Headpicture> selectList(Headpicture Headpicture) {
-        return dao.selectList(Headpicture);
+    public List<Homepage> selectList(Homepage homepage) {
+        return dao.selectList(homepage);
     }
 
     @Override
-    public PageList<Headpicture> selectPage(Headpicture Headpicture, Integer offset, Integer pageSize, String order) {
-        PageList<Headpicture> pageList = new PageList<>();
+    public PageList<Homepage> selectPage(Homepage homepage, Integer offset, Integer pageSize, String order) {
+        PageList<Homepage> pageList = new PageList<>();
 
-        int total = this.total(Headpicture);
+        int total = this.total(homepage);
 
         Integer totalPage;
         if (total % pageSize != 0) {
@@ -69,7 +62,7 @@ public class HeadpictureServiceImpl implements HeadpictureService {
 
         int page = (offset - 1) * pageSize;
 
-        List<Headpicture> list = dao.selectPage(Headpicture, page, pageSize, order);
+        List<Homepage> list = dao.selectPage(homepage, page, pageSize, order);
 
         pageList.setList(list);
         pageList.setStartPageNo(offset);
@@ -80,7 +73,7 @@ public class HeadpictureServiceImpl implements HeadpictureService {
     }
 
     @Override
-    public int total(Headpicture Headpicture) {
-        return dao.total(Headpicture);
+    public int total(Homepage homepage) {
+        return dao.total(homepage);
     }
 }
