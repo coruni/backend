@@ -2220,5 +2220,39 @@ public class UsersController {
         }
     }
 
+    @RequestMapping(value = "/tasks")
+    @ResponseBody
+    public String tasks(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            // 初始化返回信息
+            Integer isSign = 0;
+            Integer likes = 0;
+            Integer views = 0;
+            Integer shares = 0;
+
+            Map<String, Object> data = new HashMap<>();
+            if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
+                isSign = 1;
+
+            data.put("isSign", isSign);
+            data.put("likes", likes);
+            data.put("views", views);
+            data.put("shares", shares);
+            return Result.getResultJson(200, "获取成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+
+
+    }
+
 
 }
