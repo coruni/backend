@@ -200,7 +200,7 @@ public class HeadpictureController {
             if(opt==null)opt = new JSONObject();
             // 先判断头像框权限
             if (headpicture != null && headpicture.getPermission() != null && headpicture.getPermission().equals(0)) {
-                if (head_picture != null && head_picture.contains(headpicture.getId())) {
+                if (head_picture != null && head_picture.contains(headpicture.getId()) || permission) {
                     opt.put("head_picture", headpicture.getLink().toString());
                 } else {
                     return Result.getResultJson(201, "你没有获得这个头像框", null);
