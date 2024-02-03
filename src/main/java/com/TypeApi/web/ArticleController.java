@@ -309,7 +309,7 @@ public class ArticleController {
                 users.setAssets((users.getAssets()!=null?users.getAssets():0)+2);
                 users.setExperience((users.getExperience()!=null?users.getExperience():0) + 5);
                 redisHelp.delete("views_" + users.getName(), redisTemplate);
-                redisHelp.setRedis("views_" + users.getName(), String.valueOf(taskLike + 1), endTime, redisTemplate);
+                redisHelp.setRedis("views_" + users.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
                 usersService.update(users);
             }
             return Result.getResultJson(200, "获取成功", data);
