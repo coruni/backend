@@ -7,6 +7,10 @@ import org.springframework.util.DigestUtils;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -313,5 +317,15 @@ public class baseFull {
         result.add(level);
         result.add(nextExp);
         return result;
+    }
+
+    public Integer endTime(){
+        // 获取当前日期
+        LocalDate today = LocalDate.now();
+        // 如果用户还没签到，计算距离今天结束还有多少秒
+        LocalDateTime endOfToday = LocalDateTime.of(today, LocalTime.MAX);
+        Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
+        long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
+        return (int) secondsUntilEndOfDay;
     }
 }

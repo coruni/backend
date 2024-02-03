@@ -2177,15 +2177,11 @@ public class UsersController {
 
             if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
                 return Result.getResultJson(200, "今天已签到", null);
-            // 获取当前日期
-            LocalDate today = LocalDate.now();
-            // 如果用户还没签到，计算距离今天结束还有多少秒
-            LocalDateTime endOfToday = LocalDateTime.of(today, LocalTime.MAX);
-            Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
-            long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
 
+            // 获取今天结束时间
+            Integer endTime = baseFull.endTime();
             // 写入redis
-            redisHelp.setRedis("signed_" + user.getName().toString(), "1", (int) secondsUntilEndOfDay, redisTemplate);
+            redisHelp.setRedis("signed_" + user.getName().toString(), "1", endTime, redisTemplate);
 
             // 给用户添加积分和经验
             user.setAssets(user.getAssets() + apiconfig.getClock());
@@ -2236,14 +2232,29 @@ public class UsersController {
             Integer likes = 0;
             Integer views = 0;
             Integer shares = 0;
+            Integer marks = 0;
 
             Map<String, Object> data = new HashMap<>();
             if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
                 isSign = 1;
 
+            if (redisHelp.getRedis("likes_" + user.getName(), redisTemplate) != null)
+                likes = Integer.parseInt(redisHelp.getRedis("likes_" + user.getName(), redisTemplate));
+
+            if (redisHelp.getRedis("views_" + user.getName(), redisTemplate) != null)
+                views = Integer.parseInt(redisHelp.getRedis("views_" + user.getName(), redisTemplate));
+
+            if (redisHelp.getRedis("marks_" + user.getName(), redisTemplate) != null)
+                marks = Integer.parseInt(redisHelp.getRedis("marks_" + user.getName(), redisTemplate));
+
+            if (redisHelp.getRedis("shares_" + user.getName(), redisTemplate) != null)
+                shares = Integer.parseInt(redisHelp.getRedis("shares_" + user.getName(), redisTemplate));
+
+
             data.put("isSign", isSign);
             data.put("likes", likes);
             data.put("views", views);
+            data.put("marks", marks);
             data.put("shares", shares);
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {

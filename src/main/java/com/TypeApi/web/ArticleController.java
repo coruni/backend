@@ -136,10 +136,11 @@ public class ArticleController {
             Integer uid = null;
             String token = request.getHeader("Authorization");
             Boolean permission = false;
+            Users users = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 uid = Integer.parseInt(verify.getClaim("aud").asString());
-                Users users = usersService.selectByKey(uid);
+                users = usersService.selectByKey(uid);
                 if (users.getGroup().equals("administrator") || users.getGroup().equals("editor")) permission = true;
             }
             // 查询文章
@@ -247,7 +248,7 @@ public class ArticleController {
             } else {
                 authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
             }
-            if(info!=null && !info.toString().isEmpty()){
+            if (info != null && !info.toString().isEmpty()) {
                 List result = baseFull.getLevel(info.getExperience());
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
@@ -272,7 +273,7 @@ public class ArticleController {
                 authorInfo.remove("address");
                 authorInfo.remove("assets");
                 authorInfo.remove("password");
-            }else{
+            } else {
                 //加入信息
                 authorInfo.put("isFollow", 0);
                 authorInfo.put("level", 0);
@@ -298,6 +299,20 @@ public class ArticleController {
             data.put("authorInfo", authorInfo);
             // 移除信息
             data.remove("passowrd");
+
+            // 开始写入访问次数至多两次
+            Integer endTime = baseFull.endTime();
+            // likes 存入今天的数据 最多三次
+            Integer taskLike = redisHelp.getRedis("views_" + users.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + users.getName(), redisTemplate)) : 0;
+            if (taskLike < 2) {
+                // 点赞送经验和积分
+                users.setAssets(users.getAssets() + 2);
+                users.setExperience(users.getExperience() + 5);
+                redisHelp.delete("views_" + users.getName(), redisTemplate);
+                redisHelp.setRedis("views_" + users.getName(), String.valueOf(taskLike + 1), endTime, redisTemplate);
+                usersService.update(users);
+            }
+
             return Result.getResultJson(200, "获取成功", data);
 
         } catch (Exception e) {
@@ -533,7 +548,8 @@ public class ArticleController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if(user==null || user.toString().isEmpty()) return  Result.getResultJson(201,"用户不存在，请重新登录",null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
                 uid = user.getUid();
                 if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
                     permission = true;
@@ -561,7 +577,8 @@ public class ArticleController {
                 return Result.getResultJson(201, "分类不存在", null);
             }
 
-            if(_category.getPermission()!=null && _category.getPermission().equals(1) && !permission) return  Result.getResultJson(201,"该分类仅限管理员可用,请重新选择分类",null);
+            if (_category.getPermission() != null && _category.getPermission().equals(1) && !permission)
+                return Result.getResultJson(201, "该分类仅限管理员可用,请重新选择分类", null);
 
             // 写入文章信息
             Article article = new Article();
@@ -858,7 +875,7 @@ public class ArticleController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if(user==null || user.toString().isEmpty()) return Result.getResultJson(201,"用户不存在",null);
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
                 if (user.getVip() > timeStamp) vip = true;
             }
             // 文章信息
@@ -1247,6 +1264,7 @@ public class ArticleController {
             userlog.setCid(article.getCid());
             userlog.setUid(user.getUid());
             Integer likes = article.getLikes();
+
             // 存在就删除
             List<Userlog> userlogList = userlogService.selectList(userlog);
             if (userlogList.size() > 0) {
@@ -1256,6 +1274,18 @@ public class ArticleController {
                 userlog.setCreated((int) (System.currentTimeMillis() / 1000));
                 article.setLikes(likes + 1);
                 userlogService.insert(userlog);
+                // 获取结束时间
+                Integer endTime = baseFull.endTime();
+                // likes 存入今天的数据 最多三次
+                Integer taskLike = redisHelp.getRedis("likes_" + user.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("likes_" + user.getName(), redisTemplate)) : 0;
+                if (taskLike < 3) {
+                    // 点赞送经验和积分
+                    user.setAssets(user.getAssets() + 2);
+                    user.setExperience(user.getExperience() + 5);
+                    redisHelp.delete("likes_" + user.getName(), redisTemplate);
+                    redisHelp.setRedis("likes_" + user.getName(), String.valueOf(taskLike + 1), endTime, redisTemplate);
+                    usersService.update(user);
+                }
             }
             service.update(article);
             return Result.getResultJson(200, userlogList.size() > 0 ? "已取消点赞" : "点赞成功", null);
@@ -1296,6 +1326,18 @@ public class ArticleController {
                 article.setMarks(article.getMarks() + 1);
                 userlog.setCreated((int) (System.currentTimeMillis() / 1000));
                 userlogService.insert(userlog);
+                // 获取结束时间
+                Integer endTime = baseFull.endTime();
+                // likes 存入今天的数据 最多三次
+                Integer taskLike = redisHelp.getRedis("marks_" + user.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("marks_" + user.getName(), redisTemplate)) : 0;
+                if (taskLike < 3) {
+                    // 点赞送经验和积分
+                    user.setAssets(user.getAssets() + 2);
+                    user.setExperience(user.getExperience() + 5);
+                    redisHelp.delete("marks_" + user.getName(), redisTemplate);
+                    redisHelp.setRedis("marks_" + user.getName(), String.valueOf(taskLike + 1), endTime, redisTemplate);
+                    usersService.update(user);
+                }
             }
             service.update(article);
             return Result.getResultJson(200, userlogList.size() > 0 ? "已取消收藏" : "收藏成功", null);
