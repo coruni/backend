@@ -136,15 +136,15 @@ public class CommentsController {
                     Users commentUser = usersService.selectByKey(_comments.getUid());
                     Map<String, Object> dataUser;
 
-                    if(commentUser!=null && !commentUser.toString().isEmpty()){
+                    if (commentUser != null && !commentUser.toString().isEmpty()) {
                         dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
-                    }else{
+                    } else {
                         dataUser = new HashMap<>();
-                        dataUser.put("screenName","账户已注销");
-                        dataUser.put("avatar",null);
-                        dataUser.put("level",0);
-                        dataUser.put("nextExp",0);
-                        dataUser.put("isFollow",0);
+                        dataUser.put("screenName", "账户已注销");
+                        dataUser.put("avatar", null);
+                        dataUser.put("level", 0);
+                        dataUser.put("nextExp", 0);
+                        dataUser.put("isFollow", 0);
                     }
                     JSONObject opt = new JSONObject();
                     if (commentUser != null && !commentUser.toString().isEmpty()) {
@@ -162,7 +162,7 @@ public class CommentsController {
                     // 是否点赞
                     CommentLike commentLike = new CommentLike();
                     Integer isLike = 0;
-                    if (id != null && !id.equals(0) && user != null) {
+                    if (user != null && !user.toString().isEmpty() && _comments != null) {
                         commentLike.setCid(_comments.getId());
                         commentLike.setUid(user.getUid());
                         List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
@@ -300,7 +300,8 @@ public class CommentsController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在,请重新登录", null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在,请重新登录", null);
             }
 
             // 定义一个变量来获取替换掉的内容
