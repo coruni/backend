@@ -1202,6 +1202,7 @@ public class UsersController {
             @RequestParam(value = "mail", required = false) String mail,
             @RequestParam(value = "group", required = false) String group,
             @RequestParam(value = "opt", required = false) String opt,
+            @RequestParam(value = "vip", required = false) Integer vip,
             HttpServletRequest request) {
         try {
             Boolean permission = permission(request.getHeader("Authorization"));
@@ -1213,6 +1214,7 @@ public class UsersController {
             user.setSex(sex);
             user.setIntroduce(introduce);
             user.setMail(mail);
+            user.setVip(vip);
             service.update(user);
             return Result.getResultJson(200, "修改成功", null);
         } catch (Exception e) {
