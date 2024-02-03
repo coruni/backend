@@ -150,8 +150,8 @@ public class CategoryController {
     public String info(@RequestParam(value = "id") Integer id,
                        HttpServletRequest request) {
         try {
-            Users user = new Users();
             String token = request.getHeader("Authorization");
+            Users user = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
@@ -165,16 +165,15 @@ public class CategoryController {
 
             // 查询是否关注
             Integer isFollow = 0;
-            Userlog userlog = new Userlog();
-            userlog.setNum(category.getMid());
-            userlog.setType("category");
-            if (user != null && !user.toString().isEmpty()) {
+            if(user!=null && !user.toString().isEmpty()){
+                Userlog userlog = new Userlog();
+                userlog.setType("category");
                 userlog.setUid(user.getUid());
+                userlog.setNum(category.getMid());
+                // 查询是否存在记录
                 List<Userlog> userlogList = userlogService.selectList(userlog);
-                if (userlogList.size() > 0) isFollow = 1;
+                if(userlogList.size()>0) isFollow = 1;
             }
-            // 去除uid查询 查询所有关注数量
-            userlog.setUid(null);
             data.put("opt", opt);
             data.put("isFollow", isFollow);
 
@@ -310,7 +309,7 @@ public class CategoryController {
     public String follow(@RequestParam(value = "id") Integer id,
                          HttpServletRequest request) {
         try {
-            String token = request.getHeader("'Authorization");
+            String token = request.getHeader("Authorization");
             Users user = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
@@ -318,11 +317,11 @@ public class CategoryController {
                 if (user == null || user.toString().isEmpty())
                     return Result.getResultJson(201, "用户不存在,请重新登录", null);
             }
+            System.out.println(user+"草");
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
             // 使用userlog 来存储关注分类
             Userlog userlog = new Userlog();
-
             userlog.setType("category");
             userlog.setUid(user.getUid());
             userlog.setNum(category.getMid());
