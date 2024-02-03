@@ -363,6 +363,14 @@ public class InstallController {
         } else {
             text += "内容模块，字段follows已经存在，无需添加。";
         }
+        //查询分类表是否存在permission字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_metas' and column_name = 'permission';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_metas ADD permission INT NOT NULL DEFAULT 0;");
+            text += "内容模块，字段permission添加完成。";
+        } else {
+            text += "内容模块，字段permission已经存在，无需添加。";
+        }
 
         //查询文章表是否存在images字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'images';", Integer.class);

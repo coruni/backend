@@ -76,4 +76,9 @@ public class Category implements Serializable {
      * 关注
      */
     private Integer follows;
+
+    /***
+     * permission 权限 0 是全部能发 1 是管理员可发
+     */
+    private  Integer permission;
 }

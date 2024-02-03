@@ -201,7 +201,6 @@ public class CategoryController {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
-
             if (name != null && !name.isEmpty()) category.setName(name);
             if (description != null && !description.isEmpty()) category.setDescription(description);
             if (avatar != null && !avatar.isEmpty()) category.setImgurl(avatar);
@@ -239,6 +238,7 @@ public class CategoryController {
                       @RequestParam(value = "avatar") String avatar,
                       @RequestParam(value = "opt") String opt,
                       @RequestParam(value = "type") String type,
+                      @RequestParam(value = "perimission", required = false, defaultValue = "0") Integer permission,
                       HttpServletRequest request) {
         try {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
@@ -248,6 +248,7 @@ public class CategoryController {
             category.setImgurl(avatar);
             category.setType(type);
             category.setOpt(opt);
+            category.setPermission(permission);
             service.insert(category);
             return Result.getResultJson(200, "添加成功", null);
         } catch (Exception e) {
@@ -270,6 +271,7 @@ public class CategoryController {
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
             if (type.equals("recommend")) category.setIsrecommend(category.getIsrecommend() > 0 ? 0 : 1);
             if (type.equals("waterfall")) category.setIswaterfall(category.getIswaterfall() > 0 ? 0 : 1);
+            if (type.equals("permission")) category.setPermission(category.getPermission() > 0 ? 0 : 1);
             service.update(category);
             return Result.getResultJson(200, "操作成功", null);
         } catch (Exception e) {
@@ -313,7 +315,8 @@ public class CategoryController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在,请重新登录", null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在,请重新登录", null);
             }
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
