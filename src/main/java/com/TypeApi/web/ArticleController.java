@@ -300,18 +300,21 @@ public class ArticleController {
             // 移除信息
             data.remove("passowrd");
 
-            // 开始写入访问次数至多两次
-            Integer endTime = baseFull.endTime();
-            // views 存入今天的数据 最多三次
-            Integer taskViews = redisHelp.getRedis("views_" + users.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + users.getName(), redisTemplate)) : 0;
-            if (taskViews < 2 && users!=null) {
-                // 点赞送经验和积分
-                users.setAssets((users.getAssets()!=null?users.getAssets():0)+2);
-                users.setExperience((users.getExperience()!=null?users.getExperience():0) + 5);
-                redisHelp.delete("views_" + users.getName(), redisTemplate);
-                redisHelp.setRedis("views_" + users.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
-                usersService.update(users);
+            if(users!=null && !users.toString().isEmpty()){
+                // 开始写入访问次数至多两次
+                Integer endTime = baseFull.endTime();
+                // views 存入今天的数据 最多三次
+                Integer taskViews = redisHelp.getRedis("views_" + users.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + users.getName(), redisTemplate)) : 0;
+                if (taskViews < 2 && users!=null) {
+                    // 点赞送经验和积分
+                    users.setAssets((users.getAssets()!=null?users.getAssets():0)+2);
+                    users.setExperience((users.getExperience()!=null?users.getExperience():0) + 5);
+                    redisHelp.delete("views_" + users.getName(), redisTemplate);
+                    redisHelp.setRedis("views_" + users.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
+                    usersService.update(users);
+                }
             }
+
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();
