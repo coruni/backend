@@ -561,7 +561,7 @@ public class ArticleController {
                 return Result.getResultJson(201, "分类不存在", null);
             }
 
-            if(_category.getPermission().equals(1) && !permission) return  Result.getResultJson(201,"该分类仅限管理员可用,请重新选择分类",null);
+            if(_category.getPermission()!=null && _category.getPermission().equals(1) && !permission) return  Result.getResultJson(201,"该分类仅限管理员可用,请重新选择分类",null);
 
             // 写入文章信息
             Article article = new Article();
