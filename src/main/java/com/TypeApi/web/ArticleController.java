@@ -304,7 +304,7 @@ public class ArticleController {
             Integer endTime = baseFull.endTime();
             // likes 存入今天的数据 最多三次
             Integer taskLike = redisHelp.getRedis("views_" + users.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + users.getName(), redisTemplate)) : 0;
-            if (taskLike < 2) {
+            if (taskLike < 2 && users!=null) {
                 // 点赞送经验和积分
                 users.setAssets(users.getAssets() + 2);
                 users.setExperience(users.getExperience() + 5);
