@@ -76,7 +76,7 @@ public class HeadpictureController {
             }
             Long timeStamp = System.currentTimeMillis() / 1000;
             if (!permission(request.getHeader("Authorization")) && user.getVip() < timeStamp)
-                return Result.getResultJson(201, "该功能会员可用", null);
+                return Result.getResultJson(201, "该功能会员可用或权限不足", null);
 
             // 写入数据 type 0是私人 1 是公开
             Headpicture headpicture = new Headpicture();
@@ -119,7 +119,6 @@ public class HeadpictureController {
      *
      * @param page
      * @param limit
-     * @param id
      * @param self
      * @param order
      * @param request
@@ -128,7 +127,11 @@ public class HeadpictureController {
 
     @RequestMapping(value = "/list")
     @ResponseBody
-    public String list(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page, @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit, @RequestParam(value = "id", required = false) Integer id, @RequestParam(value = "self", required = false) Integer self, @RequestParam(value = "order", required = false) String order, HttpServletRequest request) {
+    public String list(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                       @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                       @RequestParam(value = "self", required = false) Integer self,
+                       @RequestParam(value = "order", required = false) String order,
+                       HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             Users user = new Users();
