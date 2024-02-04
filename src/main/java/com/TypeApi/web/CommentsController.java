@@ -3,6 +3,7 @@ package com.TypeApi.web;
 import com.TypeApi.common.*;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
@@ -172,8 +173,12 @@ public class CommentsController {
 
                     // 格式化images 数组
                     List images = new JSONArray();
-                    images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
-                    data.put("images", images);
+                    try {
+                        images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
+                    } catch (JSONException e) {
+                        images = null;
+                    }
+
                     // 加入文章信息
                     Map<String, Object> articleData = new HashMap<>();
                     if (article == null || article.toString().isEmpty()) {
@@ -186,9 +191,8 @@ public class CommentsController {
                         images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
                         articleData.put("images", images);
                     }
-
-
                     // 加入信息
+                    data.put("images", images);
                     data.put("article", articleData);
                     data.put("isLike", isLike);
                     data.put("userInfo", dataUser);
@@ -340,10 +344,10 @@ public class CommentsController {
                     }
                 }
             }
-            if (images != null && !images.toString().isEmpty()) comments.setImages(images);
 
             if (text == null || text.isEmpty()) return Result.getResultJson(201, "请输入评论", null);
             comments.setText(user.getVip() < timeStamp && !permission ? nonText : text);
+            if (images != null && !images.toString().isEmpty()) comments.setImages(images);
             comments.setIp(baseFull.getIpAddr(request));
             comments.setCreated(Math.toIntExact(timeStamp));
             comments.setCid(article.getCid());
