@@ -340,7 +340,7 @@ public class CommentsController {
                     }
                 }
             }
-            if (images != null && !images.toString().isEmpty()) comments.setAll(parent);
+            if (images != null && !images.toString().isEmpty()) comments.setImages(images);
 
             if (text == null || text.isEmpty()) return Result.getResultJson(201, "请输入评论", null);
             comments.setText(user.getVip() < timeStamp && !permission ? nonText : text);
