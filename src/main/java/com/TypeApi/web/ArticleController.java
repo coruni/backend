@@ -11,6 +11,7 @@ import net.dreamlu.mica.xss.core.XssCleanIgnore;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -163,14 +164,14 @@ public class ArticleController {
             Userlog userlog = new Userlog();
             Integer isLike = 0;
             Integer isMark = 0;
-            if (uid != null && uid != 0) {
+            if (users != null && !users.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
                 replyStatus.setCid(article.getCid());
                 replyStatus.setUid(uid);
                 Integer rStatus = commentsService.total(replyStatus, null);
                 if (rStatus > 0) {
-                    isPaid = true;
+                    isReply = true;
                 }
                 // 获取购买状态
                 Paylog paylog = new Paylog();
@@ -201,9 +202,11 @@ public class ArticleController {
                 String type = matcher.group(1);
                 String content = matcher.group(2);
                 String replacement = "";
-                if ("pay".equals(type) && !isPaid && uid != article.getAuthorId() && !permission) {
+
+
+                if ("pay".equals(type) && !isPaid && users.getUid() != article.getAuthorId() && !permission) {
                     replacement = "【付费查看：这是付费内容，付费后可查看】";
-                } else if ("reply".equals(type) && !isReply && uid != article.getAuthorId() && !permission) {
+                } else if ("reply".equals(type) && !isReply && users.getUid() != article.getAuthorId() && !permission) {
                     replacement = "【回复查看：这是回复内容，回复后可查看】";
                 } else {
                     replacement = content;  // 如果不需要替换，则保持原样
@@ -300,15 +303,15 @@ public class ArticleController {
             // 移除信息
             data.remove("passowrd");
 
-            if(users!=null && !users.toString().isEmpty()){
+            if (users != null && !users.toString().isEmpty()) {
                 // 开始写入访问次数至多两次
                 Integer endTime = baseFull.endTime();
                 // views 存入今天的数据 最多三次
                 Integer taskViews = redisHelp.getRedis("views_" + users.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + users.getName(), redisTemplate)) : 0;
-                if (taskViews < 2 && users!=null) {
+                if (taskViews < 2 && users != null) {
                     // 点赞送经验和积分
-                    users.setAssets((users.getAssets()!=null?users.getAssets():0)+2);
-                    users.setExperience((users.getExperience()!=null?users.getExperience():0) + 5);
+                    users.setAssets((users.getAssets() != null ? users.getAssets() : 0) + 2);
+                    users.setExperience((users.getExperience() != null ? users.getExperience() : 0) + 5);
                     redisHelp.delete("views_" + users.getName(), redisTemplate);
                     redisHelp.setRedis("views_" + users.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
                     usersService.update(users);
@@ -698,7 +701,6 @@ public class ArticleController {
             relate.setCid(article.getCid());
             relationshipsService.insert(relate);
             // 重新设置tag
-
             if (tag != null && !tag.isEmpty()) {
                 String[] tagList = tag.split(",");
                 for (String tags : tagList) {
@@ -711,6 +713,8 @@ public class ArticleController {
             article.setText(text);
             article.setTitle(title);
             article.setOpt(opt);
+            article.setPrice(price);
+            article.setDiscount(discount);
             article.setModified((int) (System.currentTimeMillis() / 1000));
             if (apiconfig.getContentAuditlevel().equals(1)) article.setStatus("waiting");
             if (apiconfig.getContentAuditlevel().equals(2)) {
@@ -893,7 +897,7 @@ public class ArticleController {
                 return Result.getResultJson(201, "无需重复购买", null);
             }
             // 开始判断余额
-            if (user.getAssets() < article.getPrice()) {
+            if (user.getAssets() == null || user.getAssets() < article.getPrice()) {
                 return Result.getResultJson(201, "余额不足", null);
             }
 
@@ -952,70 +956,100 @@ public class ArticleController {
     }
 
 
-    /***
-     * 文章打赏者列表
-     */
     @RequestMapping(value = "/rewardList")
     @ResponseBody
     public String rewardList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                             @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                             @RequestParam(value = "id", required = false) Integer id) {
-        if (limit > 50) {
-            limit = 50;
-        }
-        Integer total = 0;
-
-        Userlog query = new Userlog();
-        query.setCid(id);
-        query.setType("reward");
-        total = userlogService.total(query);
-
-        List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix + "_" + "rewardList_" + page + "_" + limit, redisTemplate);
+                             @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                             @RequestParam(value = "id") Integer id) {
         try {
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            } else {
-                PageList<Userlog> pageList = userlogService.selectPage(query, page, limit);
-                List<Userlog> list = pageList.getList();
-                if (list.size() < 1) {
-                    JSONObject noData = new JSONObject();
-                    noData.put("code", 1);
-                    noData.put("msg", "");
-                    noData.put("data", new ArrayList());
-                    noData.put("count", 0);
-                    noData.put("total", total);
-                    return noData.toString();
-                }
-                for (int i = 0; i < list.size(); i++) {
-                    Integer userid = list.get(i).getUid();
-                    Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
-                    //获取用户信息
-                    Map userJson = UserStatus.getUserInfo(userid, apiconfigService, usersService);
-                    //获取用户等级
-                    Comments comments = new Comments();
-                    comments.setUid(userid);
-                    Integer lv = commentsService.total(comments, null);
-                    userJson.put("lv", baseFull.getLv(lv));
-                    json.put("userJson", userJson);
-                    jsonList.add(json);
-                }
-                redisHelp.delete(this.dataprefix + "_" + "rewardList_" + page + "_" + limit, redisTemplate);
-                redisHelp.setList(this.dataprefix + "_" + "rewardList_" + page + "_" + limit, jsonList, 5, redisTemplate);
-            }
-        } catch (Exception e) {
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            }
-        }
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", null != jsonList ? jsonList : new JSONArray());
-        response.put("count", jsonList.size());
-        response.put("total", total);
-        return response.toString();
+            // 查询文章是否存在
+            Article article = service.selectByKey(id);
+            if (article == null || article.toString().isEmpty()) return Result.getResultJson(201, "文章不存在", null);
+            // 获取投喂人
+            Userlog userlog = new Userlog();
+            userlog.setType("reward");
+            userlog.setCid(article.getCid());
 
+            PageList<Userlog> userlogPageList = userlogService.selectPage(userlog, page, limit);
+            List<Userlog> userlogList = userlogPageList.getList();
+            List dataList = new ArrayList<>();
+            for (Userlog _userlog : userlogList) {
+                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(usersService.selectByKey(_userlog.getUid())));
+                //移除铭感信息
+                data.remove("mail");
+                data.remove("password");
+                data.remove("assets");
+                data.remove("opt");
+
+                dataList.add(data);
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("data", dataList);
+            data.put("count", dataList.size());
+
+            return Result.getResultJson(200, "获取成功", data);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    @RequestMapping(value = "/reward")
+    @ResponseBody
+    public String reward(@RequestParam(value = "id") Integer id,
+                         @RequestParam(value = "num") Integer num,
+                         HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            // 查询文章是否存在
+            Article article = service.selectByKey(id);
+            if (article == null || article.toString().isEmpty()) return Result.getResultJson(201, "文章不存在", null);
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(id);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
+            }
+
+            if (user.getAssets() < num) return Result.getResultJson(201, "积分不足", null);
+
+            Users author = usersService.selectByKey(article.getAuthorId());
+
+            Integer timeStamp = Math.toIntExact(System.currentTimeMillis() / 1000);
+            // 给文章作者爆米
+            Paylog paylog = new Paylog();
+            paylog.setUid(article.getAuthorId());
+            paylog.setSubject("文章奖赏");
+            paylog.setTotalAmount(String.valueOf(Math.floor(num * 0.8)));
+            paylog.setStatus(1);
+            paylog.setPaytype("reward");
+            paylog.setCreated(timeStamp);
+
+            // 扣米
+            Paylog log = new Paylog();
+            paylog.setUid(article.getAuthorId());
+            paylog.setSubject("文章打赏");
+            paylog.setTotalAmount(String.valueOf(num * -1));
+            paylog.setStatus(1);
+            paylog.setPaytype("reward");
+            paylog.setCreated(timeStamp);
+
+            // 更新用户
+            author.setAssets(user.getAssets() > 0 ? user.getAssets() + num : 0 + num);
+            user.setAssets(user.getAssets() - num);
+            usersService.update(author);
+            usersService.update(user);
+            paylogService.insert(paylog);
+
+            return Result.getResultJson(200, "打赏成功", null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
     }
 
     /***
@@ -1237,7 +1271,7 @@ public class ArticleController {
     }
 
     /***
-     *
+     * 点赞
      * @param id
      * @param request
      * @return

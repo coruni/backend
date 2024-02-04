@@ -265,6 +265,15 @@ public class InstallController {
         //每次安装和升级都删除配置缓存
         redisHelp.delete(dataprefix + "_" + "config", redisTemplate);
         //查询文章表是否存在views字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'isCircleTop';", Integer.class);
+        if (i == 0) {
+            //新增字段
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD isCircleTop INT DEFAULT 0 COMMENT '圈子置顶';");
+            text += "内容模块，字段isCircleTop添加完成。";
+        } else {
+            text += "内容模块，字段isCircleTop已经存在，无需添加。";
+        }
+        //查询文章表是否存在views字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'views';", Integer.class);
         if (i == 0) {
             //新增字段

@@ -272,6 +272,7 @@ public class SystemController {
                 update.setId(1);
             }
             int rows = appService.update(update);
+            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             if (rows > 0) {
                 redisHelp.delete(this.dataprefix + "_" + "appList", redisTemplate);
                 return Result.getResultJson(200, "修改完成", null);
