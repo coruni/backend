@@ -132,7 +132,7 @@ public class InstallController {
                     "  PRIMARY KEY (`uid`)," +
                     "  UNIQUE KEY `name` (`name`)," +
                     "  UNIQUE KEY `mail` (`mail`)" +
-                    ") ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;");
+                    ") ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;");
             text += "用户表创建完成。";
             String passwd = phpass.HashPassword(password);
             Long date = System.currentTimeMillis();
@@ -175,7 +175,7 @@ public class InstallController {
                     "  PRIMARY KEY (`cid`)," +
                     "  UNIQUE KEY `slug` (`slug`)," +
                     "  KEY `created` (`created`)" +
-                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;");
             text += "内容表创建完成。";
             //安装评论表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_comments` (" +
@@ -194,7 +194,7 @@ public class InstallController {
                     "  PRIMARY KEY (`id`)," +
                     "  KEY `cid` (`cid`)," +
                     "  KEY `created` (`created`)" +
-                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;");
             text += "评论表创建完成。";
             //分类标签表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_metas` (" +
@@ -212,14 +212,14 @@ public class InstallController {
                     "  `parent` int(10) unsigned DEFAULT 0," +
                     "  PRIMARY KEY (`mid`)," +
                     "  KEY `slug` (`slug`)" +
-                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;");
             text += "分类标签表创建完成。";
             //数据关联表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_relationships` (" +
                     "  `cid` int(10) unsigned NOT NULL," +
                     "  `mid` int(10) unsigned NOT NULL," +
                     "  PRIMARY KEY (`cid`,`mid`)" +
-                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;");
             text += "数据关联表创建完成。";
         } catch (Exception e) {
             e.printStackTrace();
@@ -1225,14 +1225,14 @@ public class InstallController {
         //查询配置中心表是否存在allowDelete字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'contentAuditlevel';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD `contentAuditlevel` int(2) DEFAULT '2' COMMENT '内容审核模式'");
+            jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD `contentAuditlevel` int(2) DEFAULT 0 COMMENT '内容审核模式'");
             text += "配置中心模块，字段contentAuditlevel添加完成。";
         } else {
             text += "配置中心模块，字段contentAuditlevel已经存在，无需添加。";
         }
         //查询配置中心表是否存在uploadLevel字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'uploadLevel';", Integer.class);
-        if (i == 0) {
+        if (i == 3) {
             jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD `uploadLevel` int(2) DEFAULT '0' COMMENT '上传限制等级（0只允许图片，1关闭上传接口，2只允许图片视频，3允许所有类型文件）'");
             text += "配置中心模块，字段uploadLevel添加完成。";
         } else {

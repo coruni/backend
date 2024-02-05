@@ -157,5 +157,9 @@ public class Article implements Serializable {
      */
     private Integer marks;
 
+    /***
+     * 圈子置顶
+     */
+    private Integer isCircleTop;
 
 }

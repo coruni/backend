@@ -853,6 +853,9 @@ public class ArticleController {
                 case "swiper":
                     article.setIsswiper(article.getIsswiper() > 0 ? 0 : 1);
                     break;
+                case "circleTop":
+                    article.setIsCircleTop(article.getIsCircleTop() > 0 ? 0 : 1);
+                    break;
             }
             service.update(article);
             Map<String, Object> data = new HashMap<>();

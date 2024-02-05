@@ -31,6 +31,7 @@
         <result column="istop" property="istop" />
         <result column="isswiper" property="isswiper" />
         <result column="replyTime" property="replyTime" />
+        <result column="isCircleTop" property="isCircleTop" />
         <result column="opt" property="opt" />
     </resultMap>
 
@@ -63,6 +64,7 @@
         `istop`,
         `isswiper`,
         `replyTime`,
+        `isCircleTop`,
         `opt`
     </sql>
 
@@ -136,6 +138,9 @@
             <if test ='null != opt'>
                 `opt`,
             </if>
+            <if test ='null != isCircleTop'>
+                `isCircleTop`,
+            </if>
             <if test ='null != images'>
                 `images`
             </if>
@@ -207,6 +212,9 @@
             <if test ='null != opt'>
                 #{opt},
             </if>
+            <if test ='null != isCircleTop'>
+                #{isCircleTop},
+            </if>
             <if test ='null != images'>
                 #{images}
             </if>
@@ -239,6 +247,7 @@
             #{curr.price},
             #{curr.discount},
             #{curr.opt},
+            #{curr.isCircleTop},
             #{curr.images}
             )
         </foreach>
@@ -275,6 +284,7 @@
             <if test ='null != isswiper'>`isswiper` = #{isswiper},</if>
             <if test ='null != replyTime'>`replyTime` = #{replyTime},</if>
             <if test ='null != opt'>`opt` = #{opt},</if>
+            <if test ='null != isCircleTop'>`isCircleTop` = #{isCircleTop},</if>
             <if test ='null != images'>`images` = #{images}</if>
         </set>
         WHERE `cid` = #{cid}
@@ -366,6 +376,9 @@
             <if test ='null != views'>
                 and `views` = #{views}
             </if>
+            <if test ='null != isCircleTop'>
+                and `isCircleTop` = #{isCircleTop}
+            </if>
             <if test ='null != likes'>
                 and `likes` = #{likes}
             </if>
@@ -448,6 +461,9 @@
             </if>
             <if test ='null != article.isswiper'>
                 and `isswiper` = #{article.isswiper}
+            </if>
+            <if test ='null != article.isCircleTop'>
+                and `isCircleTop` = #{article.isCircleTop}
             </if>
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`title`, '')) LIKE CONCAT('%', #{searchKey}, '%')
