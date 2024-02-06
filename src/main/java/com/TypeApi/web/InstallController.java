@@ -123,16 +123,17 @@ public class InstallController {
                     "  `head_pictrue` longtext," +
                     "  `url` varchar(200) DEFAULT NULL," +
                     "  `screenName` varchar(32) DEFAULT NULL," +
-                    "  `created` int(10) unsigned DEFAULT '0'," +
-                    "  `activated` int(10) unsigned DEFAULT '0'," +
-                    "  `logged` int(10) unsigned DEFAULT '0'," +
+                    "  `created` int(10) unsigned DEFAULT 0," +
+                    "  `activated` int(10) unsigned DEFAULT 0," +
+                    "  `logged` int(10) unsigned DEFAULT 0," +
                     "  `group` varchar(16) DEFAULT 'visitor'," +
                     "  `authCode` varchar(64) DEFAULT NULL," +
+                    "  `rank` longtext NULL," +
                     "  `opt` longtext," +
                     "  PRIMARY KEY (`uid`)," +
                     "  UNIQUE KEY `name` (`name`)," +
                     "  UNIQUE KEY `mail` (`mail`)" +
-                    ") ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;");
+                    ") ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;");
             text += "用户表创建完成。";
             String passwd = phpass.HashPassword(password);
             Long date = System.currentTimeMillis();
@@ -446,13 +447,13 @@ public class InstallController {
         } else {
             text += "用户模块，字段pay已经存在，无需添加。";
         }
-        //查询用户表是否存在customize字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users' and column_name = 'customize';", Integer.class);
+        //查询用户表是否存在rank字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users' and column_name = 'rank';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_users ADD customize varchar(255) DEFAULT NULL;");
-            text += "用户模块，字段customize添加完成。";
+            jdbcTemplate.execute("alter table " + prefix + "_users ADD rank longtext NULL;");
+            text += "用户模块，字段rank添加完成。";
         } else {
-            text += "用户模块，字段customize已经存在，无需添加。";
+            text += "用户模块，字段rank已经存在，无需添加。";
         }
         //查询用户表是否存在vip字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users' and column_name = 'vip';", Integer.class);
@@ -1711,9 +1712,47 @@ public class InstallController {
         } else {
             text += "应用表，字段adpid已经存在，无需添加。";
         }
+
+        //安装兑换表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_exchange';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_exchange` (" +
+                    "  `id` INT NOT NULL AUTO_INCREMENT," +
+                    "  `name` text  NOT NULL COMMENT '兑换名称'," +
+                    "  `type` varchar(255) DEFAULT 'rank' NOT NULL COMMENT '类型'," +
+                    "  `exchange_id` INT COMMENT '兑换物品id'," +
+                    "  `price` INT COMMENT '价格'," +
+                    "  `created` INT COMMENT '创建时间'," +
+                    "  PRIMARY KEY (`id`)\n" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='兑换表';");
+            text += "兑换模块创建完成。";
+        } else {
+            text += "兑换模块已存在，无需安装。";
+        }
+
+        //安装头衔表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_rank';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_rank` (" +
+                    "  `id` INT NOT NULL AUTO_INCREMENT," +
+                    "  `name` text  NOT NULL COMMENT '兑换名称'," +
+                    "  `type` varchar(255) DEFAULT 'rank' NOT NULL COMMENT '类型'," +
+                    "  `image` text COMMENT '图片'," +
+                    "  `color` varchar(255) COMMENT '文字颜色'," +
+                    "  `background` varchar(255) COMMENT '背景颜色'," +
+                    "  `permission` INT COMMENT '权限'," +
+                    "  `created` INT COMMENT '创建时间'," +
+                    "  PRIMARY KEY (`id`)\n" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='头衔表';");
+            text += "头衔模块创建完成。";
+        } else {
+            text += "头衔模块已存在，无需安装。";
+        }
+
+
         text += " ------ 执行结束，安装执行完成";
         // 再执行一次初始化app
-        App app  =new App();
+        App app = new App();
         Integer total = appService.total(app);
         if (total < 1) {
             app.setName("应用名称");
@@ -1721,7 +1760,7 @@ public class InstallController {
             appService.insert(app);
         }
         redisHelp.setRedis(this.dataprefix + "_" + "isInstall", "1", 60, redisTemplate);
-        return Result.getResultJson(1, text, null);
+        return Result.getResultJson(200, text, null);
     }
 
     /***

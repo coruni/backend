@@ -148,4 +148,9 @@ public class Users implements Serializable {
      */
     private String opt;
 
+    /***
+     * rank 头衔
+     */
+    private String rank;
+
 }
