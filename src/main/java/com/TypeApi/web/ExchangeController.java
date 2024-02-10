@@ -235,27 +235,6 @@ public class ExchangeController {
         }
     }
 
-    @RequestMapping(value = "/update")
-    @ResponseBody
-    public String update(@RequestParam(value = "id") Integer id,
-                         @RequestParam(value = "name") String name,
-                         @RequestParam(value = "price") Integer price,
-                         HttpServletRequest request) {
-        try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
-            Exchange exchange = service.selectByKey(id);
-            if (exchange == null || exchange.toString().isEmpty()) return Result.getResultJson(201, "数据不存在", null);
-            exchange.setName(name);
-            exchange.setPrice(price);
-            exchange.setExchange_id(id);
-            return Result.getResultJson(200, "更新成功", null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.getResultJson(400, "接口异常", null);
-        }
-
-    }
-
     private boolean permission(String token) {
         if (token != null && !token.isEmpty()) {
             DecodedJWT verify = JWT.verify(token);

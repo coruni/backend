@@ -1,4 +1,4 @@
-package com.TypeApi.common;
+package com.TypeApi.config;
 
 import com.TypeApi.common.JWTInterceptors;
 import org.springframework.context.annotation.Configuration;
