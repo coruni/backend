@@ -561,7 +561,6 @@ public class UsersController {
                 jsonToMap.put("mail", user.getMail());
                 jsonToMap.put("url", user.getUrl());
                 jsonToMap.put("screenName", user.getScreenName());
-                jsonToMap.put("customize", user.getCustomize());
                 jsonToMap.put("introduce", user.getIntroduce());
                 jsonToMap.put("experience", user.getExperience());
                 //判断是否为VIP
