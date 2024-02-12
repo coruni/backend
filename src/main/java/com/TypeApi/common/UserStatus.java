@@ -121,7 +121,7 @@ public class UserStatus {
             }else{
                 userJson.put("avatar", user.getAvatar());
             }
-            userJson.put("customize", user.getCustomize());
+
             userJson.put("experience", user.getExperience());
             userJson.put("introduce", user.getIntroduce());
             userJson.put("bantime", user.getBantime());

@@ -295,6 +295,7 @@ public class UsersController {
             Integer isVip = 0;
             Users user = new Users();
             Users own = new Users();
+
             if (id != null && !id.equals(0)) {
                 user = service.selectByKey(id);
                 if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
@@ -316,6 +317,8 @@ public class UsersController {
                     if (isFollow.equals(fromFollow)) related = 1;
                 }
             }
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+
             // 处理opt、地址以及头像框
             JSONObject opt = new JSONObject();
             JSONObject address = new JSONObject();
@@ -329,8 +332,53 @@ public class UsersController {
             List levelInfo = baseFull.getLevel(user.getExperience());
             Integer level = Integer.parseInt(levelInfo.get(0).toString());
             Integer nextExp = Integer.parseInt(levelInfo.get(1).toString());
+            if (user != null && !user.toString().isEmpty()) {
+                // 获取文章数量
+                Article article = new Article();
+                article.setAuthorId(user.getUid());
+                article.setStatus("publish");
+                Integer articleNum = contentsService.total(article, null);
 
-            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+                // 获取粉丝数量
+                Fan fan = new Fan();
+                fan.setTouid(user.getUid());
+                Integer fans = fanService.total(fan);
+
+                // 获取关注数量
+                fan.setUid(user.getUid());
+                fan.setTouid(null);
+                Integer follows = fanService.total(fan);
+
+                // 是否签到
+                Userlog log = new Userlog();
+                log.setUid(user.getUid());
+                log.setType("clock");
+                List<Userlog> logList = userlogService.selectList(log);
+                Integer clock = 0;
+                if (logList.size() > 0) {
+                    log = logList.get(0);
+                    Long timeStmap = System.currentTimeMillis();
+                    Long clockTime = Long.valueOf(log.getCreated());
+                    // 将时间格式化为yyMMdd
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd");
+                    String currentTimeFormatted = sdf.format(new Date(timeStmap));
+                    String createdTimeFormatted = sdf.format(new Date(clockTime));
+
+                    if (currentTimeFormatted.equals(createdTimeFormatted)) {
+                        clock = 1;
+                    }
+                }
+                // 获取评论
+                Comments comment = new Comments();
+                comment.setUid(user.getUid());
+                Integer comments = commentsService.total(comment, null);
+                // 加入数据
+                data.put("articles", articleNum);
+                data.put("fans", fans);
+                data.put("follows", follows);
+                data.put("clock", clock);
+                data.put("comments", comments);
+            }
             // 加入数据
             data.put("address", address);
             data.put("opt", opt);
@@ -341,12 +389,9 @@ public class UsersController {
             data.put("nextExp", nextExp);
             // 移除敏感数据
             data.remove("password");
-            if (!own.getUid().equals(user.getUid()) &&
-                    !("administrator".equals(user.getGroup()) || "editor".equals(user.getGroup()))) {
-                data.remove("assets");
-                data.remove("address");
-                data.remove("mail");
-            }
+            data.remove("address");
+            data.remove("mail");
+
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -1107,6 +1152,34 @@ public class UsersController {
             user.setClientId(id);
             service.update(user);
             return Result.getResultJson(200, "设置成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    @RequestMapping(value = "/changePassword")
+    @ResponseBody
+    public String changePassword(@RequestParam(value = "newPassword") String newPassword,
+                                 @RequestParam(value = "oldPassword") String oldPassword,
+                                 HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
+            }
+
+            if (!phpass.CheckPassword(oldPassword, user.getPassword()))
+                return Result.getResultJson(201, "密码不正确", null);
+            // 验证通过写入新hash
+            user.setPassword(phpass.HashPassword(newPassword));
+            service.update(user);
+            return Result.getResultJson(200, "修改成功", null);
+
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);

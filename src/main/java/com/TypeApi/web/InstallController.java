@@ -970,6 +970,7 @@ public class InstallController {
                     "  `wxpayNotifyUrl` varchar(500) DEFAULT ''," +
                     "  `compress` INT DEFAULT 0," +
                     "  `quality` FLOAT DEFAULT 0.8," +
+                    "  `uploadLevel` INT DEFAULT 0," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='api配置信息表';");
             text += "API配置中心模块创建完成。";
@@ -1050,14 +1051,6 @@ public class InstallController {
         } else {
             text += "配置中心模块，字段wxAppSecret已经存在，无需添加。";
         }
-        //查询配置中心表是否存在fields字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'fields';", Integer.class);
-        if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD fields varchar(500) DEFAULT 'able';");
-            text += "配置中心模块，字段fields添加完成。";
-        } else {
-            text += "配置中心模块，字段fields已经存在，无需添加。";
-        }
         //查询配置中心表是否存在pushAdsPrice字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'pushAdsPrice';", Integer.class);
         if (i == 0) {
@@ -1065,11 +1058,6 @@ public class InstallController {
             text += "配置中心模块，字段pushAdsPrice添加完成。";
         } else {
             text += "配置中心模块，字段pushAdsPrice已经存在，无需添加。";
-        }
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
         }
         //查询配置中心表是否存在pushAdsNum字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'pushAdsNum';", Integer.class);
@@ -1231,14 +1219,7 @@ public class InstallController {
         } else {
             text += "配置中心模块，字段contentAuditlevel已经存在，无需添加。";
         }
-        //查询配置中心表是否存在uploadLevel字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'uploadLevel';", Integer.class);
-        if (i == 3) {
-            jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD `uploadLevel` int(2) DEFAULT '0' COMMENT '上传限制等级（0只允许图片，1关闭上传接口，2只允许图片视频，3允许所有类型文件）'");
-            text += "配置中心模块，字段uploadLevel添加完成。";
-        } else {
-            text += "配置中心模块，字段uploadLevel已经存在，无需添加。";
-        }
+
         //查询配置中心表是否存在clockExp字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'clockExp';", Integer.class);
         if (i == 0) {

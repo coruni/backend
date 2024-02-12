@@ -1,7 +1,10 @@
 package com.TypeApi.web;
 
 import com.TypeApi.common.*;
-import com.TypeApi.entity.*;
+import com.TypeApi.entity.Apiconfig;
+import com.TypeApi.entity.Paykey;
+import com.TypeApi.entity.Paylog;
+import com.TypeApi.entity.Users;
 import com.TypeApi.service.*;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -14,8 +17,10 @@ import com.alipay.api.request.AlipayTradePrecreateRequest;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -525,200 +530,171 @@ public class PayController {
     }
 
     /**
-     * 卡密充值相关
-     * **/
-
-    /**
      * 创建卡密
      **/
-    @RequestMapping(value = "/madetoken")
+    @RequestMapping(value = "/madePaycard")
     @ResponseBody
-    public String madetoken(@RequestParam(value = "price", required = false) Integer price, @RequestParam(value = "num", required = false) Integer num, @RequestParam(value = "token", required = false) String token) {
+    public String madePaycard(@RequestParam(value = "num") Integer num,
+                              @RequestParam(value = "price") Integer price,
+                              HttpServletRequest request) {
         try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            String token = request.getHeader("Authorization");
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
+                if (!user.getGroup().equals("administrator")) return Result.getResultJson(201, "无权限", null);
             }
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            String group = map.get("group").toString();
-            if (!group.equals("administrator")) {
-                return Result.getResultJson(0, "你没有操作权限", null);
-            }
-            if (num > 100) {
-                num = 100;
-            }
-            if (price < 1) {
-                return Result.getResultJson(0, "充值码价格不能小于1", null);
-            }
-            Long date = System.currentTimeMillis();
-            String curTime = String.valueOf(date).substring(0, 10);
-            //循环生成卡密
-            for (int i = 0; i < num; i++) {
+            // 验证通过 创建卡密
+            Long timeStamp = System.currentTimeMillis() / 1000;
+            Integer _num = num > 100 ? 100 : num;
+            List dataList = new ArrayList<>();
+            for (int i = 0; i < _num; i++) {
                 Paykey paykey = new Paykey();
-                String value = UUID.randomUUID() + "";
-                paykey.setValue(value);
                 paykey.setStatus(0);
                 paykey.setPrice(price);
-                paykey.setCreated(Integer.parseInt(curTime));
-                paykey.setUid(-1);
+                paykey.setCreated(Math.toIntExact(timeStamp));
+                paykey.setValue(RandomStringUtils.random(18, true, true));
                 paykeyService.insert(paykey);
+                dataList.add(paykey);
             }
-            JSONObject response = new JSONObject();
-            response.put("code", 1);
-            response.put("msg", "生成卡密成功");
-            return response.toString();
+            Map<String, Object> data = new HashMap<>();
+            data.put("count", _num);
+            data.put("data", dataList);
+            return Result.getResultJson(200, "生成成功", data);
+
         } catch (Exception e) {
-            JSONObject response = new JSONObject();
-            response.put("code", 1);
-            response.put("msg", "生成卡密失败");
-            return response.toString();
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
 
-    /***
-     * 卡密列表
-     *
-     */
-    @RequestMapping(value = "/tokenPayList")
+    @RequestMapping(value = "/cardList")
     @ResponseBody
-    public String tokenPayList(@RequestParam(value = "searchParams", required = false) String searchParams,
-                               @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                               @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                               @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
-                               @RequestParam(value = "token", required = false) String token) {
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-        }
-        Integer total = 0;
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        String group = map.get("group").toString();
-        if (!group.equals("administrator")) {
-            return Result.getResultJson(0, "你没有操作权限", null);
-        }
-        Paykey query = new Paykey();
-        if (StringUtils.isNotBlank(searchParams)) {
-            JSONObject object = JSON.parseObject(searchParams);
-            query = object.toJavaObject(Paykey.class);
-            total = paykeyService.total(query);
-        }
+    public String cardList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                           @RequestParam(value = "limit", required = false, defaultValue = "50") Integer limit,
+                           @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
+                           @RequestParam(value = "status", required = false, defaultValue = "0") Integer status,
+                           HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
+                if (!user.getGroup().equals("administrator") && !user.getGroup().equals("editor"))
+                    return Result.getResultJson(201, "无权限", null);
+            }
 
-        PageList<Paykey> pageList = paykeyService.selectPage(query, page, limit, searchKey);
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", null != pageList.getList() ? pageList.getList() : new JSONArray());
-        response.put("count", pageList.getTotalCount());
-        response.put("total", total);
-        return response.toString();
+            // 验证通过开始查询列表
+            Paykey paykey = new Paykey();
+            paykey.setStatus(status);
+            PageList<Paykey> paykeyPageList = paykeyService.selectPage(paykey, page, limit, null);
+            List<Paykey> paykeyList = paykeyPageList.getList();
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("count", paykeyList.size());
+            data.put("total", paykeyService.total(paykey));
+            data.put("data", paykeyList);
+            return Result.getResultJson(200, "获取成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
     }
 
-    @RequestMapping(value = "/tokenPayExcel")
+    @RequestMapping(value = "/cardExport")
     @ResponseBody
-    public void tokenPayExcel(@RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) throws IOException {
-        HSSFWorkbook workbook = new HSSFWorkbook();
-        HSSFSheet sheet = workbook.createSheet("充值码列表");
+    public String cardExport(@RequestParam(value = "limit", required = false, defaultValue = "50") Integer limit,
+                             HttpServletRequest request,
+                             HttpServletResponse response) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
+                if (!user.getGroup().equals("administrator") && !user.getGroup().equals("editor")) {
+                    return Result.getResultJson(201, "无权限", null);
+                }
+            }
+            String[][] data = {
+                    {"ID", "卡密", "积分", "状态", "创建时间", "使用uid"}
+                    // 可以根据需要添加更多数据行
+            };
 
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-disposition", "attachment;filename=nodata.xls");
-            response.flushBuffer();
-            workbook.write(response.getOutputStream());
+            Paykey paykey = new Paykey();
+            PageList<Paykey> paykeyPageList = paykeyService.selectPage(paykey, 1, limit, null);
+            List<Paykey> paykeyList = paykeyPageList.getList();
+            try (Workbook workbook = new XSSFWorkbook()) {
+                Sheet sheet = workbook.createSheet("Card Data");
+
+                String[] header = {"ID", "卡密", "积分", "状态", "创建时间", "使用uid"};
+
+                // 写入表头
+                Row headerRow = sheet.createRow(0);
+                for (int i = 0; i < header.length; i++) {
+                    headerRow.createCell(i).setCellValue(header[i]);
+                }
+
+                // 写入数据
+                for (int i = 0; i < paykeyList.size(); i++) {
+                    Row row = sheet.createRow(i + 1);
+                    Paykey paykeyData = paykeyList.get(i);
+                    row.createCell(0).setCellValue(paykeyData.getId());
+                    row.createCell(1).setCellValue(paykeyData.getValue());
+                    row.createCell(2).setCellValue(paykeyData.getPrice());
+                    row.createCell(3).setCellValue(paykeyData.getStatus() > 0 ? "已使用" : "未使用");
+                    row.createCell(4).setCellValue(paykeyData.getCreated());
+                    row.createCell(5).setCellValue(paykeyData.getUid());
+                }
+
+                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                response.setHeader("Content-Disposition", "attachment; filename=card_data.xlsx");
+
+                workbook.write(response.getOutputStream());
+                return null;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return Result.getResultJson(500, "导出Excel文件失败", null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        String group = map.get("group").toString();
-        if (!group.equals("administrator")) {
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-disposition", "attachment;filename=nodata.xls");
-            response.flushBuffer();
-            workbook.write(response.getOutputStream());
-        }
-        Paykey query = new Paykey();
-        PageList<Paykey> pageList = paykeyService.selectPage(query, 1, limit, "");
-        List<Paykey> list = pageList.getList();
-
-
-        String fileName = "tokenPayExcel" + ".xls";//设置要导出的文件的名字
-        //新增数据行，并且设置单元格数据
-
-        int rowNum = 1;
-
-        String[] headers = {"ID", "充值码", "等同积分"};
-        //headers表示excel表中第一行的表头
-
-        HSSFRow row = sheet.createRow(0);
-        //在excel表中添加表头
-
-        for (int i = 0; i < headers.length; i++) {
-            HSSFCell cell = row.createCell(i);
-            HSSFRichTextString text = new HSSFRichTextString(headers[i]);
-            cell.setCellValue(text);
-        }
-        for (Paykey paykey : list) {
-            HSSFRow row1 = sheet.createRow(rowNum);
-            row1.createCell(0).setCellValue(paykey.getId());
-            row1.createCell(1).setCellValue(paykey.getValue());
-            row1.createCell(2).setCellValue(paykey.getPrice());
-            rowNum++;
-        }
-
-        response.setContentType("application/octet-stream");
-        response.setHeader("Content-disposition", "attachment;filename=" + fileName);
-        response.flushBuffer();
-        workbook.write(response.getOutputStream());
     }
 
     /**
      * 卡密充值
      **/
-    @RequestMapping(value = "/tokenPay")
+    @RequestMapping(value = "/chargeCard")
     @ResponseBody
-    public String tokenPay(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "token", required = false) String token) {
+    public String chargeCard(@RequestParam(value = "card", required = false) String card,
+                             HttpServletRequest request) {
         try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid = Integer.parseInt(map.get("uid").toString());
-            //登录情况下，恶意充值攻击拦截
-            String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
-            if (isSilence != null) {
-                return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
-            }
-            String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
-            if (isRepeated == null) {
-                redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 2, redisTemplate);
-            } else {
-                Integer frequency = Integer.parseInt(isRepeated) + 1;
-                if (frequency == 3) {
-                    securityService.safetyMessage("用户ID：" + uid + "，在卡密充值接口疑似存在攻击行为，请及时确认处理。", "system");
-                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
-                    return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
-                } else {
-                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
-                }
-                return Result.getResultJson(0, "你的操作太频繁了", null);
-            }
+
             //攻击拦截结束
-
-            Paykey paykey = paykeyService.selectByKey(key);
-            if (paykey == null) {
-                return Result.getResultJson(0, "卡密已失效", null);
-            }
+            Paykey paykey = paykeyService.selectByKey(card);
+            if (paykey == null) return Result.getResultJson(201, "卡密不存在", null);
             Integer pirce = paykey.getPrice();
-
-            Users users = usersService.selectByKey(uid);
-            Integer assets = users.getAssets();
-
             if (!paykey.getStatus().equals(0)) {
-                return Result.getResultJson(0, "卡密已失效", null);
+                return Result.getResultJson(201, "卡密已失效", null);
             }
 
             //修改卡密状态
             paykey.setStatus(1);
-            paykey.setUid(uid);
+            paykey.setUid(user.getUid());
             paykeyService.update(paykey);
 
             //生成资产日志
@@ -727,7 +703,7 @@ public class PayController {
             Paylog paylog = new Paylog();
             paylog.setStatus(1);
             paylog.setCreated(Integer.parseInt(curTime));
-            paylog.setUid(uid);
+            paylog.setUid(user.getUid());
             paylog.setOutTradeNo(curTime + "tokenPay");
             paylog.setTotalAmount(pirce.toString());
             paylog.setPaytype("tokenPay");
@@ -735,23 +711,13 @@ public class PayController {
             paylogService.insert(paylog);
 
             //修改用户账户
-            Integer newassets = assets + pirce;
-            Users newUser = new Users();
-            newUser.setUid(uid);
-            newUser.setAssets(newassets);
-            usersService.update(newUser);
+            user.setAssets((user.getAssets() > 0 ? user.getAssets() : 0) + paykey.getPrice());
+            usersService.update(user);
 
-
-            JSONObject response = new JSONObject();
-            response.put("code", 1);
-            response.put("msg", "卡密充值成功");
-            return response.toString();
+            return Result.getResultJson(200, "充值成功", null);
         } catch (Exception e) {
             e.printStackTrace();
-            JSONObject response = new JSONObject();
-            response.put("code", 0);
-            response.put("msg", "卡密充值失败");
-            return response.toString();
+            return Result.getResultJson(400, "接口异常", null);
         }
 
     }
