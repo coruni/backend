@@ -1650,7 +1650,12 @@ public class UsersController {
                     Map<String, Object> articleData = new HashMap<>();
                     if (reply != null && !reply.toString().isEmpty()) {
                         JSONArray images = new JSONArray();
-                        images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
+                        try {
+                            images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
+
+                        } catch (Exception e) {
+                            images = null;
+                        }
                         dataReply.put("images", images);
                         // 查询评论的用户
                         Users replyUser = service.selectByKey(reply.getUid());
