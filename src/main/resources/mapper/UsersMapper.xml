@@ -19,7 +19,6 @@
         <result column="assets" property="assets" />
         <result column="address" property="address" />
         <result column="pay" property="pay" />
-        <result column="customize" property="customize" />
         <result column="avatar" property="avatar" />
         <result column="experience" property="experience" />
         <result column="clientId" property="clientId" />
@@ -48,7 +47,6 @@
         `assets`,
         `address`,
         `pay`,
-        `customize`,
         `vip`,
         `avatar`,
         `experience`,
@@ -203,7 +201,6 @@
             <if test ='null != assets'>`assets` = #{assets},</if>
             <if test ='null != address'>`address` = #{address},</if>
             <if test ='null != pay'>`pay` = #{pay},</if>
-            <if test ='null != customize'>`customize` = #{customize},</if>
             <if test ='null != vip'>`vip` = #{vip},</if>
             <if test ='null != avatar'>`avatar` = #{avatar},</if>
             <if test ='null != experience'>`experience` = #{experience},</if>
