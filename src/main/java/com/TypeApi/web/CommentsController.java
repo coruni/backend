@@ -153,6 +153,10 @@ public class CommentsController {
                     dataUser.remove("address");
                     // 格式化信息
                     opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
+                    // 处理头像框 查询是否存在替换
+                    if (opt != null && !opt.isEmpty()) {
+                        opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink());
+                    }
                     // 加入信息
                     dataUser.put("opt", opt);
                     // 获取等级
@@ -168,7 +172,6 @@ public class CommentsController {
                     List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
                     if (commentLikeList.size() > 0) isLike = 1;
                 }
-
 
                 // 格式化images 数组
                 List images = new JSONArray();
