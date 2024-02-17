@@ -154,7 +154,7 @@ public class CommentsController {
                     // 格式化信息
                     opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
                     // 处理头像框 查询是否存在替换
-                    if (opt != null && !opt.isEmpty()) {
+                    if (opt != null && !opt.isEmpty() && opt.containsKey("head_picture") && opt.get("head_picture")!=null) {
                         opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink());
                     }
                     // 加入信息
