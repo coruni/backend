@@ -111,9 +111,9 @@ public class ShopController {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_shop), Map.class);
                 // 格式化商品图片和 specs
                 JSONArray imgurl = new JSONArray();
-                JSONObject specs = new JSONObject();
-                imgurl = shop.getImgurl() != null && !shop.getImgurl().toString().isEmpty() ? JSONArray.parseArray(shop.getImgurl().toString()) : null;
-                specs = shop.getSpecs() != null && !shop.getSpecs().toString().isEmpty() ? JSONObject.parseObject(shop.getSpecs().toString()) : null;
+                JSONArray specs = new JSONArray();
+                imgurl = _shop.getImgurl() != null && !_shop.getImgurl().toString().isEmpty() ? JSONArray.parseArray(_shop.getImgurl().toString()) : null;
+                specs = _shop.getSpecs() != null && !_shop.getSpecs().toString().isEmpty() ? JSONArray.parseArray(_shop.getSpecs().toString()) : null;
 
                 // 加入用户信息
                 Users bossInfo = usersService.selectByKey(_shop.getUid());
@@ -163,9 +163,9 @@ public class ShopController {
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(shop), Map.class);
             // 格式化商品图片和 specs
             JSONArray imgurl = new JSONArray();
-            JSONObject specs = new JSONObject();
+            JSONArray specs = new JSONArray();
             imgurl = shop.getImgurl() != null && !shop.getImgurl().toString().isEmpty() ? JSONArray.parseArray(shop.getImgurl().toString()) : null;
-            specs = shop.getSpecs() != null && !shop.getSpecs().toString().isEmpty() ? JSONObject.parseObject(shop.getSpecs().toString()) : null;
+            specs = shop.getSpecs() != null && !shop.getSpecs().toString().isEmpty() ? JSONArray.parseArray(shop.getSpecs().toString()) : null;
 
             // 加入用户信息
             Users bossInfo = usersService.selectByKey(shop.getUid());
@@ -207,7 +207,8 @@ public class ShopController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在，请重新登录", null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
             Long timeStamp = System.currentTimeMillis() / 1000;
 
@@ -224,6 +225,7 @@ public class ShopController {
             shop.setPrice(price);
             shop.setNum(num);
             shop.setSpecs(specs);
+            shop.setUid(user.getUid());
             service.insert(shop);
             return Result.getResultJson(200, permission ? "添加成功" : "请等待审核", null);
         } catch (Exception e) {
@@ -980,11 +982,11 @@ public class ShopController {
     @ResponseBody
     public String typeList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                            @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
-                           @RequestParam(value = "order",required = false,defaultValue = "created desc") String order,
+                           @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
                            HttpServletRequest request) {
         try {
             Shoptype query = new Shoptype();
-            PageList<Shoptype> shoptypePageList = shoptypeService.selectPage(query, page, limit, null,order);
+            PageList<Shoptype> shoptypePageList = shoptypeService.selectPage(query, page, limit, null, order);
             List<Shoptype> shoptypeList = shoptypePageList.getList();
             Map<String, Object> data = new HashMap<>();
             data.put("page", page);
