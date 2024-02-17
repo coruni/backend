@@ -114,7 +114,6 @@ public class ShopController {
                 JSONArray specs = new JSONArray();
                 imgurl = _shop.getImgurl() != null && !_shop.getImgurl().toString().isEmpty() ? JSONArray.parseArray(_shop.getImgurl().toString()) : null;
                 specs = _shop.getSpecs() != null && !_shop.getSpecs().toString().isEmpty() ? JSONArray.parseArray(_shop.getSpecs().toString()) : null;
-
                 // 加入用户信息
                 Users bossInfo = usersService.selectByKey(_shop.getUid());
                 Map<String, Object> dataBossInfo = JSONObject.parseObject(JSONObject.toJSONString(bossInfo), Map.class);
