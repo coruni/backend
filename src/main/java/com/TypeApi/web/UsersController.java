@@ -317,13 +317,12 @@ public class UsersController {
                     if (isFollow.equals(fromFollow)) related = 1;
                 }
             }
-            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
 
             // 处理opt、地址以及头像框
             JSONObject opt = new JSONObject();
             JSONObject address = new JSONObject();
-            opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt()) : null;
-            address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : null;
+            opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt()) : new JSONObject();
+            address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : new JSONObject();
 
             // 处理会员
             if (user != null && user.getVip() != null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
@@ -332,6 +331,7 @@ public class UsersController {
             List levelInfo = baseFull.getLevel(user.getExperience());
             Integer level = Integer.parseInt(levelInfo.get(0).toString());
             Integer nextExp = Integer.parseInt(levelInfo.get(1).toString());
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
             if (user != null && !user.toString().isEmpty()) {
                 // 获取文章数量
                 Article article = new Article();
@@ -1195,6 +1195,7 @@ public class UsersController {
                          @RequestParam(value = "sex", required = false) String sex,
                          @RequestParam(value = "introduce", required = false) String introduce,
                          @RequestParam(value = "avatar", required = false) String avatar,
+                         @RequestParam(value = "address", required = false) String address,
                          @RequestParam(value = "background", required = false) String background,
                          @RequestParam(value = "mail", required = false) String mail,
                          @RequestParam(value = "code", required = false) String code,
@@ -1213,6 +1214,7 @@ public class UsersController {
             if (background != null && !background.isEmpty()) user.setUserBg(background);
             if (sex != null && !sex.isEmpty()) user.setSex(sex);
             if (introduce != null && !introduce.isEmpty()) user.setIntroduce(introduce);
+            if (address != null && !address.isEmpty()) user.setAddress(address);
             if (password != null && !password.isEmpty()) {
                 // 加密密码
                 user.setPassword(phpass.HashPassword(password));

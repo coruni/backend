@@ -635,7 +635,7 @@ public class ShopController {
             return response.toString();
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口请求异常，请联系管理员", null);
         }
 
     }
@@ -668,16 +668,16 @@ public class ShopController {
 
             // 判断库存
             if (product.getNum() < 1) {
-                return Result.getResultJson(0, "商品库存不足", null);
+                return Result.getResultJson(201, "商品库存不足", null);
             }
 
             // 检测订单属于权限
             if (!userInfo.getUid().equals(orderInfo.getUser_id())) {
-                return Result.getResultJson(0, "订单错误", null);
+                return Result.getResultJson(202, "订单错误", null);
             }
 
             if (orderInfo.getPaid().equals(1)) {
-                return Result.getResultJson(0, "该订单已支付", null);
+                return Result.getResultJson(203, "该订单已支付", null);
             }
 
             // 获取OK之后判断用户余额是否足够
@@ -784,7 +784,7 @@ public class ShopController {
             // 判断订单boss_id是否为infoID
             Order orderInfo = orderService.selectByKey(id);
             if (!permission(request.getHeader("Authorization")) && !orderInfo.getBoss_id().equals(userInfo.getUid()) && !orderInfo.getUser_id().equals(userInfo.getUid())) {
-                return Result.getResultJson(0, "你没有权限修改该订单", null);
+                return Result.getResultJson(201, "你没有权限修改该订单", null);
             }
             Boolean isUser = false;
             if (orderInfo.getUser_id().equals(userInfo.getUid())) isUser = true;
@@ -795,7 +795,7 @@ public class ShopController {
             if (address != null && !address.isEmpty()) {
                 //判断用户 如果已支付则不可修改地址
                 if (isUser && orderInfo.getPaid().equals(1)) {
-                    return Result.getResultJson(0, "已支付订单，不可修改地址，请联系卖家", null);
+                    return Result.getResultJson(201, "已支付订单，不可修改地址，请联系卖家", null);
                 }
                 orderInfo.setAddress(address);
             }
