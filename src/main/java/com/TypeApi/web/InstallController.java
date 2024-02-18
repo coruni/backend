@@ -971,6 +971,7 @@ public class InstallController {
                     "  `compress` INT DEFAULT 0," +
                     "  `quality` FLOAT DEFAULT 0.8," +
                     "  `uploadLevel` INT DEFAULT 0," +
+                    "  `levelExp` VARCHAR(500) DEFAULT '[100,200,400,600,1000,1400,1800,2200,2400,2600,2800,3000,4000,5000,6000,7000]' COMMENT '等级经验'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='api配置信息表';");
             text += "API配置中心模块创建完成。";
@@ -984,6 +985,16 @@ public class InstallController {
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
+
+        //查询配置中心表是否存在levelExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'levelExp';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_apiconfig ADD levelExp VARCHAR(500) DEFAULT '[100,200,400,600,1000,1400,1800,2200,2400,2600,2800,3000,4000,5000,6000,7000]';");
+            text += "配置中心模块，字段levelExp添加完成。";
+        } else {
+            text += "配置中心模块，字段levelExp已经存在，无需添加。";
+        }
+
         //查询配置中心表是否存在auditlevel字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_apiconfig' and column_name = 'auditlevel';", Integer.class);
         if (i == 0) {
@@ -1546,10 +1557,10 @@ public class InstallController {
         if (i == 0) {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_chat_msg` (" +
                     "  `id` int NOT NULL AUTO_INCREMENT," +
-                    "  `sender_id` int DEFAULT '0' COMMENT '发送人'," +
-                    "  `receiver_id` int DEFAULT '0' COMMENT '接收人'," +
+                    "  `sender_id` int NOT NULL DEFAULT 0 COMMENT '发送人'," +
                     "  `text` text CHARACTER SET utf8mb4 COMMENT '消息内容'," +
                     "  `type` int COMMENT '类型0私聊1群聊'," +
+                    "  `chat_id` int NOT NULL COMMENT '聊天室id'," +
                     "  `created` int unsigned DEFAULT '0' COMMENT '发送时间'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='聊天消息';");
@@ -1557,6 +1568,16 @@ public class InstallController {
         } else {
             text += "聊天记录模块已经存在，无需添加。";
         }
+
+        //查询聊天记录模块是否存在chat_id字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_chat_msg' and column_name = 'chat_id';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_chat_msg ADD `chat_id` INT NOT NULL COMMENT '聊天室id'");
+            text += "聊天记录模块，字段chat_id添加完成。";
+        } else {
+            text += "聊天记录模块，字段chat_id已经存在，无需添加。";
+        }
+
         //动态模块
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_space';", Integer.class);
         if (i == 0) {
@@ -1576,6 +1597,8 @@ public class InstallController {
         } else {
             text += "动态模块已经存在，无需添加。";
         }
+
+
         //查询动态模块是否存在status字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_space' and column_name = 'status';", Integer.class);
         if (i == 0) {

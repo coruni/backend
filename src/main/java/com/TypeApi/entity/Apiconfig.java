@@ -488,4 +488,9 @@ public class Apiconfig implements Serializable {
      */
     private Float quality;
 
+    /***
+     * 等级经验
+     */
+    private String levelExp;
+
 }

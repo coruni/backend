@@ -163,7 +163,7 @@ public class CommentsController {
                     // 加入信息
                     dataUser.put("opt", opt);
                     // 获取等级
-                    dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
+                    dataUser.put("level", baseFull.getLevel(commentUser.getExperience(),dataprefix,apiconfigService,redisTemplate).get(0));
                 }
 
                 // 是否点赞

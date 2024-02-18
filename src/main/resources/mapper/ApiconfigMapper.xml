@@ -105,6 +105,7 @@
         <result column="uploadFilesMax" property="uploadFilesMax" />
         <result column="compress" property="compress" />
         <result column="quality" property="quality" />
+        <result column="levelExp" property="levelExp" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -211,6 +212,7 @@
         `uploadFilesMax`,
 
         `quality`,
+        `levelExp`,
         `compress`
 
     </sql>
@@ -502,6 +504,9 @@
             <if test ='null != compress'>
                 `compress`,
             </if>
+            <if test ='null != levelExp'>
+                `levelExp`,
+            </if>
             <if test ='null != quality'>
                 `quality`
             </if>
@@ -790,6 +795,9 @@
             <if test ='null != quality'>
                 #{quality},
             </if>
+            <if test ='null != levelExp'>
+                #{levelExp},
+            </if>
             <if test ='null != compress'>
                 #{compress}
             </if>
@@ -898,6 +906,7 @@
             <if test ='null != uploadMediaMax'>`uploadMediaMax` = #{uploadMediaMax},</if>
             <if test ='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax},</if>
             <if test ='null != quality'>`quality` = #{quality},</if>
+            <if test ='null != levelExp'>`levelExp` = #{levelExp},</if>
             <if test ='null != compress'>`compress` = #{compress}</if>
 
         </set>

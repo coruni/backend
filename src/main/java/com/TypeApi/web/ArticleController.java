@@ -252,7 +252,7 @@ public class ArticleController {
                 authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
             }
             if (info != null && !info.toString().isEmpty()) {
-                List result = baseFull.getLevel(info.getExperience());
+                List result = baseFull.getLevel(info.getExperience(),dataprefix,apiconfigService,redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
                 JSONObject authorOpt = new JSONObject();
@@ -447,7 +447,7 @@ public class ArticleController {
                     authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
                 }
                 if (info != null && !info.toString().isEmpty()) {
-                    List result = baseFull.getLevel(info.getExperience());
+                    List result = baseFull.getLevel(info.getExperience(),dataprefix,apiconfigService,redisTemplate);
                     Integer level = (Integer) result.get(0);
                     Integer nextLevel = (Integer) result.get(1);
                     JSONObject authorOpt = new JSONObject();
@@ -1223,7 +1223,7 @@ public class ArticleController {
                 // 加入作者信息
                 Users info = usersService.selectByKey(articleData.getAuthorId());
                 Map<String, Object> authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-                List result = baseFull.getLevel(info.getExperience());
+                List result = baseFull.getLevel(info.getExperience(),dataprefix,apiconfigService,redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
                 JSONObject authorOpt = new JSONObject();

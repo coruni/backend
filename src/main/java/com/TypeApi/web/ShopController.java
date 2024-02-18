@@ -928,7 +928,7 @@ public class ShopController {
                            @RequestParam(value = "name", required = false) String name,
                            @RequestParam(value = "intro", required = false) String intro,
                            @RequestParam(value = "pic", required = false) String pic,
-                           @RequestParam(value = "parent", required = false) String parent,
+                           @RequestParam(value = "parent", required = false) Integer parent,
                            HttpServletRequest request) {
         try {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
@@ -941,10 +941,8 @@ public class ShopController {
                 parentType = shoptypeService.selectByKey(parent);
                 if (parentType == null || parentType.toString().isEmpty())
                     return Result.getResultJson(201, "分类不存在", null);
+                shoptype.setParent(parentType.getParent());
             }
-
-
-            shoptype.setParent(parentType.getParent());
             shoptype.setName(name);
             shoptype.setIntro(intro);
             shoptype.setPic(pic);

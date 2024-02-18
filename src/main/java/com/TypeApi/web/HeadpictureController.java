@@ -275,7 +275,7 @@ public class HeadpictureController {
             if (headpicture == null || headpicture.toString().isEmpty())
                 return Result.getResultJson(201, "头像框不存在", null);
 
-            if (!permission(request.getHeader("Authorization")) || !headpicture.getCreator().equals(user.getUid()))
+            if (!permission(request.getHeader("Authorization")) && !headpicture.getCreator().equals(user.getUid()))
                 return Result.getResultJson(201, "无权限", null);
 
             service.delete(headpicture.getId());

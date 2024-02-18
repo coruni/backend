@@ -145,10 +145,7 @@
                 and `id` = #{id}
             </if>
             <if test ='null != sender_id'>
-                and `sender_id` = #{sender_id}
-            </if>
-            <if test ='null != receiver_id'>
-                and `receiver_id` = #{receiver_id}
+                and `sender_id` = #{sender_id} or `receiver_id` = #{sender_id}
             </if>
             <if test ='null != created'>
                 and `created` = #{created}
@@ -172,11 +169,9 @@
                 and `id` = #{chat.id}
             </if>
             <if test ='null != chat.sender_id'>
-                and (`sender_id` = #{chat.sender_id} or `receiver_id` = #{chat.sender_id})
+                and `sender_id` = #{chat.sender_id} or `receiver_id` = #{chat.sender_id}
             </if>
-            <if test ='null != chat.receiver_id'>
-                and (`receiver_id` = #{chat.receiver_id} or `sender_id` = #{chat.receiver_id})
-            </if>
+
             <if test ='null != chat.created'>
                 and `created` = #{chat.created}
             </if>
@@ -204,10 +199,7 @@
                 and `id` = #{id}
             </if>
             <if test ='null != sender_id'>
-                and `sender_id` = #{sender_id}
-            </if>
-            <if test ='null != receiver_id'>
-                and `receiver_id` = #{receiver_id}
+                and `sender_id` = #{sender_id} or `receiver_id` = #{sender_id}
             </if>
             <if test ='null != created'>
                 and `created` = #{created}

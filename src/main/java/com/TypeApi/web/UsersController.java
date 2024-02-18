@@ -168,7 +168,7 @@ public class UsersController {
                 address = item.getAddress() != null && !item.getAddress().toString().isEmpty() ? JSONObject.parseObject(item.getAddress().toString()) : null;
                 // 处理头像框
                 // 加入其他数据等级等
-                List result = baseFull.getLevel(item.getExperience());
+                List result = baseFull.getLevel(item.getExperience(),dataprefix,apiconfigService,redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
 
@@ -328,7 +328,7 @@ public class UsersController {
             if (user != null && user.getVip() != null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
 
             // 处理等级
-            List levelInfo = baseFull.getLevel(user.getExperience());
+            List levelInfo = baseFull.getLevel(user.getExperience(),dataprefix,apiconfigService,redisTemplate);
             Integer level = Integer.parseInt(levelInfo.get(0).toString());
             Integer nextExp = Integer.parseInt(levelInfo.get(1).toString());
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
@@ -1051,11 +1051,11 @@ public class UsersController {
             try {
                 MailService.send("你本次的验证码为" + verificationCode, "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title><meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head><body><div class=\"main\"><h1>用户验证码</h1><div class=\"text\"><p>你本次的验证码为<span>" + verificationCode + "</span>。</p><p>出于安全原因，该验证码将于10分钟后失效。请勿将验证码透露给他人。</p></div></div></body></html>",
                         new String[]{mail}, new String[]{});
-                return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.getResultJson(201, "邮件发送错误", null);
             }
+            return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
         } catch (Exception e) {
             return Result.getResultJson(400, "不正确的邮箱发信配置", null);
         }
@@ -1667,6 +1667,20 @@ public class UsersController {
         response.setHeader("Content-disposition", "attachment;filename=" + fileName);
         response.flushBuffer();
         workbook.write(response.getOutputStream());
+    }
+
+    @RequestMapping(value = "/delCode")
+    @ResponseBody
+    public String delCode(@RequestParam(value = "id") Integer id,
+                          HttpServletRequest request){
+        try{
+            if(!permission(request.getHeader("Authorization"))) return Result.getResultJson(201,"无权限",null);
+            invitationService.delete(id);
+            return Result.getResultJson(200,"删除成功",null);
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(400,"接口异常",null);
+        }
     }
 
     /***

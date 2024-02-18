@@ -6,7 +6,6 @@
     <resultMap id="BaseResultMap" type="com.TypeApi.entity.ChatMsg" >
         <result column="id" property="id" />
         <result column="sender_id" property="sender_id" />
-        <result column="receiver_id" property="receiver_id" />
         <result column="text" property="text" />
         <result column="created" property="created" />
         <result column="type" property="type" />
@@ -16,7 +15,7 @@
     <sql id="Base_Column_List">
         `id`,
         `sender_id`,
-        `receiver_id`,
+        `chat_id`,
         `text`,
         `created`,
         `type`
@@ -32,8 +31,8 @@
             <if test ='null != sender_id'>
                 `sender_id`,
             </if>
-            <if test ='null != receiver_id'>
-                `receiver_id`,
+            <if test ='null != chat_id'>
+                `chat_id`,
             </if>
             <if test ='null != text'>
                 `text`,
@@ -52,8 +51,8 @@
             <if test ='null != sender_id'>
                 #{sender_id},
             </if>
-            <if test ='null != receiver_id'>
-                #{receiver_id},
+            <if test ='null != chat_id'>
+                #{chat_id},
             </if>
             <if test ='null != text'>
                 #{text},
@@ -74,7 +73,7 @@
             (
                 #{curr.id},
                 #{curr.sender_id},
-                #{curr.receiver_id},
+                #{curr.chat_id},
                 #{curr.text},
                 #{curr.created},
                 #{curr.type}
@@ -87,7 +86,7 @@
         UPDATE ${prefix}_chat_msg
         <set>
             <if test ='null != sender_id'>`sender_id` = #{sender_id},</if>
-            <if test ='null != receiver_id'>`receiver_id` = #{receiver_id},</if>
+            <if test ='null != chat_id'>`chat_id` = #{chat_id},</if>
             <if test ='null != text'>`text` = #{text},</if>
             <if test ='null != created'>`created` = #{created},</if>
             <if test ='null != type'>`type` = #{type}</if>
@@ -98,7 +97,7 @@
     <!-- 删除 -->
     <delete id="delete">
         DELETE FROM ${prefix}_chat_msg
-        WHERE `receiver_id` = #{key}
+        WHERE `chat_id` = #{key}
     </delete>
 
     <delete id="deleteMsg">
@@ -132,8 +131,8 @@
             <if test ='null != sender_id'>
                 and `sender_id` = #{sender_id}
             </if>
-            <if test ='null != receiver_id'>
-                and `receiver_id` = #{receiver_id}
+            <if test ='null != chat_id'>
+                and `chat_id` = #{chat_id}
             </if>
             <if test ='null != text'>
                 and `text` = #{text}
@@ -145,7 +144,7 @@
                 and `type` = #{type}
             </if>
         </where>
-        order by created desc
+        order by created asc
     </select>
 
     <!-- 分页条件查询 -->
@@ -159,8 +158,8 @@
             <if test ='null != chatMsg.sender_id'>
                 and `sender_id` = #{chatMsg.sender_id}
             </if>
-            <if test ='null != chatMsg.receiver_id'>
-                and `receiver_id` = #{chatMsg.receiver_id}
+            <if test ='null != chatMsg.chat_id'>
+                and `chat_id` = #{chatMsg.chat_id}
             </if>
             <if test ='null != chatMsg.text'>
                 and `text` = #{chatMsg.text}
@@ -173,7 +172,7 @@
             </if>
 
         </where>
-        order by created desc
+        order by created asc
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>
 
@@ -187,8 +186,8 @@
             <if test ='null != sender_id'>
                 and `sender_id` = #{sender_id}
             </if>
-            <if test ='null != receiver_id'>
-                and `receiver_id` = #{receiver_id}
+            <if test ='null != chat_id'>
+                and `chat_id` = #{chat_id}
             </if>
             <if test ='null != text'>
                 and `text` = #{text}

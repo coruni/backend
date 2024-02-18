@@ -126,6 +126,18 @@ public class websocket {
         }
     }
 
+
+    /***
+     * 发送用户聊天消息
+     * @param Message
+     * @param user_id
+     * @throws IOException
+     */
+    public void sendChatText(String Message,Integer user_id) throws IOException{
+        webSocketMap.get(user_id.toString()).sendMessage(Message);
+        System.out.println(webSocketMap.get(user_id.toString()));
+    }
+
     public static synchronized int getOnlineCount() {
         return onlineCount;
     }
