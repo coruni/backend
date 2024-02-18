@@ -540,11 +540,19 @@ public class ShopController {
                 bossInfo.remove("opt");
                 bossInfo.remove("password");
                 bossInfo.remove("head_picture");
+                // 如果是商家订单就查询购买者信息
+                Users buyUser = usersService.selectByKey(_order.getUser_id());
+                Map<String, Object> buyerInfo = JSONObject.parseObject(JSONObject.toJSONString(buyUser));
+                buyerInfo.remove("address");
+                buyerInfo.remove("opt");
+                buyerInfo.remove("password");
+                buyerInfo.remove("head_picture");
+
+                info.put("buyerInfo",buyerInfo);
                 info.put("bossInfo", bossInfo);
                 info.put("address", address);
                 info.put("specs", specs);
                 info.put("product_image", product_image);
-
                 arrayList.add(info);
             }
 
