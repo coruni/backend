@@ -447,7 +447,7 @@ public class ShopController {
             if (orderInfo.toString().isEmpty()) {
                 return Result.getResultJson(0, "订单不存在", null);
             }
-            if (!user.getUid().equals(orderInfo.getUser_id())) {
+            if (!user.getUid().equals(orderInfo.getUser_id()) &&!user.getUid().equals(orderInfo.getBoss_id())) {
                 return Result.getResultJson(0, "你没有权限查看该订单", null);
             }
 
