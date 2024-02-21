@@ -133,6 +133,7 @@ public class ExchangeController {
 
                 // 查询是否已拥有该头像框
                 JSONArray head_picture = JSONArray.parseArray(user.getHead_picture());
+                if (head_picture == null) head_picture = new JSONArray();
                 if (head_picture.contains(id)) return Result.getResultJson(201, "已拥有该头像框", null);
                 price = exchange.getPrice();
                 type = exchange.getType();
@@ -145,6 +146,7 @@ public class ExchangeController {
                     return Result.getResultJson(201, "头衔不存在", null);
                 // 查询是否已拥有该头衔
                 JSONArray rank_list = JSONArray.parseArray(user.getRank());
+                if (rank_list == null) rank_list = new JSONArray();
                 if (rank_list.contains(id)) return Result.getResultJson(201, "已拥有该头衔", null);
                 price = exchange.getPrice();
                 type = exchange.getType();

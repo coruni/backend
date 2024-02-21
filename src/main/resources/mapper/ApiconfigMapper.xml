@@ -51,8 +51,6 @@
         <result column="wxpayNotifyUrl" property="wxpayNotifyUrl" />
         <result column="auditlevel" property="auditlevel" />
         <result column="forbidden" property="forbidden" />
-        <result column="fields" property="fields" />
-
         <result column="pushAdsPrice" property="pushAdsPrice" />
         <result column="pushAdsNum" property="pushAdsNum" />
         <result column="bannerAdsPrice" property="bannerAdsPrice" />
@@ -160,7 +158,6 @@
 
         `auditlevel`,
         `forbidden`,
-        `fields`,
 
         `pushAdsPrice`,
         `pushAdsNum`,
@@ -364,9 +361,6 @@
             </if>
             <if test ='null != forbidden'>
                 `forbidden`,
-            </if>
-            <if test ='null != fields'>
-                `fields`,
             </if>
 
             <if test ='null != pushAdsPrice'>
@@ -657,9 +651,7 @@
             <if test ='null != forbidden'>
                 #{forbidden},
             </if>
-            <if test ='null != fields'>
-                #{fields},
-            </if>
+
             <if test ='null != pushAdsPrice'>
                 #{pushAdsPrice},
             </if>
@@ -857,7 +849,6 @@
             <if test ='null != mchApiV3Key'>`mchApiV3Key` = #{mchApiV3Key},</if>
             <if test ='null != auditlevel'>`auditlevel` = #{auditlevel},</if>
             <if test ='null != forbidden'>`forbidden` = #{forbidden},</if>
-            <if test ='null != fields'>`fields` = #{fields},</if>
             <if test ='null != pushAdsPrice'>`pushAdsPrice` = #{pushAdsPrice},</if>
             <if test ='null != pushAdsNum'>`pushAdsNum` = #{pushAdsNum},</if>
             <if test ='null != bannerAdsPrice'>`bannerAdsPrice` = #{bannerAdsPrice},</if>
