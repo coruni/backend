@@ -4,6 +4,7 @@ import com.TypeApi.common.*;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.aliyuncs.http.HttpRequest;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -186,12 +187,9 @@ public class SystemController {
             return Result.getResultJson(0, "请输入正确的访问key", null);
         }
         Apiconfig apiconfig = apiconfigService.selectByKey(1);
-        Map json = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", json);
-        return response.toString();
+        Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
+        data.remove("levelExp");
+        return Result.getResultJson(200, "获取成功", data);
     }
 
     /***
