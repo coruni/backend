@@ -168,7 +168,7 @@ public class UsersController {
                 address = item.getAddress() != null && !item.getAddress().toString().isEmpty() ? JSONObject.parseObject(item.getAddress().toString()) : null;
                 // 处理头像框
                 // 加入其他数据等级等
-                List result = baseFull.getLevel(item.getExperience(),dataprefix,apiconfigService,redisTemplate);
+                List result = baseFull.getLevel(item.getExperience(), dataprefix, apiconfigService, redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
 
@@ -328,7 +328,7 @@ public class UsersController {
             if (user != null && user.getVip() != null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
 
             // 处理等级
-            List levelInfo = baseFull.getLevel(user.getExperience(),dataprefix,apiconfigService,redisTemplate);
+            List levelInfo = baseFull.getLevel(user.getExperience(), dataprefix, apiconfigService, redisTemplate);
             Integer level = Integer.parseInt(levelInfo.get(0).toString());
             Integer nextExp = Integer.parseInt(levelInfo.get(1).toString());
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
@@ -419,7 +419,10 @@ public class UsersController {
             if (!userResult.hasUser) {
                 return Result.getResultJson(201, "用户不存在", null);
             }
+
             Users user = userResult.user;
+
+            if (user.getStatus().equals(0)) return Result.getResultJson(201, "账号已注销", null);
             // 验证密码
             Boolean isPass = phpass.CheckPassword(password, user.getPassword());
             if (!isPass) {
@@ -1672,14 +1675,14 @@ public class UsersController {
     @RequestMapping(value = "/delCode")
     @ResponseBody
     public String delCode(@RequestParam(value = "id") Integer id,
-                          HttpServletRequest request){
-        try{
-            if(!permission(request.getHeader("Authorization"))) return Result.getResultJson(201,"无权限",null);
+                          HttpServletRequest request) {
+        try {
+            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             invitationService.delete(id);
-            return Result.getResultJson(200,"删除成功",null);
-        }catch (Exception e){
+            return Result.getResultJson(200, "删除成功", null);
+        } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(400,"接口异常",null);
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
 
@@ -2360,5 +2363,23 @@ public class UsersController {
 
     }
 
-
+    @RequestMapping(value = "/destroy")
+    @ResponseBody
+    public String destory(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            user.setStatus(0);
+            service.update(user);
+            return Result.getResultJson(200, "注销成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口错误", null);
+        }
+    }
 }

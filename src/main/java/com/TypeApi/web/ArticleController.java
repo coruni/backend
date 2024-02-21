@@ -194,7 +194,6 @@ public class ArticleController {
                 if (userlogList.size() > 0) isMark = 1;
             }
 
-
             Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
             Matcher matcher = pattern.matcher(text);
             StringBuffer replacedText = new StringBuffer();
@@ -265,6 +264,9 @@ public class ArticleController {
                 fan.setUid(uid);
                 fan.setTouid(article.getAuthorId());
                 Integer isFollow = fanService.total(fan);
+
+                // 是否注销
+                if(info.getStatus().equals(0)) authorInfo.put("screenName","用户已注销");
 
                 //加入信息
                 authorInfo.put("isFollow", isFollow);
@@ -460,6 +462,9 @@ public class ArticleController {
                     fan.setUid(uid);
                     fan.setTouid(article.getAuthorId());
                     Integer isFollow = fanService.total(fan);
+
+                    // 是否注销
+                    if(info.getStatus().equals(0)) authorInfo.put("screenName","用户已注销");
 
                     //加入信息
                     authorInfo.put("isFollow", isFollow);

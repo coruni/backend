@@ -126,6 +126,7 @@ public class InstallController {
                     "  `created` int(10) unsigned DEFAULT 0," +
                     "  `activated` int(10) unsigned DEFAULT 0," +
                     "  `logged` int(10) unsigned DEFAULT 0," +
+                    "  `status` INT NOT NULL DEFAULT 1 ,"+
                     "  `group` varchar(16) DEFAULT 'visitor'," +
                     "  `authCode` varchar(64) DEFAULT NULL," +
                     "  `rank` longtext NULL," +
@@ -423,6 +424,17 @@ public class InstallController {
         } else {
             text += "用户模块，字段introduce已经存在，无需添加。";
         }
+
+        //查询用户表是否存在status字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users' and column_name = 'status';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_users ADD status INT NOT NULL DEFAULT 1 ;");
+            text += "用户模块，字段status添加完成。";
+        } else {
+            text += "用户模块，字段status已经存在，无需添加。";
+        }
+
+
         //查询用户表是否存在account字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users' and column_name = 'assets';", Integer.class);
         if (i == 0) {

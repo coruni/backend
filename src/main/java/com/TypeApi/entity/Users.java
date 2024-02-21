@@ -148,4 +148,9 @@ public class Users implements Serializable {
      */
     private String rank;
 
+    /***
+     * 用户状态
+     */
+    private Integer status;
+
 }

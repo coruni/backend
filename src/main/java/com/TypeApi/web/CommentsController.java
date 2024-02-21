@@ -140,7 +140,7 @@ public class CommentsController {
                     dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
                 } else {
                     dataUser = new HashMap<>();
-                    dataUser.put("screenName", "账户已注销");
+                    dataUser.put("screenName", "用户已注销");
                     dataUser.put("avatar", null);
                     dataUser.put("level", 0);
                     dataUser.put("nextExp", 0);
@@ -148,6 +148,9 @@ public class CommentsController {
                 }
                 JSONObject opt = new JSONObject();
                 if (commentUser != null && !commentUser.toString().isEmpty()) {
+
+                    // 用户是否注销
+                    if(commentUser.getStatus().equals(0)) dataUser.put("screenName","用户已注销");
                     //移除信息
                     dataUser.remove("password");
                     dataUser.remove("address");
