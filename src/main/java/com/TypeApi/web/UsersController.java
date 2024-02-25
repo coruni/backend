@@ -1202,7 +1202,6 @@ public class UsersController {
                          @RequestParam(value = "background", required = false) String background,
                          @RequestParam(value = "mail", required = false) String mail,
                          @RequestParam(value = "code", required = false) String code,
-                         @RequestParam(value = "password", required = false) String password,
                          HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
@@ -1218,10 +1217,6 @@ public class UsersController {
             if (sex != null && !sex.isEmpty()) user.setSex(sex);
             if (introduce != null && !introduce.isEmpty()) user.setIntroduce(introduce);
             if (address != null && !address.isEmpty()) user.setAddress(address);
-            if (password != null && !password.isEmpty()) {
-                // 加密密码
-                user.setPassword(phpass.HashPassword(password));
-            }
             if (mail != null && !mail.isEmpty()) {
                 if (!baseFull.isEmail(mail)) return Result.getResultJson(201, "邮箱格式错误", null);
                 Users query = new Users();

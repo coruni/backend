@@ -134,15 +134,13 @@ public class ArticleController {
     public String info(@RequestParam(value = "id") Integer id,
                        HttpServletRequest request) {
         try {
-            Integer uid = null;
             String token = request.getHeader("Authorization");
             Boolean permission = false;
-            Users users = new Users();
+            Users user = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-                users = usersService.selectByKey(uid);
-                if (users.getGroup().equals("administrator") || users.getGroup().equals("editor")) permission = true;
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
             }
             // 查询文章
             Article article = service.selectByKey(id);
@@ -164,11 +162,11 @@ public class ArticleController {
             Userlog userlog = new Userlog();
             Integer isLike = 0;
             Integer isMark = 0;
-            if (users != null && !users.toString().isEmpty()) {
+            if (user != null && !user.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
                 replyStatus.setCid(article.getCid());
-                replyStatus.setUid(uid);
+                replyStatus.setUid(user.getUid());
                 Integer rStatus = commentsService.total(replyStatus, null);
                 if (rStatus > 0) {
                     isReply = true;
@@ -176,7 +174,7 @@ public class ArticleController {
                 // 获取购买状态
                 Paylog paylog = new Paylog();
                 paylog.setPaytype("article");
-                paylog.setUid(uid);
+                paylog.setUid(user.getUid());
                 paylog.setCid(article.getCid());
                 Integer pStatus = paylogService.total(paylog);
                 if (pStatus > 0) {
@@ -186,7 +184,7 @@ public class ArticleController {
                 // 是否点赞或者是否收藏
                 userlog.setType("articleLike");
                 userlog.setCid(article.getCid());
-                userlog.setUid(uid);
+                userlog.setUid(user.getUid());
                 List<Userlog> userlogList = userlogService.selectList(userlog);
                 if (userlogList.size() > 0) isLike = 1;
                 userlog.setType("articleMark");
@@ -203,9 +201,9 @@ public class ArticleController {
                 String replacement = "";
 
 
-                if ("pay".equals(type) && !isPaid && users.getUid() != article.getAuthorId() && !permission) {
+                if (type.equals("pay") && !isPaid && user.getUid() != article.getAuthorId() && !permission) {
                     replacement = "【付费查看：这是付费内容，付费后可查看】";
-                } else if ("reply".equals(type) && !isReply && users.getUid() != article.getAuthorId() && !permission) {
+                } else if (type.equals("reply") && !isReply && user.getUid() != article.getAuthorId() && !permission) {
                     replacement = "【回复查看：这是回复内容，回复后可查看】";
                 } else {
                     replacement = content;  // 如果不需要替换，则保持原样
@@ -241,7 +239,6 @@ public class ArticleController {
 
             }
 
-
             // 加入作者信息
             Users info = usersService.selectByKey(article.getAuthorId());
             Map<String, Object> authorInfo;
@@ -251,7 +248,7 @@ public class ArticleController {
                 authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
             }
             if (info != null && !info.toString().isEmpty()) {
-                List result = baseFull.getLevel(info.getExperience(),dataprefix,apiconfigService,redisTemplate);
+                List result = baseFull.getLevel(info.getExperience(), dataprefix, apiconfigService, redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
                 JSONObject authorOpt = new JSONObject();
@@ -259,14 +256,17 @@ public class ArticleController {
 
                 // 是否VIP
                 Integer isVip = info.getVip() > System.currentTimeMillis() / 1000 ? 1 : 0;
-                // 获取关注
-                Fan fan = new Fan();
-                fan.setUid(uid);
-                fan.setTouid(article.getAuthorId());
-                Integer isFollow = fanService.total(fan);
+                Integer isFollow = 0;
+                if (user != null && !user.toString().isEmpty()) {
+                    // 获取关注
+                    Fan fan = new Fan();
+                    fan.setUid(user.getUid());
+                    fan.setTouid(article.getAuthorId());
+                    if (fanService.total(fan) > 0) isFollow = 1;
+                }
 
                 // 是否注销
-                if(info.getStatus().equals(0)) authorInfo.put("screenName","用户已注销");
+                if (info.getStatus().equals(0)) authorInfo.put("screenName", "用户已注销");
 
                 //加入信息
                 authorInfo.put("isFollow", isFollow);
@@ -284,7 +284,7 @@ public class ArticleController {
                 authorInfo.put("level", 0);
                 authorInfo.put("nextLevel", 0);
                 authorInfo.put("isVip", 0);
-                authorInfo.put("screenName", "账户已注销");
+                authorInfo.put("screenName", "用户已注销");
             }
 
 
@@ -305,21 +305,20 @@ public class ArticleController {
             // 移除信息
             data.remove("passowrd");
 
-            if (users != null && !users.toString().isEmpty()) {
+            if (user != null && !user.toString().isEmpty()) {
                 // 开始写入访问次数至多两次
                 Integer endTime = baseFull.endTime();
                 // views 存入今天的数据 最多三次
-                Integer taskViews = redisHelp.getRedis("views_" + users.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + users.getName(), redisTemplate)) : 0;
-                if (taskViews < 2 && users != null) {
+                Integer taskViews = redisHelp.getRedis("views_" + user.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + user.getName(), redisTemplate)) : 0;
+                if (taskViews < 2) {
                     // 点赞送经验和积分
-                    users.setAssets((users.getAssets() != null ? users.getAssets() : 0) + 2);
-                    users.setExperience((users.getExperience() != null ? users.getExperience() : 0) + 5);
-                    redisHelp.delete("views_" + users.getName(), redisTemplate);
-                    redisHelp.setRedis("views_" + users.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
-                    usersService.update(users);
+                    user.setAssets((user.getAssets() != null ? user.getAssets() : 0) + 2);
+                    user.setExperience((user.getExperience() != null ? user.getExperience() : 0) + 5);
+                    redisHelp.delete("views_" + user.getName(), redisTemplate);
+                    redisHelp.setRedis("views_" + user.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
+                    usersService.update(user);
                 }
             }
-
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -341,14 +340,13 @@ public class ArticleController {
                               @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
                               HttpServletRequest request) {
         try {
-            Integer uid = null;
             Boolean permission = false;
             String token = request.getHeader("Authorization");
+            Users user = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-                Users users = usersService.selectByKey(uid);
-                if (users.getGroup().equals("administrator") || users.getGroup().equals("editor")) permission = true;
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
             }
             Article query = new Article();
             if (params != null && !params.isEmpty()) {
@@ -368,25 +366,25 @@ public class ArticleController {
                 opt = article.getOpt() != null && !article.getOpt().toString().isEmpty() ? JSONObject.parseObject(article.getOpt().toString()) : null;
 
                 // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
-                Integer isReply = 0;
-                Integer isPaid = 0;
-                if (uid != null && uid != 0) {
+                Boolean isReply = false;
+                Boolean isPaid = false;
+                if (user != null && !user.toString().isEmpty()) {
                     // 获取评论状态
                     Comments replyStatus = new Comments();
                     replyStatus.setCid(article.getCid());
-                    replyStatus.setUid(uid);
+                    replyStatus.setUid(user.getUid());
                     Integer rStatus = commentsService.total(replyStatus, null);
                     if (rStatus > 0) {
-                        isReply = 1;
+                        isReply = true;
                     }
                     // 获取购买状态
                     Paylog paylog = new Paylog();
                     paylog.setPaytype("article");
-                    paylog.setUid(uid);
+                    paylog.setUid(user.getUid());
                     paylog.setCid(article.getCid());
                     Integer pStatus = paylogService.total(paylog);
                     if (pStatus > 0) {
-                        isPaid = 1;
+                        isPaid = true;
                     }
                 }
                 // 替换隐藏内容
@@ -398,9 +396,9 @@ public class ArticleController {
                     String type = matcher.group(1);
                     String content = matcher.group(2);
                     String replacement = "";
-                    if ("pay".equals(type) && isPaid == 0 && uid != article.getAuthorId() && !permission) {
+                    if (type.equals("pay") && !isPaid && !user.getUid().equals(article.getAuthorId()) && !permission) {
                         replacement = "【付费查看：这是付费内容，付费后可查看】";
-                    } else if ("reply".equals(type) && isReply == 0 && uid != article.getAuthorId() && !permission) {
+                    } else if (type.equals("reply") && !isReply && user.getUid().equals(article.getAuthorId()) && !permission) {
                         replacement = "【回复查看：这是回复内容，回复后可查看】";
                     } else {
                         replacement = content;  // 如果不需要替换，则保持原样
@@ -449,7 +447,7 @@ public class ArticleController {
                     authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
                 }
                 if (info != null && !info.toString().isEmpty()) {
-                    List result = baseFull.getLevel(info.getExperience(),dataprefix,apiconfigService,redisTemplate);
+                    List result = baseFull.getLevel(info.getExperience(), dataprefix, apiconfigService, redisTemplate);
                     Integer level = (Integer) result.get(0);
                     Integer nextLevel = (Integer) result.get(1);
                     JSONObject authorOpt = new JSONObject();
@@ -457,14 +455,17 @@ public class ArticleController {
                     // 是否VIP
                     Integer isVip = 0;
                     if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
-                    // 获取关注
-                    Fan fan = new Fan();
-                    fan.setUid(uid);
-                    fan.setTouid(article.getAuthorId());
-                    Integer isFollow = fanService.total(fan);
+                    Integer isFollow = 0;
+                    if (user != null && !user.toString().isEmpty()) {
+                        // 获取关注
+                        Fan fan = new Fan();
+                        fan.setUid(user.getUid());
+                        fan.setTouid(article.getAuthorId());
+                        if (fanService.total(fan) > 0) isFollow = 1;
+                    }
 
                     // 是否注销
-                    if(info.getStatus().equals(0)) authorInfo.put("screenName","用户已注销");
+                    if (info.getStatus().equals(0)) authorInfo.put("screenName", "用户已注销");
 
                     //加入信息
                     authorInfo.put("isFollow", isFollow);
@@ -490,10 +491,10 @@ public class ArticleController {
                 Userlog userlog = new Userlog();
                 Integer isLike = 0;
                 Integer isMark = 0;
-                if (uid != null && !uid.equals(0)) {
+                if (user != null && !user.toString().isEmpty()) {
                     userlog.setType("articleLike");
                     userlog.setCid(article.getCid());
-                    userlog.setUid(uid);
+                    userlog.setUid(user.getUid());
                     List<Userlog> userlogList = userlogService.selectList(userlog);
                     if (userlogList.size() > 0) isLike = 1;
                     userlog.setType("articleMark");
@@ -1228,7 +1229,7 @@ public class ArticleController {
                 // 加入作者信息
                 Users info = usersService.selectByKey(articleData.getAuthorId());
                 Map<String, Object> authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-                List result = baseFull.getLevel(info.getExperience(),dataprefix,apiconfigService,redisTemplate);
+                List result = baseFull.getLevel(info.getExperience(), dataprefix, apiconfigService, redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
                 JSONObject authorOpt = new JSONObject();

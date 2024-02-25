@@ -1752,7 +1752,7 @@ public class InstallController {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_rank` (" +
                     "  `id` INT NOT NULL AUTO_INCREMENT," +
                     "  `name` text  NOT NULL COMMENT '兑换名称'," +
-                    "  `type` varchar(255) DEFAULT 'rank' NOT NULL COMMENT '类型'," +
+                    "  `type` INT DEFAULT 0 NOT NULL COMMENT '类型'," +
                     "  `image` text COMMENT '图片'," +
                     "  `color` varchar(255) COMMENT '文字颜色'," +
                     "  `background` varchar(255) COMMENT '背景颜色'," +

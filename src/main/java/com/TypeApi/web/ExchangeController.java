@@ -88,8 +88,10 @@ public class ExchangeController {
                     data.put("detail", detail);
                 }
                 if (_exchange.getType().equals("rank")) {
-
+                    detail = JSONObject.parseObject(JSONObject.toJSONString(rankService.selectByKey(_exchange.getExchange_id())));
+                    data.put("detail",detail);
                 }
+                dataList.add(data);
             }
 
             Map<String, Object> data = new HashMap<>();
