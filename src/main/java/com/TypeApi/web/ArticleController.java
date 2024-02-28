@@ -162,6 +162,7 @@ public class ArticleController {
             Userlog userlog = new Userlog();
             Integer isLike = 0;
             Integer isMark = 0;
+            Integer hide = 1;
             if (user != null && !user.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
@@ -191,6 +192,7 @@ public class ArticleController {
                 userlogList = userlogService.selectList(userlog);
                 if (userlogList.size() > 0) isMark = 1;
             }
+
 
             Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
             Matcher matcher = pattern.matcher(text);
@@ -291,6 +293,10 @@ public class ArticleController {
             // 返回信息
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
 
+            if (!isPaid){
+                data.remove("opt");
+                hide = 0;
+            }
             // 加入信息
             if (article.getImages() != null && !article.getImages().isEmpty())
                 data.put("images", JSONArray.parseArray(article.getImages()));
@@ -301,6 +307,7 @@ public class ArticleController {
             data.put("tag", tagDataList);
             data.put("isLike", isLike);
             data.put("isMark", isMark);
+            data.put("hide",hide);
             data.put("authorInfo", authorInfo);
             // 移除信息
             data.remove("passowrd");
