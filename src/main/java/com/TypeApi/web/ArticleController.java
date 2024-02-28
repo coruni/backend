@@ -292,7 +292,7 @@ public class ArticleController {
 
             // 返回信息
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-            if (user == null || (!isPaid && user.getUid().equals(article.getAuthorId()))) {
+            if (user == null || (user!=null && !isPaid && user.getUid().equals(article.getAuthorId()))) {
                 data.remove("opt");
                 isHide = 1;
             }
