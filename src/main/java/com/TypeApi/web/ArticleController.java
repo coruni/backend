@@ -162,7 +162,7 @@ public class ArticleController {
             Userlog userlog = new Userlog();
             Integer isLike = 0;
             Integer isMark = 0;
-            Integer isHide = 0;
+            Integer isHide = 1;
             if (user != null && !user.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
@@ -201,8 +201,6 @@ public class ArticleController {
                 String type = matcher.group(1);
                 String content = matcher.group(2);
                 String replacement = "";
-
-
                 if (type.equals("pay") && !isPaid && user.getUid() != article.getAuthorId() && !permission) {
                     replacement = "【付费查看：这是付费内容，付费后可查看】";
                 } else if (type.equals("reply") && !isReply && user.getUid() != article.getAuthorId() && !permission) {
@@ -292,10 +290,7 @@ public class ArticleController {
 
             // 返回信息
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-            if (user == null || (user!=null && !isPaid && user.getUid().equals(article.getAuthorId()))) {
-                data.remove("opt");
-                isHide = 1;
-            }
+
             // 加入信息
             if (article.getImages() != null && !article.getImages().isEmpty())
                 data.put("images", JSONArray.parseArray(article.getImages()));
@@ -310,7 +305,6 @@ public class ArticleController {
             data.put("authorInfo", authorInfo);
             // 移除信息
             data.remove("passowrd");
-
             if (user != null && !user.toString().isEmpty()) {
                 // 开始写入访问次数至多两次
                 Integer endTime = baseFull.endTime();
@@ -324,6 +318,13 @@ public class ArticleController {
                     redisHelp.setRedis("views_" + user.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
                     usersService.update(user);
                 }
+            }
+
+            if(user!=null &&article.getAuthorId().equals(user.getUid()) || isPaid){
+                data.put("isHide",0);
+            }else{
+                data.put("opt",null);
+                data.put("isHide",1);
             }
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
