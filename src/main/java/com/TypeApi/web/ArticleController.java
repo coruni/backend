@@ -162,7 +162,7 @@ public class ArticleController {
             Userlog userlog = new Userlog();
             Integer isLike = 0;
             Integer isMark = 0;
-            Integer hide = 1;
+            Integer isHide = 0;
             if (user != null && !user.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
@@ -292,10 +292,9 @@ public class ArticleController {
 
             // 返回信息
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-
-            if (!isPaid){
+            if (user == null || (!isPaid && user.getUid().equals(article.getAuthorId()))) {
                 data.remove("opt");
-                hide = 0;
+                isHide = 1;
             }
             // 加入信息
             if (article.getImages() != null && !article.getImages().isEmpty())
@@ -307,7 +306,7 @@ public class ArticleController {
             data.put("tag", tagDataList);
             data.put("isLike", isLike);
             data.put("isMark", isMark);
-            data.put("hide",hide);
+            data.put("hide", isHide);
             data.put("authorInfo", authorInfo);
             // 移除信息
             data.remove("passowrd");
