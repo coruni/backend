@@ -10,6 +10,12 @@ import com.alibaba.fastjson.TypeReference;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import net.dreamlu.mica.core.result.R;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.poi.hssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -477,267 +483,39 @@ public class UsersController {
         return new CheckUserResult(hasUser, user);
     }
 
-    /***
-     * 社会化登陆
-     * @param params Bean对象JSON字符串
-     */
-    @RequestMapping(value = "/apiLogin")
+    @RequestMapping(value = "/OAuth")
     @ResponseBody
-    public String apiLogin(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) {
-
-        Map jsonToMap = null;
-        String oldpw = null;
+    public String OAuth(@RequestParam(value = "provider") String provider,
+                        @RequestParam(value = "openid") String openid,
+                        @RequestParam(value = "access_token") String access_token) {
         try {
-            if (StringUtils.isNotBlank(params)) {
-                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-            } else {
-                return Result.getResultJson(0, "请输入正确的参数", null);
-            }
-            String ip = baseFull.getIpAddr(request);
-            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            Integer isInvite = apiconfig.getIsInvite();
-            //如果是微信，则走两步判断，是小程序还是APP
-            if (jsonToMap.get("appLoginType").toString().equals("weixin")) {
+            Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
+            //定义一个变量存储获取到的第三方信息
+            //先判定provider
+            if (provider.equals("weixin")) {
+                String url = String.format("https://graph.qq.com/user/get_user_info?access_token=%s&oauth_consumer_key=&s&openid=$s", access_token, apiconfig.getQqAppletsAppid(), openid);
+                CloseableHttpClient httpClient = HttpClients.createDefault();
+                HttpGet httpGet = new HttpGet(url);
+                CloseableHttpResponse response = httpClient.execute(httpGet);
 
-                //走官方接口获取accessToken和openid
-                if (jsonToMap.get("js_code") == null) {
-                    return Result.getResultJson(0, "APP配置异常，js_code参数不存在", null);
-                }
-                String js_code = jsonToMap.get("js_code").toString();
-                if (jsonToMap.get("type").toString().equals("applets")) {
-                    String requestUrl = "https://api.weixin.qq.com/sns/jscode2session?appid=" + apiconfig.getAppletsAppid() + "&secret=" + apiconfig.getAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
-                    String res = HttpClient.doGet(requestUrl);
-                    System.out.println(res);
-                    if (res == null) {
-                        return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
-                    }
-                    System.out.println("微信登录小程序接口返回" + res);
-                    HashMap data = JSON.parseObject(res, HashMap.class);
-                    if (data.get("openid") == null) {
-                        return Result.getResultJson(0, "接口配置异常，小程序openid获取失败", null);
-                    }
-                    jsonToMap.put("accessToken", data.get("openid"));
-                    jsonToMap.put("openId", data.get("openid"));
-                } else {
-                    String requestUrl = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=" + apiconfig.getWxAppId() + "&secret=" + apiconfig.getWxAppSecret() + "&code=" + js_code + "&grant_type=authorization_code";
-                    String res = HttpClient.doGet(requestUrl);
-                    System.out.println(res);
-                    if (res == null) {
-                        return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
-                    }
-                    System.out.println("微信登录app接口返回" + res);
-                    HashMap data = JSON.parseObject(res, HashMap.class);
-                    if (data.get("openid") == null) {
-                        return Result.getResultJson(0, "接口配置异常，openid获取失败", null);
-                    }
-                    jsonToMap.put("accessToken", data.get("openid"));
-                    jsonToMap.put("openId", data.get("openid"));
-                }
-
-
-            }
-
-            //QQ也要走两步判断
-            if (jsonToMap.get("appLoginType").toString().equals("qq")) {
-
-
-                if (jsonToMap.get("type").toString().equals("applets")) {
-                    if (jsonToMap.get("js_code") == null) {
-                        return Result.getResultJson(0, "APP配置异常，js_code参数不存在", null);
-                    }
-                    String js_code = jsonToMap.get("js_code").toString();
-                    //如果是小程序，走官方接口获取accessToken和openid
-
-
-                    String requestUrl = "https://api.q.qq.com/sns/jscode2session?appid=" + apiconfig.getQqAppletsAppid() + "&secret=" + apiconfig.getQqAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
-                    String res = HttpClient.doGet(requestUrl);
-                    System.out.println("QQ接口返回" + res);
-                    if (res == null) {
-                        return Result.getResultJson(0, "接口配置异常，QQ官方接口请求失败", null);
-                    }
-
-                    HashMap data = JSON.parseObject(res, HashMap.class);
-                    if (data.get("openid") == null) {
-                        return Result.getResultJson(0, "接口配置异常，openid获取失败", null);
-                    }
-                    jsonToMap.put("accessToken", data.get("openid"));
-                    jsonToMap.put("openId", data.get("openid"));
-                } else {
-                    if (jsonToMap.get("accessToken") == null) {
-                        return Result.getResultJson(0, "登录配置异常，accessToken参数不存在", null);
-                    }
-                    jsonToMap.put("accessToken", jsonToMap.get("openId"));
-                    jsonToMap.put("openId", jsonToMap.get("openId"));
-                }
-            } else {
-                if (jsonToMap.get("accessToken") == null) {
-                    return Result.getResultJson(0, "登录配置异常，accessToken参数不存在", null);
+                try {
+                    HttpEntity entity = response.getEntity();
+                    String result = EntityUtils.toString(entity);
+                    EntityUtils.consume(entity);
+                    System.out.println(result);
+                } finally {
+                    response.close();
                 }
             }
-            Userapi userapi = JSON.parseObject(JSON.toJSONString(jsonToMap), Userapi.class);
-            String openid = userapi.getOpenId();
-            String loginType = userapi.getAppLoginType();
-            Userapi isApi = new Userapi();
-            isApi.setOpenId(openid);
-            isApi.setAppLoginType(loginType);
-            List<Userapi> apiList = userapiService.selectList(isApi);
-            //大于0则走向登陆，小于0则进行注册
-            if (apiList.size() > 0) {
 
-                Userapi apiInfo = apiList.get(0);
-                Users user = service.selectByKey(apiInfo.getUid().toString());
-                //判断用户是否被封禁
-                Integer bantime = user.getBantime();
-                if (bantime.equals(1)) {
-                    return Result.getResultJson(0, "你的账号已被永久封禁，如有疑问请联系管理员", null);
-                } else {
-                    Long date = System.currentTimeMillis();
-                    Integer curtime = Integer.parseInt(String.valueOf(date).substring(0, 10));
-                    if (bantime > curtime) {
-                        return Result.getResultJson(0, "你的账号被暂时封禁，请耐心等待解封。", null);
-                    }
-                }
-                Long date = System.currentTimeMillis();
-                String Token = date + user.getName();
-                jsonToMap.put("uid", user.getUid());
+            Map<String, Object> data = new HashMap<>();
+            return Result.getResultJson(200, "登录成功", null);
 
-                //生成唯一性token用于验证
-                jsonToMap.put("name", user.getName());
-                jsonToMap.put("token", user.getName() + DigestUtils.md5DigestAsHex(Token.getBytes()));
-                jsonToMap.put("time", date);
-                jsonToMap.put("group", user.getGroup());
-                jsonToMap.put("mail", user.getMail());
-                jsonToMap.put("url", user.getUrl());
-                jsonToMap.put("screenName", user.getScreenName());
-                jsonToMap.put("introduce", user.getIntroduce());
-                jsonToMap.put("experience", user.getExperience());
-                //判断是否为VIP
-                jsonToMap.put("vip", user.getVip());
-                jsonToMap.put("isvip", 0);
-                String curTime = String.valueOf(date).substring(0, 10);
-                Integer viptime = user.getVip();
-                if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
-                    jsonToMap.put("isvip", 1);
-                }
-                if (user.getAvatar() != null) {
-                    jsonToMap.put("avatar", user.getAvatar());
-                } else {
-                    if (user.getMail() != null) {
-                        if (user.getMail().indexOf("@qq.com") != -1) {
-                            String qq = user.getMail().replace("@qq.com", "");
-                            jsonToMap.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640");
-                        } else {
-                            jsonToMap.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), user.getMail()));
-                        }
-                    } else {
-                        jsonToMap.put("avatar", apiconfig.getWebinfoAvatar() + "null");
-                    }
-                }
-
-                //获取用户等级
-                Integer uid = user.getUid();
-                Comments comments = new Comments();
-                comments.setUid(uid);
-                Integer lv = commentsService.total(comments, null);
-                jsonToMap.put("lv", baseFull.getLv(lv));
-                //更新用户登录时间和第一次登陆时间（满足typecho要求）
-                String userTime = String.valueOf(date).substring(0, 10);
-                Users updateuser = new Users();
-                updateuser.setUid(user.getUid());
-                updateuser.setLogged(Integer.parseInt(userTime));
-                if (user.getLogged() == 0) {
-                    updateuser.setActivated(Integer.parseInt(userTime));
-                }
-
-                Integer rows = service.update(updateuser);
-
-                //删除之前的token后，存入redis(防止积累导致内存溢出，超时时间默认是24小时)
-                String oldToken = redisHelp.getRedis(this.dataprefix + "_" + "userkey" + jsonToMap.get("name").toString(), redisTemplate);
-                if (oldToken != null) {
-                    redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
-                }
-                redisHelp.setRedis(this.dataprefix + "_" + "userkey" + jsonToMap.get("name").toString(), jsonToMap.get("token").toString(), this.usertime, redisTemplate);
-                redisHelp.setKey(this.dataprefix + "_" + "userInfo" + jsonToMap.get("name").toString() + DigestUtils.md5DigestAsHex(Token.getBytes()), jsonToMap, this.usertime, redisTemplate);
-
-                return Result.getResultJson(rows > 0 ? 1 : 0, rows > 0 ? "登录成功" : "登陆失败", jsonToMap);
-
-            } else {
-                //注册
-                if (isInvite.equals(1)) {
-                    return Result.getResultJson(0, "当前注册需要邀请码，请采用普通方式注册！", null);
-                }
-
-//                if (jsonToMap.get("headImgUrl") != null) {
-//
-//                }
-                Users regUser = new Users();
-                String name = baseFull.createRandomStr(5) + baseFull.createRandomStr(4);
-                String p = baseFull.createRandomStr(9);
-                String passwd = phpass.HashPassword(p);
-                Long date = System.currentTimeMillis();
-                String userTime = String.valueOf(date).substring(0, 10);
-                regUser.setName(name);
-                regUser.setCreated(Integer.parseInt(userTime));
-                regUser.setGroup("subscriber");
-                regUser.setScreenName(userapi.getNickName());
-                regUser.setPassword(passwd.replaceAll("(\\\r\\\n|\\\r|\\\n|\\\n\\\r)", ""));
-                if (jsonToMap.get("headImgUrl") != null) {
-                    String headImgUrl = jsonToMap.get("headImgUrl").toString();
-                    //QQ的接口头像要处理(垃圾腾讯突然修改了返回格式)
-                    if (jsonToMap.get("appLoginType").toString().equals("qq")) {
-                        headImgUrl = headImgUrl.replace("http://", "https://");
-                        headImgUrl = headImgUrl.replace("&amp;", "&");
-                    }
-                    regUser.setAvatar(headImgUrl);
-                }
-                Integer to = service.insert(regUser);
-                //注册完成后，增加绑定
-                Integer uid = regUser.getUid();
-                userapi.setUid(uid);
-                int rows = userapiService.insert(userapi);
-                //返回token
-                Long regdate = System.currentTimeMillis();
-                String Token = regdate + name;
-                jsonToMap.put("uid", uid);
-                //生成唯一性token用于验证
-                jsonToMap.put("name", name);
-                jsonToMap.put("token", name + DigestUtils.md5DigestAsHex(Token.getBytes()));
-                jsonToMap.put("time", regdate);
-                jsonToMap.put("group", "contributor");
-                jsonToMap.put("groupKey", "contributor");
-                jsonToMap.put("mail", "");
-                jsonToMap.put("url", "");
-                jsonToMap.put("screenName", userapi.getNickName());
-                jsonToMap.put("avatar", apiconfig.getWebinfoAvatar() + "null");
-                jsonToMap.put("lv", 0);
-                jsonToMap.put("customize", "");
-                jsonToMap.put("experience", 0);
-                //VIP
-                jsonToMap.put("vip", 0);
-                jsonToMap.put("isvip", 0);
-
-                //删除之前的token后，存入redis(防止积累导致内存溢出，超时时间默认是24小时)
-                String oldToken = redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate);
-                if (oldToken != null) {
-                    redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
-                }
-                redisHelp.setRedis(this.dataprefix + "_" + "userkey" + jsonToMap.get("name").toString(), jsonToMap.get("token").toString(), this.usertime, redisTemplate);
-                redisHelp.setKey(this.dataprefix + "_" + "userInfo" + jsonToMap.get("name").toString() + DigestUtils.md5DigestAsHex(Token.getBytes()), jsonToMap, this.usertime, redisTemplate);
-
-                return Result.getResultJson(rows > 0 ? 1 : 0, rows > 0 ? "登录成功" : "登陆失败", jsonToMap);
-
-            }
         } catch (Exception e) {
             e.printStackTrace();
-            JSONObject response = new JSONObject();
+            return Result.getResultJson(400, "接口异常", null);
 
-            response.put("code", 0);
-            response.put("msg", "登陆失败，请联系管理员");
-            response.put("data", null);
-
-            return response.toString();
         }
-
     }
 
     /***
