@@ -483,33 +483,124 @@ public class UsersController {
         return new CheckUserResult(hasUser, user);
     }
 
+
     @RequestMapping(value = "/OAuth")
     @ResponseBody
     public String OAuth(@RequestParam(value = "provider") String provider,
                         @RequestParam(value = "openid") String openid,
-                        @RequestParam(value = "access_token") String access_token) {
+                        @RequestParam(value = "access_token") String access_token,
+                        @RequestParam(value = "code") String code) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             //定义一个变量存储获取到的第三方信息
+            Map<String, Object> data = new HashMap<>();
+            Users user = new Users();
             //先判定provider
-            if (provider.equals("weixin")) {
+            if (provider.equals("qq")) {
                 String url = String.format("https://graph.qq.com/user/get_user_info?access_token=%s&oauth_consumer_key=&s&openid=$s", access_token, apiconfig.getQqAppletsAppid(), openid);
                 CloseableHttpClient httpClient = HttpClients.createDefault();
                 HttpGet httpGet = new HttpGet(url);
                 CloseableHttpResponse response = httpClient.execute(httpGet);
-
                 try {
                     HttpEntity entity = response.getEntity();
                     String result = EntityUtils.toString(entity);
                     EntityUtils.consume(entity);
-                    System.out.println(result);
+                    Map<String, Object> info = JSONObject.parseObject(result, Map.class);
+                    //  如果获取到ret状态不为0则返回错误信息
+                    if (!info.get("ret").equals(0)) {
+                        return Result.getResultJson(201, info.get("msg").toString(), info);
+                    }
+                    // 判断获取到的openid和传入的openid是否一致
+                    if (!info.get("openid").equals(openid)) return Result.getResultJson(202, "数据不匹配", null);
+                    // 查询数据库是否存在
+                    Userapi userapi = new Userapi();
+                    userapi.setOpenId(openid);
+                    userapi.setAppLoginType(provider);
+
+                    List<Userapi> userapiList = userapiService.selectList(userapi);
+                    if (userapiList.size() == 0) {
+                        // 数据为0 为用户创建新的账号
+                        user.setStatus(1);
+                        user.setAvatar(info.get("figureurl").toString());
+                        user.setScreenName(info.get("nickname").toString());
+                        // 暂空 需要写入一个用户名
+                        user.setSex(info.get("gender").toString());
+                        service.insert(user);
+                        userapi.setAppLoginType(provider);
+                        userapi.setOpenId(openid);
+                        userapi.setUid(user.getUid());
+                        userapiService.insert(userapi);
+                        user = service.selectByKey(user.getUid());
+
+                    } else {
+                        user = service.selectByKey(userapi.getUid());
+                    }
                 } finally {
                     response.close();
                 }
             }
 
-            Map<String, Object> data = new HashMap<>();
-            return Result.getResultJson(200, "登录成功", null);
+            if (provider.equals("weixin")) {
+                String url = String.format("https://api.weixin.qq.com/sns/oauth2/access_token?appid=$s&secret=%s&code=%s&grant_type=authorization_code", apiconfig.getWxAppId(), apiconfig.getWxAppSecret(), code);
+                CloseableHttpClient httpClient = HttpClients.createDefault();
+                HttpGet httpGet = new HttpGet(url);
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                try {
+                    HttpEntity entity = response.getEntity();
+                    String result = EntityUtils.toString(entity);
+                    EntityUtils.consume(entity);
+                    Map<String, Object> info = JSONObject.parseObject(result, Map.class);
+                    if (info.containsKey("access_token")) {
+                        httpGet = new HttpGet(String.format("https://api.weixin.qq.com/sns/userinfo?access_token=%s&openid=%s", info.get("access_token"), info.get("openid")));
+                        CloseableHttpResponse userResponse = httpClient.execute(httpGet);
+                        try {
+                            entity = userResponse.getEntity();
+                            String userResult = EntityUtils.toString(entity);
+                            EntityUtils.consume(entity);
+                            Userapi userapi = new Userapi();
+                            // 获取到了openid查询数据库是否存在
+                            userapi.setOpenId(info.get("openid").toString());
+                            userapi.setAppLoginType(provider);
+                            List<Userapi> userapiList = userapiService.selectList(userapi);
+                            if (userapiList.size() == 0) {
+                                // 数据为0 为用户创建新的账号
+                                user.setStatus(1);
+                                user.setAvatar(info.get("figureurl").toString());
+                                user.setScreenName(info.get("nickname").toString());
+                                // 暂空 需要写入一个用户名
+                                user.setSex(info.get("gender").toString());
+                                service.insert(user);
+                                userapi.setAppLoginType(provider);
+                                userapi.setOpenId(openid);
+                                userapi.setUid(user.getUid());
+                                userapiService.insert(userapi);
+                                user = service.selectByKey(user.getUid());
+
+                            } else {
+                                user = service.selectByKey(userapi.getUid());
+                            }
+                        } finally {
+                            userResponse.close();
+                        }
+                    } else {
+                        return Result.getResultJson(201, info.get("errmsg").toString(), null);
+                    }
+                } finally {
+                    response.close();
+                }
+            }
+
+            // 生成Token
+            Map token = new HashMap<>();
+            token.put("sub ", "login");
+            token.put("aud", user.getUid().toString());
+            data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+            data.put("token", JWT.getToken(token));
+            data.remove("password");
+            if (user.getAddress() != null && !user.getAddress().isEmpty()) {
+                data.put("address", JSONObject.parseObject(user.getAddress()));
+            }
+            return Result.getResultJson(200, "登录成功", data);
 
         } catch (Exception e) {
             e.printStackTrace();
