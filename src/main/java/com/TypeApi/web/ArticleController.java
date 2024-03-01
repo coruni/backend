@@ -141,8 +141,10 @@ public class ArticleController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
-                user_id = user.getUid();
+                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
+                    permission = true;
+                    user_id = user.getUid();
+                }
             }
             // 查询文章
             Article article = service.selectByKey(id);
@@ -357,9 +359,11 @@ public class ArticleController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor"))
+                if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
                     permission = true;
-                user_id = user.getUid();
+                    user_id = user.getUid();
+                }
+
             }
             Article query = new Article();
             if (params != null && !params.isEmpty()) {
@@ -469,7 +473,7 @@ public class ArticleController {
                     Integer isVip = 0;
                     if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
                     Integer isFollow = 0;
-                    if (user != null && !user.toString().isEmpty()) {
+                    if (user != null && !user.toString().isEmpty() && user_id != 0) {
                         // 获取关注
                         Fan fan = new Fan();
                         fan.setUid(user.getUid());
