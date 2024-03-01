@@ -259,12 +259,12 @@ public class ArticleController {
                 // 是否VIP
                 Integer isVip = info.getVip() > System.currentTimeMillis() / 1000 ? 1 : 0;
                 Integer isFollow = 0;
-                if (user != null && !user.toString().isEmpty()) {
+                if (user != null && !user.toString().isEmpty() && user_id != 0) {
                     // 获取关注
                     Fan fan = new Fan();
-                    fan.setUid(user.getUid());
+                    fan.setUid(user_id);
                     fan.setTouid(article.getAuthorId());
-                    if (fanService.total(fan) > 0) isFollow = 1;
+                    if (fanService.selectList(fan).size() > 0) isFollow = 1;
                 }
 
                 // 是否注销
@@ -311,8 +311,8 @@ public class ArticleController {
             if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0) {
                 data.put("opt", null);
                 data.put("isHide", 1);
-            }else{
-                data.put("isHide",0);
+            } else {
+                data.put("isHide", 0);
             }
 
             if (user != null && !user.toString().isEmpty()) {
