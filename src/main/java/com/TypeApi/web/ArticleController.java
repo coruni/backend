@@ -350,10 +350,12 @@ public class ArticleController {
             Boolean permission = false;
             String token = request.getHeader("Authorization");
             Users user = new Users();
+            Integer user_id= 0;
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
+                user_id = user.getUid();
             }
             Article query = new Article();
             if (params != null && !params.isEmpty()) {
@@ -403,9 +405,9 @@ public class ArticleController {
                     String type = matcher.group(1);
                     String content = matcher.group(2);
                     String replacement = "";
-                    if (type.equals("pay") && !isPaid && !user.getUid().equals(article.getAuthorId()) && !permission) {
+                    if (type.equals("pay") && !isPaid && !article.getAuthorId().equals(user_id) && !permission) {
                         replacement = "【付费查看：这是付费内容，付费后可查看】";
-                    } else if (type.equals("reply") && !isReply && user.getUid().equals(article.getAuthorId()) && !permission) {
+                    } else if (type.equals("reply") && !isReply && !article.getAuthorId().equals(user_id) && !permission) {
                         replacement = "【回复查看：这是回复内容，回复后可查看】";
                     } else {
                         replacement = content;  // 如果不需要替换，则保持原样
