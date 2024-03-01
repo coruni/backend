@@ -1081,12 +1081,12 @@ public class UsersController {
                 DecodedJWT verify = JWT.verify(token);
                 user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
             }
-            if (nickname != null && !nickname.isEmpty()) user.setScreenName(nickname);
-            if (avatar != null && !avatar.isEmpty()) user.setAvatar(avatar);
-            if (background != null && !background.isEmpty()) user.setUserBg(background);
-            if (sex != null && !sex.isEmpty()) user.setSex(sex);
-            if (introduce != null && !introduce.isEmpty()) user.setIntroduce(introduce);
-            if (address != null && !address.isEmpty()) user.setAddress(address);
+            user.setScreenName(nickname);
+            user.setAvatar(avatar);
+            user.setUserBg(background);
+            user.setSex(sex);
+            user.setIntroduce(introduce);
+            user.setAddress(address);
             if (mail != null && !mail.isEmpty()) {
                 if (!baseFull.isEmail(mail)) return Result.getResultJson(201, "邮箱格式错误", null);
                 Users query = new Users();

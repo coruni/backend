@@ -353,7 +353,7 @@ public class ArticleController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
+                if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
             }
             Article query = new Article();
             if (params != null && !params.isEmpty()) {
@@ -470,6 +470,8 @@ public class ArticleController {
                         fan.setTouid(article.getAuthorId());
                         if (fanService.total(fan) > 0) isFollow = 1;
                     }
+
+                    //
 
                     // 是否注销
                     if (info.getStatus().equals(0)) authorInfo.put("screenName", "用户已注销");
