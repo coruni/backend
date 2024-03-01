@@ -557,18 +557,19 @@ public class UsersController {
                             entity = userResponse.getEntity();
                             String userResult = EntityUtils.toString(entity);
                             EntityUtils.consume(entity);
+                            Map<String,Object>userInfo = JSONObject.parseObject(userResult,Map.class);
                             Userapi userapi = new Userapi();
                             // 获取到了openid查询数据库是否存在
-                            userapi.setOpenId(info.get("openid").toString());
+                            userapi.setOpenId(userInfo.get("openid").toString());
                             userapi.setAppLoginType(provider);
                             List<Userapi> userapiList = userapiService.selectList(userapi);
                             if (userapiList.size() == 0) {
                                 // 数据为0 为用户创建新的账号
                                 user.setStatus(1);
-                                user.setAvatar(info.get("figureurl").toString());
-                                user.setScreenName(info.get("nickname").toString());
+                                user.setAvatar(userInfo.get("headimgurl").toString());
+                                user.setScreenName(userInfo.get("nickname").toString());
                                 // 暂空 需要写入一个用户名
-                                user.setSex(info.get("gender").toString());
+                                user.setSex(userInfo.get("sex").toString());
                                 service.insert(user);
                                 userapi.setAppLoginType(provider);
                                 userapi.setOpenId(openid);
