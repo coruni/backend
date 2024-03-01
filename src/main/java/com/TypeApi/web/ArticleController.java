@@ -137,10 +137,12 @@ public class ArticleController {
             String token = request.getHeader("Authorization");
             Boolean permission = false;
             Users user = new Users();
+            Integer user_id = 0;
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
+                user_id = user.getUid();
             }
             // 查询文章
             Article article = service.selectByKey(id);
@@ -162,7 +164,7 @@ public class ArticleController {
             Userlog userlog = new Userlog();
             Integer isLike = 0;
             Integer isMark = 0;
-            Integer isHide = 1;
+            Integer isHide = 0;
             if (user != null && !user.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
@@ -301,10 +303,18 @@ public class ArticleController {
             data.put("tag", tagDataList);
             data.put("isLike", isLike);
             data.put("isMark", isMark);
-            data.put("hide", isHide);
             data.put("authorInfo", authorInfo);
             // 移除信息
             data.remove("passowrd");
+
+            // 判断是是否是隐藏内容
+            if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0) {
+                data.put("opt", null);
+                data.put("isHide", 1);
+            }else{
+                data.put("isHide",0);
+            }
+
             if (user != null && !user.toString().isEmpty()) {
                 // 开始写入访问次数至多两次
                 Integer endTime = baseFull.endTime();
@@ -318,13 +328,6 @@ public class ArticleController {
                     redisHelp.setRedis("views_" + user.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
                     usersService.update(user);
                 }
-            }
-
-            if(user!=null &&article.getAuthorId().equals(user.getUid()) || isPaid){
-                data.put("isHide",0);
-            }else{
-                data.put("opt",null);
-                data.put("isHide",1);
             }
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
@@ -350,11 +353,12 @@ public class ArticleController {
             Boolean permission = false;
             String token = request.getHeader("Authorization");
             Users user = new Users();
-            Integer user_id= 0;
+            Integer user_id = 0;
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
+                if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor"))
+                    permission = true;
                 user_id = user.getUid();
             }
             Article query = new Article();
@@ -526,6 +530,7 @@ public class ArticleController {
                 data.put("authorInfo", authorInfo);
                 // 移除信息
                 data.remove("passowrd");
+                data.remove("opt");
                 dataList.add(data);
             }
             // 返回信息
