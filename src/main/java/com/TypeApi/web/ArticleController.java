@@ -137,14 +137,14 @@ public class ArticleController {
             String token = request.getHeader("Authorization");
             Boolean permission = false;
             Users user = new Users();
-            Integer user_id = 0;
+            int user_id = 0;
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
+                if (user != null && (user.getGroup().equals("administrator") || user.getGroup().equals("editor"))) {
                     permission = true;
-                    user_id = user.getUid();
                 }
+                if (user != null) user_id = user.getUid();
             }
             // 查询文章
             Article article = service.selectByKey(id);
@@ -164,15 +164,15 @@ public class ArticleController {
             Boolean isPaid = false;
 
             Userlog userlog = new Userlog();
-            Integer isLike = 0;
-            Integer isMark = 0;
-            Integer isHide = 0;
+            int isLike = 0;
+            int isMark = 0;
+            int isHide = 0;
             if (user != null && !user.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
                 replyStatus.setCid(article.getCid());
                 replyStatus.setUid(user.getUid());
-                Integer rStatus = commentsService.total(replyStatus, null);
+                int rStatus = commentsService.total(replyStatus, null);
                 if (rStatus > 0) {
                     isReply = true;
                 }
@@ -181,7 +181,7 @@ public class ArticleController {
                 paylog.setPaytype("article");
                 paylog.setUid(user.getUid());
                 paylog.setCid(article.getCid());
-                Integer pStatus = paylogService.total(paylog);
+                int pStatus = paylogService.total(paylog);
                 if (pStatus > 0) {
                     isPaid = true;
                 }
@@ -309,8 +309,9 @@ public class ArticleController {
             // 移除信息
             data.remove("passowrd");
 
+            JSONObject object = JSONObject.parseObject(opt.getJSONArray("files").get(0).toString());
             // 判断是是否是隐藏内容
-            if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0) {
+            if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object.containsKey("link") && !permission) {
                 data.put("opt", null);
                 data.put("isHide", 1);
             } else {
@@ -355,14 +356,14 @@ public class ArticleController {
             Boolean permission = false;
             String token = request.getHeader("Authorization");
             Users user = new Users();
-            Integer user_id = 0;
+            int user_id = 0;
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
                     permission = true;
-                    user_id = user.getUid();
                 }
+                if (user != null) user_id = user.getUid();
 
             }
             Article query = new Article();
@@ -525,7 +526,6 @@ public class ArticleController {
                 if (article.getImages() != null && !article.getImages().isEmpty())
                     data.put("images", JSONArray.parseArray(article.getImages()));
                 else data.put("images", images);
-                data.put("opt", opt);
                 data.put("text", text);
                 data.put("category", cateMap);
                 data.put("tag", tagDataList);
