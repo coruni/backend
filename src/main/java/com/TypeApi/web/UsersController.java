@@ -557,7 +557,7 @@ public class UsersController {
                             entity = userResponse.getEntity();
                             String userResult = EntityUtils.toString(entity);
                             EntityUtils.consume(entity);
-                            Map<String,Object>userInfo = JSONObject.parseObject(userResult,Map.class);
+                            Map<String, Object> userInfo = JSONObject.parseObject(userResult, Map.class);
                             Userapi userapi = new Userapi();
                             // 获取到了openid查询数据库是否存在
                             userapi.setOpenId(userInfo.get("openid").toString());
@@ -1681,16 +1681,18 @@ public class UsersController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
             Inbox inbox = new Inbox();
             inbox.setUid(user.getUid());
             inbox.setIsread(0);
             inbox.setType("comment");
-            Integer comments = inboxService.total(inbox);
+            int comments = inboxService.total(inbox);
             inbox.setType("system");
-            Integer systems = inboxService.total(inbox);
+            int systems = inboxService.total(inbox);
             inbox.setType("finance");
-            Integer finances = inboxService.total(inbox);
+            int finances = inboxService.total(inbox);
 
             Map<String, Object> data = new HashMap<>();
             data.put("comments", comments);
