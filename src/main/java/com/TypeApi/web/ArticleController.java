@@ -166,7 +166,6 @@ public class ArticleController {
             Userlog userlog = new Userlog();
             int isLike = 0;
             int isMark = 0;
-            int isHide = 0;
             if (user != null && !user.toString().isEmpty()) {
                 // 获取评论状态
                 Comments replyStatus = new Comments();
@@ -205,9 +204,9 @@ public class ArticleController {
                 String type = matcher.group(1);
                 String content = matcher.group(2);
                 String replacement = "";
-                if (type.equals("pay") && !isPaid && user.getUid() != article.getAuthorId() && !permission) {
+                if (type.equals("pay") && !isPaid && !article.getAuthorId().equals(user_id) && !permission) {
                     replacement = "【付费查看：这是付费内容，付费后可查看】";
-                } else if (type.equals("reply") && !isReply && user.getUid() != article.getAuthorId() && !permission) {
+                } else if (type.equals("reply") && !isReply && !article.getAuthorId().equals(user_id) && !permission) {
                     replacement = "【回复查看：这是回复内容，回复后可查看】";
                 } else {
                     replacement = content;  // 如果不需要替换，则保持原样
@@ -481,8 +480,6 @@ public class ArticleController {
                         fan.setTouid(article.getAuthorId());
                         if (fanService.total(fan) > 0) isFollow = 1;
                     }
-
-                    //
 
                     // 是否注销
                     if (info.getStatus().equals(0)) authorInfo.put("screenName", "用户已注销");
@@ -1395,7 +1392,7 @@ public class ArticleController {
                 // likes 存入今天的数据 最多三次
                 Integer taskLike = redisHelp.getRedis("marks_" + user.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("marks_" + user.getName(), redisTemplate)) : 0;
                 if (taskLike < 3) {
-                    // 点赞送经验和积分
+                    // 收藏送经验和积分
                     user.setAssets(user.getAssets() + 2);
                     user.setExperience(user.getExperience() + 5);
                     redisHelp.delete("marks_" + user.getName(), redisTemplate);
