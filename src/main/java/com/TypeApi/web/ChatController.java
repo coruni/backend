@@ -218,8 +218,13 @@ public class ChatController {
             // 将信息返回
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(chatMsg), Map.class);
              // 使用webSocket 给目标用户发消息
-            Integer user_id = chat.getReceiver_id().equals(user.getUid())?chat.getSender_id():chat.getReceiver_id();
-            websocket.sendChatText(text,5);
+            try{
+                int user_id = chat.getReceiver_id().equals(user.getUid())?chat.getSender_id():chat.getReceiver_id();
+                websocket.sendChatText(text,5);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
             return Result.getResultJson(200, "发送成功", data);
 
         } catch (Exception e) {
