@@ -484,12 +484,20 @@ public class UsersController {
     }
 
 
+    /***
+     *
+     * @param provider
+     * @param openid
+     * @param access_token
+     * @param code
+     * @return
+     */
     @RequestMapping(value = "/OAuth")
     @ResponseBody
     public String OAuth(@RequestParam(value = "provider") String provider,
-                        @RequestParam(value = "openid") String openid,
-                        @RequestParam(value = "access_token") String access_token,
-                        @RequestParam(value = "code") String code) {
+                        @RequestParam(value = "openid", required = false) String openid,
+                        @RequestParam(value = "access_token", required = false) String access_token,
+                        @RequestParam(value = "code", required = false) String code) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             //定义一个变量存储获取到的第三方信息
@@ -497,46 +505,31 @@ public class UsersController {
             Users user = new Users();
             //先判定provider
             if (provider.equals("qq")) {
-                String url = String.format("https://graph.qq.com/user/get_user_info?access_token=%s&oauth_consumer_key=&s&openid=$s", access_token, apiconfig.getQqAppletsAppid(), openid);
-                CloseableHttpClient httpClient = HttpClients.createDefault();
-                HttpGet httpGet = new HttpGet(url);
-                CloseableHttpResponse response = httpClient.execute(httpGet);
-                try {
-                    HttpEntity entity = response.getEntity();
-                    String result = EntityUtils.toString(entity);
-                    EntityUtils.consume(entity);
-                    Map<String, Object> info = JSONObject.parseObject(result, Map.class);
-                    //  如果获取到ret状态不为0则返回错误信息
-                    if (!info.get("ret").equals(0)) {
-                        return Result.getResultJson(201, info.get("msg").toString(), info);
-                    }
-                    // 判断获取到的openid和传入的openid是否一致
-                    if (!info.get("openid").equals(openid)) return Result.getResultJson(202, "数据不匹配", null);
-                    // 查询数据库是否存在
-                    Userapi userapi = new Userapi();
-                    userapi.setOpenId(openid);
+                Map<String, Object> userInfo = getOauthResult(access_token, openid, code, provider, apiconfig);
+                if (userInfo.get("status").equals(0)) return Result.getResultJson(201, "数据不匹配", null);
+                // 提取数据
+                System.out.println(userInfo.get("info").toString());
+                Map<String, Object> info = JSONObject.parseObject(JSONObject.toJSONString(userInfo.get("info")), Map.class);
+                // 查询数据库是否存在
+                Userapi userapi = new Userapi();
+                userapi.setOpenId(openid);
+                userapi.setAppLoginType(provider);
+                List<Userapi> userapiList = userapiService.selectList(userapi);
+                if (userapiList.size() == 0) {
+                    // 数据为0 为用户创建新的账号
+                    user.setStatus(1);
+                    user.setAvatar(info.get("figureurl").toString());
+                    user.setScreenName(info.get("nickname").toString());
+                    user.setName(userInfo.get("openid").toString().substring(0, 8));
+                    user.setSex(info.get("gender").toString());
+                    service.insert(user);
                     userapi.setAppLoginType(provider);
-
-                    List<Userapi> userapiList = userapiService.selectList(userapi);
-                    if (userapiList.size() == 0) {
-                        // 数据为0 为用户创建新的账号
-                        user.setStatus(1);
-                        user.setAvatar(info.get("figureurl").toString());
-                        user.setScreenName(info.get("nickname").toString());
-                        // 暂空 需要写入一个用户名
-                        user.setSex(info.get("gender").toString());
-                        service.insert(user);
-                        userapi.setAppLoginType(provider);
-                        userapi.setOpenId(openid);
-                        userapi.setUid(user.getUid());
-                        userapiService.insert(userapi);
-                        user = service.selectByKey(user.getUid());
-
-                    } else {
-                        user = service.selectByKey(userapi.getUid());
-                    }
-                } finally {
-                    response.close();
+                    userapi.setOpenId(openid);
+                    userapi.setUid(user.getUid());
+                    userapiService.insert(userapi);
+                    user = service.selectByKey(user.getUid());
+                } else {
+                    user = service.selectByKey(userapiList.get(0).getUid());
                 }
             }
 
@@ -566,6 +559,7 @@ public class UsersController {
                             if (userapiList.size() == 0) {
                                 // 数据为0 为用户创建新的账号
                                 user.setStatus(1);
+                                user.setGroup("contributor");
                                 user.setAvatar(userInfo.get("headimgurl").toString());
                                 user.setScreenName(userInfo.get("nickname").toString());
                                 // 暂空 需要写入一个用户名
@@ -576,9 +570,9 @@ public class UsersController {
                                 userapi.setUid(user.getUid());
                                 userapiService.insert(userapi);
                                 user = service.selectByKey(user.getUid());
-
                             } else {
-                                user = service.selectByKey(userapi.getUid());
+                                user = service.selectByKey(userapiList.get(0).getUid());
+
                             }
                         } finally {
                             userResponse.close();
@@ -596,6 +590,10 @@ public class UsersController {
             token.put("sub ", "login");
             token.put("aud", user.getUid().toString());
             data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+
+            List level = baseFull.getLevel(user.getExperience(),dataprefix,apiconfigService,redisTemplate);
+            data.put("level",level.get(0));
+            data.put("nextExp",level.get(1));
             data.put("token", JWT.getToken(token));
             data.remove("password");
             if (user.getAddress() != null && !user.getAddress().isEmpty()) {
@@ -608,6 +606,59 @@ public class UsersController {
             return Result.getResultJson(400, "接口异常", null);
 
         }
+    }
+
+    private Map<String, Object> getOauthResult(String access_token, String openid, String code, String provider, Apiconfig apiconfig) {
+        Map<String, Object> data = new HashMap<>();
+        try {
+            if (provider.equals("qq")) {
+                String url = String.format("https://graph.qq.com/user/get_user_info?access_token=%s&oauth_consumer_key=%s&openid=%s", access_token, apiconfig.getQqAppletsAppid(), openid);
+                CloseableHttpClient httpClient = HttpClients.createDefault();
+                HttpGet httpGet = new HttpGet(url);
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                Map<String, Object> info = new HashMap<>();
+                try {
+                    HttpEntity entity = response.getEntity();
+                    String result = EntityUtils.toString(entity);
+                    EntityUtils.consume(entity);
+                    info = JSONObject.parseObject(result, Map.class);
+                    //  如果获取到ret状态不为0则返回错误信息
+                    if (!info.get("ret").equals(0)) {
+                        data.put("status", 0);
+                        data.put("info", info);
+                        return data;
+                    }
+                } finally {
+                    response.close();
+                }
+
+                // 再获取用户openid
+                url = String.format("https://graph.qq.com/oauth2.0/me?access_token=%s&fmt=json", access_token);
+                httpGet = new HttpGet(url);
+                CloseableHttpResponse openidRes = httpClient.execute(httpGet);
+
+                try {
+                    HttpEntity openidEntity = openidRes.getEntity();
+                    String openidResult = EntityUtils.toString(openidEntity);
+                    EntityUtils.consume(openidEntity);
+                    Map<String, Object> openidInfo = JSONObject.parseObject(openidResult, Map.class);
+                    if (!openidInfo.get("openid").equals(openid)) {
+                        data.put("status", 0);
+                        return data;
+                    }
+                    data.put("status", 1);
+                    data.put("info", info);
+                    data.put("openid", openidInfo.get("openid"));
+                } finally {
+                    if (openidRes != null) {
+                        openidRes.close();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return data;
     }
 
     /***

@@ -87,6 +87,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/user/userList")
                 .excludePathPatterns("/user/userData")
                 .excludePathPatterns("/user/RegSendCode")
+                .excludePathPatterns("/user/OAuth")
                 .excludePathPatterns("/exchange/list")
                 .excludePathPatterns("/article/info")
                 .excludePathPatterns("/article/articleList")
