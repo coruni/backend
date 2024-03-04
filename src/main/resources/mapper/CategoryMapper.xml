@@ -17,6 +17,7 @@
         <result column="opt" property="opt" />
         <result column="iswaterfall" property="iswaterfall" />
         <result column="isrecommend" property="isrecommend" />
+        <result column="isvip" property="isvip" />
         <result column="follows" property="follows" />
         <result column="permission" property="permission" />
     </resultMap>
@@ -34,6 +35,7 @@
         `opt`,
         `iswaterfall`,
         `isrecommend`,
+        `isvip`,
         `follows`,
         `permission`
     </sql>
@@ -71,6 +73,9 @@
             </if>
             <if test ='null != iswaterfall'>
                 `iswaterfall`,
+            </if>
+            <if test ='null != isvip'>
+                `isvip`,
             </if>
             <if test ='null != imgurl'>
                 `imgurl`,
@@ -112,6 +117,9 @@
             </if>
             <if test ='null != iswaterfall'>
                 #{iswaterfall},
+            </if>
+            <if test ='null != isvip'>
+                #{isvip},
             </if>
             <if test ='null != imgurl'>
                 #{imgurl},
@@ -159,6 +167,7 @@
             <if test ='opt != null'>`opt` = #{opt},</if>
             <if test ='iswaterfall != null'>`iswaterfall` = #{iswaterfall},</if>
             <if test ='isrecommend != null'>`isrecommend` = #{isrecommend},</if>
+            <if test ='isvip != null'>`isvip` = #{isvip},</if>
             <if test ='follows != null'>`follows` = #{follows},</if>
             <if test ='permission != null'>`permission` = #{permission}</if>
         </set>
@@ -231,6 +240,9 @@
             <if test ='null != isrecommend'>
                 and `isrecommend` = #{isrecommend}
             </if>
+            <if test ='null != isvip'>
+                and `isvip` = #{isvip}
+            </if>
             <if test ='null != follows'>
                 and `follows` = #{follows}
             </if>
@@ -278,6 +290,9 @@
             <if test ='null != category.isrecommend'>
                 and `isrecommend` = #{category.isrecommend}
             </if>
+            <if test ='null != category.isvip'>
+                and `isvip` = #{category.isvip}
+            </if>
             <if test ='null != category.permission'>
                 and `permission` = #{category.permission}
             </if>
@@ -321,6 +336,9 @@
             </if>
             <if test ='null != iswaterfall'>
                 and `iswaterfall` = #{iswaterfall}
+            </if>
+            <if test ='null != isvip'>
+                and `isvip` = #{isvip}
             </if>
             <if test ='null != isrecommend'>
                 and `isrecommend` = #{isrecommend}

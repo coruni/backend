@@ -164,15 +164,15 @@ public class CategoryController {
             opt = category.getOpt() != null && !category.toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
 
             // 查询是否关注
-            Integer isFollow = 0;
-            if(user!=null && !user.toString().isEmpty()){
+            int isFollow = 0;
+            if (user != null && !user.toString().isEmpty()) {
                 Userlog userlog = new Userlog();
                 userlog.setType("category");
                 userlog.setUid(user.getUid());
                 userlog.setNum(category.getMid());
                 // 查询是否存在记录
                 List<Userlog> userlogList = userlogService.selectList(userlog);
-                if(userlogList.size()>0) isFollow = 1;
+                if (userlogList.size() > 0) isFollow = 1;
             }
             data.put("opt", opt);
             data.put("isFollow", isFollow);
@@ -268,9 +268,22 @@ public class CategoryController {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
-            if (type.equals("recommend")) category.setIsrecommend(category.getIsrecommend() > 0 ? 0 : 1);
-            if (type.equals("waterfall")) category.setIswaterfall(category.getIswaterfall() > 0 ? 0 : 1);
-            if (type.equals("permission")) category.setPermission(category.getPermission() > 0 ? 0 : 1);
+            switch (type) {
+                case "recommend":
+                    category.setIsrecommend(category.getIsrecommend() > 0 ? 0 : 1);
+                    break;
+                case "waterfall":
+                    category.setIswaterfall(category.getIswaterfall() > 0 ? 0 : 1);
+                    break;
+                case "permission":
+                    category.setPermission(category.getPermission() > 0 ? 0 : 1);
+                    break;
+                case "vip":
+                    category.setIsvip(category.getIsvip() > 0 ? 0 : 1);
+                    break;
+                default:
+                    break;
+            }
             service.update(category);
             return Result.getResultJson(200, "操作成功", null);
         } catch (Exception e) {
@@ -317,7 +330,7 @@ public class CategoryController {
                 if (user == null || user.toString().isEmpty())
                     return Result.getResultJson(201, "用户不存在,请重新登录", null);
             }
-            System.out.println(user+"草");
+            System.out.println(user + "草");
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
             // 使用userlog 来存储关注分类

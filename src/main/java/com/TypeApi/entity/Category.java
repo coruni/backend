@@ -81,4 +81,9 @@ public class Category implements Serializable {
      * permission 权限 0 是全部能发 1 是管理员可发
      */
     private  Integer permission;
+
+    /***
+     * permission 权限 0 是全部能发 1 是管理员可发
+     */
+    private  Integer isvip;
 }

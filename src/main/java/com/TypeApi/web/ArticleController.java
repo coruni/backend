@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import net.dreamlu.mica.xss.core.XssCleanIgnore;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -223,6 +224,11 @@ public class ArticleController {
                 cateOpt = JSONObject.parseObject(category.getOpt().toString());
                 cateMap.put("opt", cateOpt);
             }
+
+            // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
+
+            Boolean showText = showText(user, article, category);
+            if (!showText &!permission) text = "";
             // 标签
             Relationships tagQuery = new Relationships();
             tagQuery.setCid(article.getCid());
@@ -239,7 +245,6 @@ public class ArticleController {
                     tagData.remove("opt");
                     tagDataList.add(tagData);
                 }
-
             }
 
             // 加入作者信息
@@ -305,6 +310,7 @@ public class ArticleController {
             data.put("isLike", isLike);
             data.put("isMark", isMark);
             data.put("authorInfo", authorInfo);
+            data.put("showText", showText);
             // 移除信息
             data.remove("passowrd");
 
@@ -338,6 +344,24 @@ public class ArticleController {
         }
     }
 
+    /***
+     * 判断是否是会员可见
+     * @param user
+     * @param article
+     * @return
+     */
+    private Boolean showText(Users user, Article article, Category category) {
+        if (category.getIsvip().equals(0)) return true;
+
+        if (user.getUid() != null && !user.getUid().equals(0)) {
+            if ((category.getIsvip().equals(1) && (user.getVip() > System.currentTimeMillis() / 1000)) || article.getAuthorId().equals(user.getUid())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     /***
      * 文章列表
@@ -363,7 +387,6 @@ public class ArticleController {
                     permission = true;
                 }
                 if (user != null) user_id = user.getUid();
-
             }
             Article query = new Article();
             if (params != null && !params.isEmpty()) {
@@ -371,6 +394,7 @@ public class ArticleController {
                 query.setStatus("publish");
             }
             if (permission) query.setStatus(null);
+
             PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random);
             List<Article> articleList = articlePage.getList();
             List dataList = new ArrayList<>();
@@ -390,7 +414,7 @@ public class ArticleController {
                     Comments replyStatus = new Comments();
                     replyStatus.setCid(article.getCid());
                     replyStatus.setUid(user.getUid());
-                    Integer rStatus = commentsService.total(replyStatus, null);
+                    int rStatus = commentsService.total(replyStatus, null);
                     if (rStatus > 0) {
                         isReply = true;
                     }
@@ -399,7 +423,7 @@ public class ArticleController {
                     paylog.setPaytype("article");
                     paylog.setUid(user.getUid());
                     paylog.setCid(article.getCid());
-                    Integer pStatus = paylogService.total(paylog);
+                    int pStatus = paylogService.total(paylog);
                     if (pStatus > 0) {
                         isPaid = true;
                     }
@@ -858,7 +882,7 @@ public class ArticleController {
      */
     @RequestMapping(value = "/action")
     @ResponseBody
-    public String action(@RequestParam(value = "id") Integer id,
+    public String action(@RequestParam(value = "id") int id,
                          @RequestParam(value = "type") String type,
                          HttpServletRequest request) {
         try {
@@ -879,6 +903,9 @@ public class ArticleController {
                 case "circleTop":
                     article.setIsCircleTop(article.getIsCircleTop() > 0 ? 0 : 1);
                     break;
+                case "publish":
+                    article.setSlug(article.getStatus().equals("waiting") ? "publish" : "waiting");
+                    break;
             }
             service.update(article);
             Map<String, Object> data = new HashMap<>();
@@ -896,7 +923,7 @@ public class ArticleController {
     @RequestMapping(value = "/buy")
     @ResponseBody
     public String buy(HttpServletRequest request,
-                      @RequestParam(value = "id") Integer id) {
+                      @RequestParam(value = "id") int id) {
         try {
             String token = request.getHeader("Authorization");
             Users user = new Users();
@@ -984,9 +1011,9 @@ public class ArticleController {
 
     @RequestMapping(value = "/rewardList")
     @ResponseBody
-    public String rewardList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                             @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
-                             @RequestParam(value = "id") Integer id) {
+    public String rewardList(@RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                             @RequestParam(value = "limit", required = false, defaultValue = "10") int limit,
+                             @RequestParam(value = "id") int id) {
         try {
             // 查询文章是否存在
             Article article = service.selectByKey(id);
@@ -1024,8 +1051,8 @@ public class ArticleController {
 
     @RequestMapping(value = "/reward")
     @ResponseBody
-    public String reward(@RequestParam(value = "id") Integer id,
-                         @RequestParam(value = "num") Integer num,
+    public String reward(@RequestParam(value = "id") int id,
+                         @RequestParam(value = "num") int num,
                          HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
