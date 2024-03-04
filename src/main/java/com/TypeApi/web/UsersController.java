@@ -518,7 +518,7 @@ public class UsersController {
                 if (userapiList.size() == 0) {
                     // 数据为0 为用户创建新的账号
                     user.setStatus(1);
-                    user.setAvatar(info.get("figureurl").toString());
+                    user.setAvatar(info.get("figureurl_qq_2").toString());
                     user.setScreenName(info.get("nickname").toString());
                     user.setName(userInfo.get("openid").toString().substring(0, 8));
                     user.setSex(info.get("gender").toString());
