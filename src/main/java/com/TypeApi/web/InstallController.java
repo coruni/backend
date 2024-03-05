@@ -944,9 +944,9 @@ public class InstallController {
         }
 
         //查询卡密是否存在type字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_payKey' and column_name = 'type';", Integer.class);
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_paykey' and column_name = 'type';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_payKey ADD `type` varchar(255) DEFAULT NULL COMMENT '类型'");
+            jdbcTemplate.execute("alter table " + prefix + "_paykey ADD `type` varchar(255) DEFAULT 'point' COMMENT '类型'");
             text += "卡密模块，字段type添加完成。";
         } else {
             text += "卡密模块，字段type已经存在，无需添加。";
