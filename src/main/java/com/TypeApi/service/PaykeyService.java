@@ -41,6 +41,11 @@ public interface PaykeyService {
      **/
     Paykey selectByKey(Object key);
 
+    /***
+     * [数值查询]
+     */
+    Paykey selectByCard(Object card);
+
     /**
      * [条件查询]
      **/

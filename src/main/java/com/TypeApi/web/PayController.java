@@ -572,6 +572,12 @@ public class PayController {
         }
     }
 
+    private Boolean permission(Users user) {
+        if (user.getUid() == null || user.getUid().equals(0)) return false;
+        if (user.getGroup().equals("editor") || user.getGroup().equals("administrator")) return true;
+        return false;
+    }
+
     @RequestMapping(value = "/cardList")
     @ResponseBody
     public String cardList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
@@ -581,18 +587,18 @@ public class PayController {
                            HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
+            Boolean permission = false;
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user == null || user.toString().isEmpty())
                     return Result.getResultJson(201, "用户不存在，请重新登录", null);
-                if (!user.getGroup().equals("administrator") && !user.getGroup().equals("editor"))
-                    return Result.getResultJson(201, "无权限", null);
+                permission = permission(user);
+                if (!permission) return Result.getResultJson(201, "无权限", null);
             }
 
             // 验证通过开始查询列表
             Paykey paykey = new Paykey();
-            paykey.setStatus(status);
             PageList<Paykey> paykeyPageList = paykeyService.selectPage(paykey, page, limit, null);
             List<Paykey> paykeyList = paykeyPageList.getList();
 
@@ -613,15 +619,15 @@ public class PayController {
                              HttpServletRequest request,
                              HttpServletResponse response) {
         try {
+            Boolean permission = false;
             String token = request.getHeader("Authorization");
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user == null || user.toString().isEmpty())
                     return Result.getResultJson(201, "用户不存在，请重新登录", null);
-                if (!user.getGroup().equals("administrator") && !user.getGroup().equals("editor")) {
-                    return Result.getResultJson(201, "无权限", null);
-                }
+                permission = permission(user);
+                if (!permission) return Result.getResultJson(201, "无权限", null);
             }
             String[][] data = {
                     {"ID", "卡密", "数值", "类型", "状态", "创建时间", "使用uid"}
@@ -670,6 +676,33 @@ public class PayController {
         }
     }
 
+    @RequestMapping(value = "/delete")
+    @ResponseBody
+    public String delete(@RequestParam(value = "id") int id,
+                         HttpServletRequest request) {
+        try {
+            Boolean permission = false;
+            String token = request.getHeader("Authorization");
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
+                permission = permission(user);
+                if (!permission) return Result.getResultJson(201, "无权限", null);
+            }
+
+            Paykey paykey = paykeyService.selectByKey(id);
+            if (paykey.getId() == null) return Result.getResultJson(201, "卡密不存在", null);
+
+            paykeyService.delete(paykey.getId());
+            return Result.getResultJson(200, "删除成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
     /**
      * 卡密充值
      **/
@@ -686,9 +719,9 @@ public class PayController {
                 if (user == null || user.toString().isEmpty())
                     return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
-            //攻击拦截结束
-            Paykey paykey = paykeyService.selectByKey(card);
-            if (paykey == null) return Result.getResultJson(201, "卡密不存在", null);
+
+            Paykey paykey = paykeyService.selectByCard(card);
+            if (paykey.getValue() == null) return Result.getResultJson(201, "卡密不存在", null);
             Integer pirce = paykey.getPrice();
             if (!paykey.getStatus().equals(0)) {
                 return Result.getResultJson(201, "卡密已失效", null);
@@ -704,7 +737,7 @@ public class PayController {
                 Boolean isVip = user.getVip() > timeStamp;
                 if (isVip) user.setVip(user.getVip() + dayTime);
                 else user.setVip((int) (timeStamp + dayTime));
-
+                System.out.println(dayTime+"_"+timeStamp);
                 // 给用户发消息
                 Inbox inbox = new Inbox();
                 inbox.setCreated((int) timeStamp);

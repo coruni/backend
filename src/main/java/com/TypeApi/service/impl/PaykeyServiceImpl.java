@@ -52,6 +52,11 @@ public class PaykeyServiceImpl implements PaykeyService {
 	}
 
 	@Override
+	public Paykey selectByCard(Object card) {
+		return dao.selectByCard(card);
+	}
+
+	@Override
 	public List<Paykey> selectList(Paykey paykey) {
 		return dao.selectList(paykey);
 	}

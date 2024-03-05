@@ -118,11 +118,18 @@
         </foreach>
     </delete>
 
-    <!-- 根据value查询 -->
+    <!-- 根据card查询 -->
+    <select id="selectByCard" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_paykey
+        WHERE `value` = #{card}
+    </select>
+
+    <!-- 根据id查询 -->
     <select id="selectByKey" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_paykey
-        WHERE `value` = #{key}
+        WHERE `id` = #{key}
     </select>
 
     <!-- 条件查询 -->
