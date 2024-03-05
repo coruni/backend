@@ -228,7 +228,7 @@ public class ArticleController {
             // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
 
             Boolean showText = showText(user, article, category);
-            if (!showText &!permission) text = "";
+            if (!showText &&!permission) text = "";
             // 标签
             Relationships tagQuery = new Relationships();
             tagQuery.setCid(article.getCid());
