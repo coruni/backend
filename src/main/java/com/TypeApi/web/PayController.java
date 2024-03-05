@@ -1,10 +1,7 @@
 package com.TypeApi.web;
 
 import com.TypeApi.common.*;
-import com.TypeApi.entity.Apiconfig;
-import com.TypeApi.entity.Paykey;
-import com.TypeApi.entity.Paylog;
-import com.TypeApi.entity.Users;
+import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -61,6 +58,9 @@ public class PayController {
 
     @Autowired
     private PaykeyService paykeyService;
+
+    @Autowired
+    private InboxService inboxService;
 
 
     @Autowired
@@ -534,8 +534,9 @@ public class PayController {
      **/
     @RequestMapping(value = "/madePaycard")
     @ResponseBody
-    public String madePaycard(@RequestParam(value = "num") Integer num,
-                              @RequestParam(value = "price") Integer price,
+    public String madePaycard(@RequestParam(value = "num") int num,
+                              @RequestParam(value = "price") int price,
+                              @RequestParam(value = "type") String type,
                               HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -554,6 +555,7 @@ public class PayController {
                 Paykey paykey = new Paykey();
                 paykey.setStatus(0);
                 paykey.setPrice(price);
+                paykey.setType(type);
                 paykey.setCreated(Math.toIntExact(timeStamp));
                 paykey.setValue(RandomStringUtils.random(18, true, true));
                 paykeyService.insert(paykey);
@@ -622,7 +624,7 @@ public class PayController {
                 }
             }
             String[][] data = {
-                    {"ID", "卡密", "积分", "状态", "创建时间", "使用uid"}
+                    {"ID", "卡密", "数值", "类型", "状态", "创建时间", "使用uid"}
                     // 可以根据需要添加更多数据行
             };
 
@@ -632,7 +634,7 @@ public class PayController {
             try (Workbook workbook = new XSSFWorkbook()) {
                 Sheet sheet = workbook.createSheet("Card Data");
 
-                String[] header = {"ID", "卡密", "积分", "状态", "创建时间", "使用uid"};
+                String[] header = {"ID", "卡密", "数值", "类型", "状态", "创建时间", "使用uid"};
 
                 // 写入表头
                 Row headerRow = sheet.createRow(0);
@@ -647,9 +649,10 @@ public class PayController {
                     row.createCell(0).setCellValue(paykeyData.getId());
                     row.createCell(1).setCellValue(paykeyData.getValue());
                     row.createCell(2).setCellValue(paykeyData.getPrice());
-                    row.createCell(3).setCellValue(paykeyData.getStatus() > 0 ? "已使用" : "未使用");
-                    row.createCell(4).setCellValue(paykeyData.getCreated());
-                    row.createCell(5).setCellValue(paykeyData.getUid());
+                    row.createCell(3).setCellValue(paykeyData.getType());
+                    row.createCell(4).setCellValue(paykeyData.getStatus() > 0 ? "已使用" : "未使用");
+                    row.createCell(5).setCellValue(paykeyData.getCreated());
+                    row.createCell(6).setCellValue(paykeyData.getUid());
                 }
 
                 response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -683,7 +686,6 @@ public class PayController {
                 if (user == null || user.toString().isEmpty())
                     return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
-
             //攻击拦截结束
             Paykey paykey = paykeyService.selectByKey(card);
             if (paykey == null) return Result.getResultJson(201, "卡密不存在", null);
@@ -696,22 +698,39 @@ public class PayController {
             paykey.setStatus(1);
             paykey.setUid(user.getUid());
             paykeyService.update(paykey);
+            long timeStamp = System.currentTimeMillis() / 1000;
+            if (paykey.getType().equals("vip")) {
+                int dayTime = paykey.getPrice() * 86400;
+                Boolean isVip = user.getVip() > timeStamp;
+                if (isVip) user.setVip(user.getVip() + dayTime);
+                else user.setVip((int) (timeStamp + dayTime));
 
-            //生成资产日志
-            Long date = System.currentTimeMillis();
-            String curTime = String.valueOf(date).substring(0, 10);
-            Paylog paylog = new Paylog();
-            paylog.setStatus(1);
-            paylog.setCreated(Integer.parseInt(curTime));
-            paylog.setUid(user.getUid());
-            paylog.setOutTradeNo(curTime + "tokenPay");
-            paylog.setTotalAmount(pirce.toString());
-            paylog.setPaytype("tokenPay");
-            paylog.setSubject("卡密充值");
-            paylogService.insert(paylog);
+                // 给用户发消息
+                Inbox inbox = new Inbox();
+                inbox.setCreated((int) timeStamp);
+                inbox.setTouid(user.getUid());
+                inbox.setType("system");
+                inbox.setValue(paykey.getPrice());
+                inbox.setText("使用卡密充值会员" + paykey.getPrice() + "天");
+                inboxService.insert(inbox);
+            }
+            if (paykey.getType().equals("point")) {
+                //生成资产日志
+                Long date = System.currentTimeMillis();
+                String curTime = String.valueOf(date).substring(0, 10);
+                Paylog paylog = new Paylog();
+                paylog.setStatus(1);
+                paylog.setCreated(Integer.parseInt(curTime));
+                paylog.setUid(user.getUid());
+                paylog.setOutTradeNo(curTime + "tokenPay");
+                paylog.setTotalAmount(pirce.toString());
+                paylog.setPaytype("tokenPay");
+                paylog.setSubject("卡密充值");
+                paylogService.insert(paylog);
+                //修改用户账户
+                user.setAssets((user.getAssets() > 0 ? user.getAssets() : 0) + paykey.getPrice());
+            }
 
-            //修改用户账户
-            user.setAssets((user.getAssets() > 0 ? user.getAssets() : 0) + paykey.getPrice());
             usersService.update(user);
 
             return Result.getResultJson(200, "充值成功", null);

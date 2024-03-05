@@ -41,4 +41,10 @@ public class Paykey implements Serializable {
      * uid  使用用户
      */
     private Integer uid;
+
+    /***
+     * type 充值类型
+     */
+    private String type;
+
 }

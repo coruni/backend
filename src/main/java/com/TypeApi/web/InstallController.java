@@ -931,7 +931,8 @@ public class InstallController {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_paykey` (" +
                     "  `id` int(11) NOT NULL AUTO_INCREMENT," +
                     "  `value` varchar(255) DEFAULT '' COMMENT '密钥'," +
-                    "  `price` int(11) DEFAULT '0' COMMENT '等值积分'," +
+                    "  `price` int(11) DEFAULT '0' COMMENT '数值'," +
+                    "  `type` varchar(255) DEFAULT 'point' COMMENT '类型'," +
                     "  `status` int(2) DEFAULT '0' COMMENT '0未使用，1已使用'," +
                     "  `created` int(10) DEFAULT '0' COMMENT '创建时间'," +
                     "  `uid` int(11) DEFAULT '-1' COMMENT '使用用户'," +
@@ -941,6 +942,16 @@ public class InstallController {
         } else {
             text += "卡密充值模块已经存在，无需添加。";
         }
+
+        //查询卡密是否存在type字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_payKey' and column_name = 'type';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_payKey ADD `type` varchar(255) DEFAULT NULL COMMENT '类型'");
+            text += "卡密模块，字段type添加完成。";
+        } else {
+            text += "卡密模块，字段type已经存在，无需添加。";
+        }
+
         try {
             Thread.sleep(500);
         } catch (InterruptedException ie) {

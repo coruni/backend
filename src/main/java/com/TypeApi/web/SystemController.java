@@ -328,11 +328,11 @@ public class SystemController {
             // 查找id是否存在
             Homepage homepage = homepageService.selectByKey(id);
             if (homepage == null || homepage.toString().isEmpty()) return Result.getResultJson(201, "数据不存在", null);
+            homepage.setId(id);
             homepage.setPage(page);
             homepage.setImage(image);
             homepage.setEnable(enable);
             homepage.setType(type);
-
             homepageService.update(homepage);
             return Result.getResultJson(200, "修改成功", null);
 
