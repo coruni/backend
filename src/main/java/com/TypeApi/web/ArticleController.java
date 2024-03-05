@@ -593,7 +593,7 @@ public class ArticleController {
         try {
             String token = request.getHeader("Authorization");
             Boolean permission = false;
-            Integer uid = null;
+            int user_id = 0;
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             Users user = new Users();
             if (token != null && !token.isEmpty()) {
@@ -601,7 +601,7 @@ public class ArticleController {
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user == null || user.toString().isEmpty())
                     return Result.getResultJson(201, "用户不存在，请重新登录", null);
-                uid = user.getUid();
+                user_id = user.getUid();
                 if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
                     permission = true;
                 }
@@ -634,7 +634,7 @@ public class ArticleController {
             // 写入文章信息
             Article article = new Article();
             article.setStatus("publish");
-            article.setAuthorId(uid);
+            article.setAuthorId(user_id);
             article.setText(text);
             article.setTitle(title);
             article.setMid(category);
@@ -684,12 +684,12 @@ public class ArticleController {
                     relationshipsService.insert(related);
                 }
             }
-            if (permission) {
+            if (article.getStatus().equals("publish")) {
                 //如果能直接发布就加经验
                 postAddExp(user);
             }
             metasService.update(_category);
-            return Result.getResultJson(200, permission ? "发布成功" : "发布成功，请等待审核", null);
+            return Result.getResultJson(200, article.getStatus().equals("publish") ? "发布成功" : "发布成功，请等待审核", null);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
@@ -904,7 +904,7 @@ public class ArticleController {
                     article.setIsCircleTop(article.getIsCircleTop() > 0 ? 0 : 1);
                     break;
                 case "publish":
-                    article.setSlug(article.getStatus().equals("waiting") ? "publish" : "waiting");
+                    article.setStatus(article.getStatus().equals("waiting") ? "publish" : "waiting");
                     break;
             }
             service.update(article);

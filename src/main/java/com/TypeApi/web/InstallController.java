@@ -119,18 +119,20 @@ public class InstallController {
                     "  `password` varchar(64) DEFAULT NULL," +
                     "  `mail` varchar(200) DEFAULT NULL," +
                     "  `sex` varchar(255)," +
+                    "  `userBg` longtext," +
+                    "  `vip` int(10) DEFAULT 0," +
                     "  `medal` longtext," +
                     "  `head_pictrue` longtext," +
                     "  `url` varchar(200) DEFAULT NULL," +
                     "  `screenName` varchar(32) DEFAULT NULL," +
-                    "  `created` int(10) unsigned DEFAULT 0," +
-                    "  `activated` int(10) unsigned DEFAULT 0," +
-                    "  `logged` int(10) unsigned DEFAULT 0," +
                     "  `status` INT NOT NULL DEFAULT 1 ,"+
                     "  `group` varchar(16) DEFAULT 'visitor'," +
                     "  `authCode` varchar(64) DEFAULT NULL," +
                     "  `rank` longtext NULL," +
                     "  `opt` longtext," +
+                    "  `logged` int(10) unsigned DEFAULT 0," +
+                    "  `activated` int(10) unsigned DEFAULT 0," +
+                    "  `created` int(10) unsigned DEFAULT 0," +
                     "  PRIMARY KEY (`uid`)," +
                     "  UNIQUE KEY `name` (`name`)," +
                     "  UNIQUE KEY `mail` (`mail`)" +
