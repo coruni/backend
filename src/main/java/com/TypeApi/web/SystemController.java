@@ -318,6 +318,7 @@ public class SystemController {
     @RequestMapping(value = "/appHomepageUpdate")
     @ResponseBody
     public String appHomepageUpdate(@RequestParam(value = "id") Integer id,
+                                    @RequestParam(value = "name") String name,
                                     @RequestParam(value = "page") String page,
                                     @RequestParam(value = "image") String image,
                                     @RequestParam(value = "enable") Integer enable,
@@ -328,8 +329,9 @@ public class SystemController {
             // 查找id是否存在
             Homepage homepage = homepageService.selectByKey(id);
             if (homepage == null || homepage.toString().isEmpty()) return Result.getResultJson(201, "数据不存在", null);
-            homepage.setId(id);
+            System.out.println(homepage);
             homepage.setPage(page);
+            homepage.setName(name);
             homepage.setImage(image);
             homepage.setEnable(enable);
             homepage.setType(type);
