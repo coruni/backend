@@ -55,9 +55,6 @@ public class ArticleController {
     private PaylogService paylogService;
 
     @Autowired
-    private FieldsService fieldsService;
-
-    @Autowired
     private RelationshipsService relationshipsService;
 
     @Autowired

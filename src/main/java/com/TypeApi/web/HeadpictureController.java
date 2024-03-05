@@ -63,7 +63,9 @@ public class HeadpictureController {
 
     @RequestMapping(value = "/add")
     @ResponseBody
-    public String headAdd(@RequestParam(value = "link") String link, @RequestParam(value = "name", required = false) String name, HttpServletRequest request) {
+    public String headAdd(@RequestParam(value = "link") String link,
+                          @RequestParam(value = "name", required = false) String name,
+                          HttpServletRequest request) {
 
         try {
             String token = request.getHeader("Authorization");
