@@ -6,9 +6,11 @@ import com.TypeApi.common.RedisHelp;
 import com.TypeApi.common.ResultAll;
 import com.TypeApi.entity.Apiconfig;
 import com.TypeApi.entity.App;
+import com.TypeApi.entity.Category;
 import com.TypeApi.entity.Users;
 import com.TypeApi.service.ApiconfigService;
 import com.TypeApi.service.AppService;
+import com.TypeApi.service.CategoryService;
 import com.TypeApi.service.UsersService;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -44,6 +46,9 @@ public class InstallController {
 
     @Autowired
     private ApiconfigService apiconfigService;
+
+    @Autowired
+    private CategoryService categoryService;
 
     @Autowired
     private AppService appService;
@@ -650,6 +655,15 @@ public class InstallController {
             user.setScreenName("管理员");
             user.setPassword(phpass.HashPassword("123456"));
             usersService.insert(user);
+
+            // 插入一个默认分类
+            Category category = new Category();
+            category.setPermission(0);
+            category.setIsrecommend(1);
+            category.setName("默认分类");
+            category.setDescription("初始默认分类");
+            categoryService.insert(category);
+
 
             // 将apiconfig缓存到redis中
             try {
