@@ -225,7 +225,7 @@ public class ArticleController {
             // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
 
             Boolean showText = showText(user, article, category);
-            if (!showText &&!permission) text = "";
+            if (!showText && !permission) text = "";
             // 标签
             Relationships tagQuery = new Relationships();
             tagQuery.setCid(article.getCid());
@@ -310,8 +310,7 @@ public class ArticleController {
             data.put("showText", showText);
             // 移除信息
             data.remove("passowrd");
-
-            JSONObject object = JSONObject.parseObject(opt.getJSONArray("files").get(0).toString());
+            JSONObject object = JSONObject.parseObject(opt.getJSONArray("files") != null ? opt.getJSONArray("files").get(0).toString() : null);
             // 判断是是否是隐藏内容
             if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object.containsKey("link") && !permission) {
                 data.put("opt", null);
