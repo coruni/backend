@@ -662,8 +662,7 @@ public class ArticleController {
             }
             tempNum++;
             if (tempNum < 3) {
-                user.setExperience(user.getExperience() + apiconfig.getPostExp());
-                usersService.update(user);
+                postAddExp(user);
             }
 
             LocalDateTime endOfToday = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
@@ -672,7 +671,7 @@ public class ArticleController {
             redisHelp.setRedis(redisKey, String.valueOf(tempNum), (int) secondsUntilEndOfDay, redisTemplate);
 
             // 写入Tag和分类
-            Integer articleId = service.insert(article);
+            service.insert(article);
             _category.setCount(_category.getCount() + 1);
             Relationships related = new Relationships();
             related.setCid(article.getCid());
@@ -702,7 +701,7 @@ public class ArticleController {
 
     private void postAddExp(Users user) {
         Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-        Integer exp = user.getExperience() + apiconfig.getPostExp();
+        user.setExperience(user.getExperience() != null ? user.getExperience() + apiconfig.getPostExp() : 0 + apiconfig.getPostExp());
         usersService.update(user);
         Userlog log = new Userlog();
         log.setType("postExp");
