@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.aliyuncs.http.HttpRequest;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,8 +35,6 @@ import java.util.Map;
 public class SystemController {
 
     ResultAll Result = new ResultAll();
-    EditFile editFile = new EditFile();
-    HttpClient HttpClient = new HttpClient();
     RedisHelp redisHelp = new RedisHelp();
 
 
@@ -67,129 +66,25 @@ public class SystemController {
 
     @Value("${web.prefix}")
     private String dataprefix;
-    /**
-     * 密钥配置
-     */
-    private String webinfoKey;
-
-
-    /**
-     * 缓存配置
-     */
-    private String usertime;
-    private String contentCache;
-    private String contentInfoCache;
-    private String CommentCache;
-    private String userCache;
-    /**
-     * 邮箱配置
-     */
-    private String mailHost;
-    private String mailUsername;
-    private String mailPassword;
-    /**
-     * Mysql配置
-     */
-    private String dataUrl;
-    private String dataUsername;
-    private String dataPassword;
-    private String dataPrefix;
-
-
-    /***
-     * 缓存配置
-     */
-    @RequestMapping(value = "/setupCache")
-    @ResponseBody
-    public String setupCache(@RequestParam(value = "webkey", required = false) String webkey, @RequestParam(value = "params", required = false) String params) {
-        if (webkey.length() < 1) {
-            return Result.getResultJson(0, "请输入正确的访问key", null);
-        }
-        if (!webkey.equals(this.key)) {
-            return Result.getResultJson(0, "请输入正确的访问key", null);
-        }
-        Map jsonToMap = new HashMap();
-        try {
-            //读取参数，开始写入
-            if (StringUtils.isNotBlank(params)) {
-                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-                //新的配置
-
-            }
-            String new_usertime = "";
-            String new_contentCache = "";
-            String new_contentInfoCache = "";
-            String new_CommentCache = "";
-            String new_userCache = "";
-
-            String usertime = "webinfo.usertime=";
-            String contentCache = "webinfo.contentCache=";
-            String contentInfoCache = "webinfo.contentInfoCache=";
-            String CommentCache = "webinfo.CommentCache=";
-            String userCache = "webinfo.userCache=";
-            //老的配置
-            String old_usertime = usertime + this.usertime;
-            String old_contentCache = contentCache + this.contentCache;
-            String old_contentInfoCache = contentInfoCache + this.contentInfoCache;
-            String old_CommentCache = CommentCache + this.CommentCache;
-            String old_userCache = userCache + this.userCache;
-            //新的配置
-
-            if (jsonToMap.get("usertime") != null) {
-                new_usertime = usertime + jsonToMap.get("usertime").toString();
-            } else {
-                new_usertime = usertime;
-            }
-            editFile.replacTextContent(old_usertime, new_usertime);
-            if (jsonToMap.get("contentCache") != null) {
-                new_contentCache = contentCache + jsonToMap.get("contentCache").toString();
-            } else {
-                new_contentCache = contentCache;
-            }
-            editFile.replacTextContent(old_contentCache, new_contentCache);
-            if (jsonToMap.get("contentInfoCache") != null) {
-                new_contentInfoCache = contentInfoCache + jsonToMap.get("contentInfoCache").toString();
-            } else {
-                new_contentInfoCache = contentInfoCache;
-            }
-            editFile.replacTextContent(old_contentInfoCache, new_contentInfoCache);
-            if (jsonToMap.get("CommentCache") != null) {
-                new_CommentCache = CommentCache + jsonToMap.get("CommentCache").toString();
-            } else {
-                new_CommentCache = CommentCache;
-            }
-            editFile.replacTextContent(old_CommentCache, new_CommentCache);
-
-            if (jsonToMap.get("userCache") != null) {
-                new_userCache = userCache + jsonToMap.get("userCache").toString();
-            } else {
-                new_userCache = userCache;
-            }
-            editFile.replacTextContent(old_userCache, new_userCache);
-            return Result.getResultJson(1, "修改成功，手动重启后生效", null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.getResultJson(1, "修改失败，请确认参数是否正确", null);
-        }
-    }
-
 
     /***
      * 获取数据库中的配置
      */
     @RequestMapping(value = "/getApiConfig")
     @ResponseBody
-    public String getApiConfig(@RequestParam(value = "webkey", required = false) String webkey) {
-        if (webkey.length() < 1) {
-            return Result.getResultJson(0, "请输入正确的访问key", null);
+    public String getApiConfig(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Boolean permission = permission(token);
+            if (!permission) return Result.getResultJson(201, "无权限", null);
+            Apiconfig apiconfig = apiconfigService.selectByKey(1);
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
+            data.remove("levelExp");
+            return Result.getResultJson(200, "获取成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
-        if (!webkey.equals(this.key)) {
-            return Result.getResultJson(0, "请输入正确的访问key", null);
-        }
-        Apiconfig apiconfig = apiconfigService.selectByKey(1);
-        Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
-        data.remove("levelExp");
-        return Result.getResultJson(200, "获取成功", data);
     }
 
     /***
@@ -197,57 +92,28 @@ public class SystemController {
      */
     @RequestMapping(value = "/apiConfigUpdate")
     @ResponseBody
-    public String apiConfigUpdate(@RequestParam(value = "params", required = false) String params, @RequestParam(value = "webkey", required = false) String webkey) {
-        Apiconfig update = null;
-        if (webkey.isEmpty()) {
-            return Result.getResultJson(0, "请输入正确的访问key", null);
-        }
-        if (!webkey.equals(this.key)) {
-            return Result.getResultJson(0, "请输入正确的访问key", null);
-        }
-        if (StringUtils.isNotBlank(params)) {
-            JSONObject object = JSON.parseObject(params);
-            update = object.toJavaObject(Apiconfig.class);
-        }
-        update.setId(1);
-        int rows = apiconfigService.update(update);
-        //更新Redis缓存
-        Apiconfig apiconfig = apiconfigService.selectByKey(1);
-        Map configJson = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
-        redisHelp.delete(dataprefix + "_" + "config", redisTemplate);
-        redisHelp.setKey(dataprefix + "_" + "config", configJson, 6000, redisTemplate);
-        JSONObject response = new JSONObject();
-        response.put("code", rows);
-        response.put("msg", rows > 0 ? "修改成功，当前配置已生效！" : "修改失败");
-        return response.toString();
-    }
-
-
-    /***
-     * 初始化APP
-     */
-    @RequestMapping(value = "/initApp")
-    @ResponseBody
-    public String initApp(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey) {
-
+    public String apiConfigUpdate(@RequestParam(value = "params", required = false) String params,
+                                  HttpServletRequest request) {
         try {
-            if (!webkey.equals(this.key)) {
-                return Result.getResultJson(201, "Key错误", null);
+            Apiconfig update = new Apiconfig();
+            Boolean permission = permission(request.getHeader("Authorization"));
+            if (!permission) return Result.getResultJson(201, "无权限", null);
+            if (StringUtils.isNotBlank(params)) {
+                JSONObject object = JSON.parseObject(params);
+                update = object.toJavaObject(Apiconfig.class);
             }
-            App app = new App();
-            Integer total = appService.total(app);
-            if (total < 1) {
-                app.setName("应用名称");
-                app.setCurrencyName("积分");
-                appService.insert(app);
-            } else {
-                return Result.getResultJson(201, "无需初始化", null);
-            }
-            return Result.getResultJson(200, "已初始化完成", null);
+            update.setId(1);
+            int rows = apiconfigService.update(update);
+            //更新Redis缓存
+            Apiconfig apiconfig = apiconfigService.selectByKey(1);
+            Map configJson = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
+            redisHelp.delete(dataprefix + "_" + "config", redisTemplate);
+            redisHelp.setKey(dataprefix + "_" + "config", configJson, 6000, redisTemplate);
 
+            return Result.getResultJson(200, "修改完成", null);
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(400, "接口错误", null);
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
 
@@ -256,31 +122,23 @@ public class SystemController {
      */
     @RequestMapping(value = "/update")
     @ResponseBody
-    public String updateApp(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey,
-                            @RequestParam(value = "params", required = false) String params) {
-
-        App update = null;
-        if (!webkey.equals(this.key)) {
-            return Result.getResultJson(201, "Key错误", null);
-        }
+    public String updateApp(@RequestParam(value = "params", required = false) String params,
+                            HttpServletRequest request) {
         try {
+            Boolean permission = permission(request.getHeader("Authorization"));
+            if (!permission) return Result.getResultJson(201, "无权限", null);
+            App update = new App();
             if (StringUtils.isNotBlank(params)) {
                 JSONObject object = JSON.parseObject(params);
                 update = object.toJavaObject(App.class);
                 update.setId(1);
             }
-            int rows = appService.update(update);
+            appService.update(update);
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            if (rows > 0) {
-                redisHelp.delete(this.dataprefix + "_" + "appList", redisTemplate);
-                return Result.getResultJson(200, "修改完成", null);
-            } else {
-                return Result.getResultJson(201, "修改失败", null);
-
-            }
+            return Result.getResultJson(200, "修改完成", null);
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(400, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口请求异常", null);
         }
     }
 
@@ -387,17 +245,14 @@ public class SystemController {
     }
 
     private boolean permission(String token) {
-        if (token != null && !token.isEmpty()) {
-            DecodedJWT verify = JWT.verify(token);
-            Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
+        if (token == null || token.isEmpty()) return false;
+        DecodedJWT verify = JWT.verify(token);
+        Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+        if (user.getUid() == null) return false;
+        if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
+            return true;
         }
+        return false;
     }
 
     /***

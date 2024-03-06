@@ -17,6 +17,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -438,8 +442,9 @@ public class UsersController {
             Map token = new HashMap<>();
             token.put("sub ", "login");
             token.put("aud", user.getUid().toString());
-            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), new TypeReference<Map<String, Object>>() {
-            });
+
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+
 
             if (user.getAddress() != null && !user.getAddress().isEmpty()) {
                 data.put("address", JSONObject.parseObject(user.getAddress()));
@@ -591,9 +596,9 @@ public class UsersController {
             token.put("aud", user.getUid().toString());
             data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
 
-            List level = baseFull.getLevel(user.getExperience(),dataprefix,apiconfigService,redisTemplate);
-            data.put("level",level.get(0));
-            data.put("nextExp",level.get(1));
+            List level = baseFull.getLevel(user.getExperience(), dataprefix, apiconfigService, redisTemplate);
+            data.put("level", level.get(0));
+            data.put("nextExp", level.get(1));
             data.put("token", JWT.getToken(token));
             data.remove("password");
             if (user.getAddress() != null && !user.getAddress().isEmpty()) {
@@ -1541,51 +1546,48 @@ public class UsersController {
      */
     @RequestMapping(value = "/codeExcel")
     @ResponseBody
-    public void codeExcel(@RequestParam(value = "limit") Integer limit,
-                          @RequestParam(value = "type", defaultValue = "0") Integer type,
-                          HttpServletResponse response,
-                          HttpServletRequest request) throws IOException {
-        HSSFWorkbook workbook = new HSSFWorkbook();
-        HSSFSheet sheet = workbook.createSheet("邀请码列表");
-        if (!permission(request.getHeader("Authorization"))) {
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-disposition", "attachment;filename=nodata.xls");
-            response.flushBuffer();
-            workbook.write(response.getOutputStream());
+    public String codeExcel(@RequestParam(value = "type", defaultValue = "0") Integer type,
+                            HttpServletResponse response,
+                            HttpServletRequest request) throws IOException {
+        try {
+            String token = request.getHeader("Authorization");
+            if (!permission(token)) return Result.getResultJson(201, "无权限", null);
+
+            Invitation query = new Invitation();
+            query.setStatus(type);
+            List<Invitation> invitationList = invitationService.selectList(query);
+
+            try (Workbook workbook = new XSSFWorkbook()) {
+                String[] headers = {"ID", "邀请码", "创建人"};
+                Sheet sheet = workbook.createSheet("invite Data");
+                // 写入表头
+                Row headerRow = sheet.createRow(0);
+                for (int i = 0; i < headers.length; i++) {
+                    headerRow.createCell(i).setCellValue(headers[i]);
+                }
+                for (int i = 0; i < invitationList.size(); i++) {
+                    Row row = sheet.createRow(i + 1);
+                    Invitation invitation = invitationList.get(i);
+                    row.createCell(0).setCellValue(invitation.getId());
+                    row.createCell(1).setCellValue(invitation.getCode());
+                    row.createCell(2).setCellValue(invitation.getUid());
+                    row.createCell(3).setCellValue(invitation.getStatus() > 0 ? "已使用" : "未使用");
+                    row.createCell(5).setCellValue(invitation.getCreated());
+                }
+
+                response.setContentType("application/octet-stream");
+                response.setHeader("Content-Disposition", "attachment; filename=邀请码.xlsx");
+                workbook.write(response.getOutputStream());
+                return null;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return Result.getResultJson(500, "导出Excel文件失败", null);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
-        Invitation query = new Invitation();
-        query.setStatus(type);
-        PageList<Invitation> pageList = invitationService.selectPage(query, 1, limit);
-        List<Invitation> list = pageList.getList();
-
-        String fileName = "InvitationExcel" + ".xls";//设置要导出的文件的名字
-        //新增数据行，并且设置单元格数据
-
-        int rowNum = 1;
-
-        String[] headers = {"ID", "邀请码", "创建人"};
-        //headers表示excel表中第一行的表头
-
-        HSSFRow row = sheet.createRow(0);
-        //在excel表中添加表头
-
-        for (int i = 0; i < headers.length; i++) {
-            HSSFCell cell = row.createCell(i);
-            HSSFRichTextString text = new HSSFRichTextString(headers[i]);
-            cell.setCellValue(text);
-        }
-        for (com.TypeApi.entity.Invitation Invitation : list) {
-            HSSFRow row1 = sheet.createRow(rowNum);
-            row1.createCell(0).setCellValue(Invitation.getId());
-            row1.createCell(1).setCellValue(Invitation.getCode());
-            row1.createCell(2).setCellValue(Invitation.getUid());
-            rowNum++;
-        }
-
-        response.setContentType("application/octet-stream");
-        response.setHeader("Content-disposition", "attachment;filename=" + fileName);
-        response.flushBuffer();
-        workbook.write(response.getOutputStream());
     }
 
     @RequestMapping(value = "/delCode")

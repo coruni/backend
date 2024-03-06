@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -613,6 +612,7 @@ public class PayController {
         }
     }
 
+
     @RequestMapping(value = "/cardExport")
     @ResponseBody
     public String cardExport(@RequestParam(value = "limit", required = false, defaultValue = "50") Integer limit,
@@ -629,23 +629,17 @@ public class PayController {
                 permission = permission(user);
                 if (!permission) return Result.getResultJson(201, "无权限", null);
             }
-            String[][] data = {
-                    {"ID", "卡密", "数值", "类型", "状态", "创建时间", "使用uid"}
-                    // 可以根据需要添加更多数据行
-            };
 
             Paykey paykey = new Paykey();
-            PageList<Paykey> paykeyPageList = paykeyService.selectPage(paykey, 1, limit, null);
-            List<Paykey> paykeyList = paykeyPageList.getList();
+            List<Paykey> paykeyList = paykeyService.selectList(paykey);
             try (Workbook workbook = new XSSFWorkbook()) {
                 Sheet sheet = workbook.createSheet("Card Data");
-
-                String[] header = {"ID", "卡密", "数值", "类型", "状态", "创建时间", "使用uid"};
+                String[] headers = {"ID", "卡密", "数值", "类型", "状态", "创建时间", "使用uid"};
 
                 // 写入表头
                 Row headerRow = sheet.createRow(0);
-                for (int i = 0; i < header.length; i++) {
-                    headerRow.createCell(i).setCellValue(header[i]);
+                for (int i = 0; i < headers.length; i++) {
+                    headerRow.createCell(i).setCellValue(headers[i]);
                 }
 
                 // 写入数据
@@ -661,8 +655,8 @@ public class PayController {
                     row.createCell(6).setCellValue(paykeyData.getUid());
                 }
 
-                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-                response.setHeader("Content-Disposition", "attachment; filename=card_data.xlsx");
+                response.setContentType("application/octet-stream");
+                response.setHeader("Content-Disposition", "attachment; filename=卡密.xlsx");
 
                 workbook.write(response.getOutputStream());
                 return null;
@@ -675,7 +669,6 @@ public class PayController {
             return Result.getResultJson(400, "接口异常", null);
         }
     }
-
     @RequestMapping(value = "/delete")
     @ResponseBody
     public String delete(@RequestParam(value = "id") int id,
@@ -737,7 +730,7 @@ public class PayController {
                 Boolean isVip = user.getVip() > timeStamp;
                 if (isVip) user.setVip(user.getVip() + dayTime);
                 else user.setVip((int) (timeStamp + dayTime));
-                System.out.println(dayTime+"_"+timeStamp);
+                System.out.println(dayTime + "_" + timeStamp);
                 // 给用户发消息
                 Inbox inbox = new Inbox();
                 inbox.setCreated((int) timeStamp);

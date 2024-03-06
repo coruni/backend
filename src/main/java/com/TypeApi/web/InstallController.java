@@ -1,5 +1,6 @@
 package com.TypeApi.web;
 
+import com.TypeApi.common.JWT;
 import com.TypeApi.common.PHPass;
 import com.TypeApi.common.RedisHelp;
 import com.TypeApi.common.ResultAll;
@@ -10,6 +11,7 @@ import com.TypeApi.service.ApiconfigService;
 import com.TypeApi.service.AppService;
 import com.TypeApi.service.UsersService;
 import com.alibaba.fastjson.JSONObject;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.apache.xmlbeans.impl.xb.xsdschema.Public;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**
@@ -668,8 +671,34 @@ public class InstallController {
      */
     @RequestMapping(value = "/update")
     @ResponseBody
-    public String update() {
-        return "0";
+    public String update(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            Boolean permission = false;
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                permission = permission(user);
+                if (!permission) return Result.getResultJson(201, "无权限", null);
+            }
+            return Result.getResultJson(200, "更新完成", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+
+    }
+
+    /***
+     * 权限判断
+     * @param user
+     * @return
+     */
+    private Boolean permission(Users user) {
+        if (user.getUid() == null) return false;
+        if (user.getGroup().equals("administrator")) return true;
+        return false;
     }
 
     /***
