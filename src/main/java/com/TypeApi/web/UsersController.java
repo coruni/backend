@@ -150,13 +150,8 @@ public class UsersController {
         try {
             limit = limit > 50 ? 50 : limit;
             String token = request.getHeader("Authorization");
-            Boolean permission = false;
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
-            }
+            Users user = getUser(token);
+            Boolean permission = permission(user);
             // 获取查询参数
             Users query = new Users();
             if (StringUtils.isNotBlank(params)) {
@@ -222,76 +217,6 @@ public class UsersController {
     }
 
     /***
-     * 用户数据
-     */
-    @RequestMapping(value = "/userData")
-    @ResponseBody
-    public String userData(@RequestParam(value = "id", required = false) Integer id, HttpServletRequest request) {
-        try {
-            Map data = new HashMap<>();
-            Integer uid = id;
-            String token = request.getHeader("Authorization");
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
-            if (uid != null && !uid.toString().isEmpty()) {
-                // 获取文章数量
-                Article article = new Article();
-                article.setAuthorId(uid);
-                article.setStatus("publish");
-                Integer articleNum = contentsService.total(article, null);
-
-                // 获取粉丝数量
-                Fan fan = new Fan();
-                fan.setTouid(uid);
-                Integer fans = fanService.total(fan);
-
-                // 获取关注数量
-                fan.setUid(uid);
-                fan.setTouid(null);
-                Integer follows = fanService.total(fan);
-
-                // 是否签到
-                Userlog log = new Userlog();
-                log.setUid(uid);
-                log.setType("clock");
-                List<Userlog> logList = userlogService.selectList(log);
-                Integer clock = 0;
-                if (logList.size() > 0) {
-                    log = logList.get(0);
-                    Long timeStmap = System.currentTimeMillis();
-                    Long clockTime = Long.valueOf(log.getCreated());
-                    // 将时间格式化为yyMMdd
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd");
-                    String currentTimeFormatted = sdf.format(new Date(timeStmap));
-                    String createdTimeFormatted = sdf.format(new Date(clockTime));
-
-                    if (currentTimeFormatted.equals(createdTimeFormatted)) {
-                        clock = 1;
-                    }
-                }
-                // 获取评论
-                Comments comment = new Comments();
-                comment.setUid(uid);
-                Integer comments = commentsService.total(comment, null);
-                // 加入数据
-                data.put("articles", articleNum);
-                data.put("fans", fans);
-                data.put("follows", follows);
-                data.put("clock", clock);
-                data.put("comments", comments);
-            }
-
-            // 用户数据
-            return Result.getResultJson(200, "请求成功", data);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.getResultJson(400, "接口异常", null);
-        }
-    }
-
-    /***
      * 用户信息
      */
     @RequestMapping(value = "/userInfo")
@@ -301,8 +226,8 @@ public class UsersController {
             String token = request.getHeader("Authorization");
             Integer isFollow = 0;
             Integer fromFollow = 0;
-            Integer related = 0;
-            Integer isVip = 0;
+            int related = 0;
+            int isVip = 0;
             Users user = new Users();
             Users own = new Users();
 
@@ -1073,11 +998,8 @@ public class UsersController {
                             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.getUid().equals(0)) return Result.getResultJson(201, "用户不存在", null);
             user.setClientId(id);
             service.update(user);
             return Result.getResultJson(200, "设置成功", null);
@@ -1094,13 +1016,9 @@ public class UsersController {
                                  HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
 
             if (!phpass.CheckPassword(oldPassword, user.getPassword()))
                 return Result.getResultJson(201, "密码不正确", null);
@@ -1132,11 +1050,9 @@ public class UsersController {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.getUid().equals(0)) return Result.getResultJson(201, "用户不存在", null);
+
             user.setScreenName(nickname);
             user.setAvatar(avatar);
             user.setUserBg(background);
@@ -1172,19 +1088,6 @@ public class UsersController {
         }
     }
 
-    private boolean permission(String token) {
-        if (token != null && !token.isEmpty()) {
-            DecodedJWT verify = JWT.verify(token);
-            Users user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
 
     /***
      * 管理员修改用户
@@ -1203,7 +1106,8 @@ public class UsersController {
             @RequestParam(value = "vip", required = false) Integer vip,
             HttpServletRequest request) {
         try {
-            Boolean permission = permission(request.getHeader("Authorization"));
+            String token = request.getHeader("Authorization");
+            Boolean permission = permission(getUser(token));
             if (!permission) return Result.getResultJson(201, "无权限", null);
             Users user = service.selectByKey(id);
             user.setOpt(opt);
@@ -1230,12 +1134,8 @@ public class UsersController {
                          HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
-            if (!permission(request.getHeader("Authorization"))) {
+            Users user = getUser(token);
+            if (!permission(user)) {
                 return Result.getResultJson(201, "无权限", null);
             }
             Users deleteUser = service.selectByKey(id);
@@ -1261,11 +1161,8 @@ public class UsersController {
         try {
             if (num == null || num.equals("")) return Result.getResultJson(201, "请输入提现额度", null);
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.getUid().equals(0)) return Result.getResultJson(201, "用户不存在", null);
             if (user.getPay() == null || user.getPay().isEmpty())
                 return Result.getResultJson(201, "请先设置收款方式", null);
             Userlog log = new Userlog();
@@ -1318,13 +1215,11 @@ public class UsersController {
                                @RequestParam(value = "id", required = false) Integer id,
                                HttpServletRequest request) {
         try {
-            Boolean permission = permission(request.getHeader("Authorization"));
+
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            Boolean permission = permission(user);
+
             Paylog pay = new Paylog();
             pay.setPaytype("withdraw");
             pay.setUid(user.getUid());
@@ -1370,7 +1265,8 @@ public class UsersController {
                                 HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
             Paylog pay = paylogService.selectByKey(id);
             if (pay == null || pay.toString().isEmpty()) return Result.getResultJson(201, "数据不存在", null);
             Users user = service.selectByKey(pay.getUid());
@@ -1422,7 +1318,8 @@ public class UsersController {
                          @RequestParam(value = "id") Integer id,
                          HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
             if (num == 0 || num.toString().isEmpty() || num.equals(""))
                 return Result.getResultJson(201, "余额不可为空", null);
 
@@ -1485,19 +1382,16 @@ public class UsersController {
     public String madeCode(@RequestParam(value = "num") Integer num,
                            HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
             if (num == null || num.equals("") || num.equals(0))
                 return Result.getResultJson(201, "请输入正确的数量", null);
             Invitation invite = new Invitation();
-            String token = request.getHeader("Authorization");
-            Integer uid = null;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
+            int user_id = user.getUid();
             Long timeStamp = System.currentTimeMillis() / 1000;
             invite.setCreated(Math.toIntExact(timeStamp));
-            invite.setUid(uid);
+            invite.setUid(user_id);
             for (int i = 0; i < num; i++) {
                 invite.setCode(baseFull.createRandomStr(8));
                 invite.setStatus(0);
@@ -1521,7 +1415,9 @@ public class UsersController {
                            @RequestParam(value = "type", defaultValue = "0") Integer type,
                            HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
             Invitation invite = new Invitation();
             invite.setStatus(type);
             PageList<Invitation> invitePage = invitationService.selectPage(invite, page, limit);
@@ -1551,7 +1447,7 @@ public class UsersController {
                             HttpServletRequest request) throws IOException {
         try {
             String token = request.getHeader("Authorization");
-            if (!permission(token)) return Result.getResultJson(201, "无权限", null);
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
 
             Invitation query = new Invitation();
             query.setStatus(type);
@@ -1595,7 +1491,8 @@ public class UsersController {
     public String delCode(@RequestParam(value = "id") Integer id,
                           HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
             invitationService.delete(id);
             return Result.getResultJson(200, "删除成功", null);
         } catch (Exception e) {
@@ -1615,13 +1512,9 @@ public class UsersController {
                         HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
             Inbox query = new Inbox();
             query.setType(type);
             query.setTouid(user.getUid());
@@ -1730,13 +1623,9 @@ public class UsersController {
     public String noticeNum(HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
             Inbox inbox = new Inbox();
             inbox.setUid(user.getUid());
             inbox.setIsread(0);
@@ -1769,13 +1658,9 @@ public class UsersController {
                            HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
             String sql = "UPDATE " + prefix + "_inbox SET isread = 1 WHERE touid = ?";
             if (type != null) {
                 sql = "UPDATE " + prefix + "_inbox SET isread = 1 WHERE touid = ? AND type = ?";
@@ -1800,7 +1685,8 @@ public class UsersController {
                           HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
             Users user = service.selectByKey(id);
             if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             if (text == null || text.isEmpty()) return Result.getResultJson(201, "内容不可为空", null);
@@ -1838,11 +1724,9 @@ public class UsersController {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
             // 查询用户是否存在
             Users toFanUser = service.selectByKey(id);
             if (toFanUser == null || toFanUser.toString().isEmpty())
@@ -1882,11 +1766,9 @@ public class UsersController {
                              HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不能存在", null);
             // 如果传入id的话就查询其他人的关注列表 默认查询我关注的人
             // 查询被关注人的列表
             Fan fan = new Fan();
@@ -1966,33 +1848,30 @@ public class UsersController {
                       HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            if (!permission(token)) return Result.getResultJson(201, "无权限", null);
-            Integer uid = null;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
             Long timeStamp = System.currentTimeMillis() / 1000;
             Long banTime = timeStamp + (days * 86400);
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             //查询用户是否存在
-            Users user = service.selectByKey(id);
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            if (user.getBantime() > timeStamp) return Result.getResultJson(201, "用户封禁中", null);
+            Users banUser = service.selectByKey(id);
+            if (banUser == null || banUser.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            if (banUser.getBantime() > timeStamp) return Result.getResultJson(201, "用户封禁中", null);
             if (days == null || days.equals(0) || days.equals(""))
                 return Result.getResultJson(201, "请输入封禁天数", null);
 
             // 写入封禁记录
             Violation violation = new Violation();
             violation.setCreated(Math.toIntExact(timeStamp));
-            violation.setUid(user.getUid());
+            violation.setUid(banUser.getUid());
             violation.setType("ban");
             violation.setText(text);
-            violation.setHandler(uid);
+            violation.setHandler(banUser.getUid());
             violationService.insert(violation);
             // 更新用户信息
-            user.setBantime(Math.toIntExact(banTime));
-            service.update(user);
+            banUser.setBantime(Math.toIntExact(banTime));
+            service.update(banUser);
 
             return Result.getResultJson(200, "封禁成功", null);
 
@@ -2010,21 +1889,19 @@ public class UsersController {
     public String unban(@RequestParam(value = "id") Integer id,
                         HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             String token = request.getHeader("Authorization");
-            Integer uid = null;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在", null);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+
             Long timeStamp = System.currentTimeMillis() / 1000;
-            Users user = service.selectByKey(id);
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            if (user.getBantime() < timeStamp) return Result.getResultJson(201, "该用户状态正常", null);
+            Users banUser = service.selectByKey(id);
+            if (banUser == null || banUser.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            if (banUser.getBantime() < timeStamp) return Result.getResultJson(201, "该用户状态正常", null);
 
             // 更改用户的封禁时间
-            user.setBantime(Math.toIntExact(timeStamp));
-            service.update(user);
+            banUser.setBantime(Math.toIntExact(timeStamp));
+            service.update(banUser);
             return Result.getResultJson(200, "解除成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2043,7 +1920,10 @@ public class UsersController {
                           @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
                           HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+
             Violation violation = new Violation();
             if (params != null && !params.toString().isEmpty()) {
                 violation = JSONObject.parseObject(JSONObject.toJSONString(params), Violation.class);
@@ -2089,19 +1969,15 @@ public class UsersController {
                         @RequestParam(value = "id") Integer id,
                         HttpServletRequest request) {
         try {
-            //1是清理用户签到，2是清理用户资产日志，3是清理用户订单数据，4是清理无效卡密
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             String token = request.getHeader("Authorization");
-            Users admin = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                admin = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
-            Users user = service.selectByKey(id);
-            if (user == null) {
+            Users user = getUser(token);
+            //1是清理用户签到，2是清理用户资产日志，3是清理用户订单数据，4是清理无效卡密
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+            Users clanUser = service.selectByKey(id);
+            if (clanUser == null) {
                 return Result.getResultJson(0, "该用户不存在", null);
             }
-            if (user.getGroup().equals("administrator")) {
+            if (clanUser.getGroup().equals("administrator")) {
                 return Result.getResultJson(0, "不允许删除管理员的文章", null);
             }
             String text = null;
@@ -2130,7 +2006,7 @@ public class UsersController {
                 jdbcTemplate.execute("DELETE FROM " + this.prefix + "_userlog WHERE type='clock' and uid = " + id + ";");
                 text = "日志数据";
             }
-            securityService.safetyMessage("管理员：" + admin.getName() + "，清除了用户" + user.getName() + "所有" + text, "system");
+            securityService.safetyMessage("管理员：" + user.getName() + "，清除了用户" + user.getName() + "所有" + text, "system");
             return Result.getResultJson(200, "清除成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2150,28 +2026,30 @@ public class UsersController {
                           @RequestParam(value = "days") Integer days,
                           HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
-            Users user = service.selectByKey(id);
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+            Users giftUser = service.selectByKey(id);
+            if (giftUser == null || giftUser.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             if (days == null || days.equals(0) || days.equals(""))
                 return Result.getResultJson(201, "请输入正确天数", null);
             Long timeStamp = System.currentTimeMillis() / 1000;
-            if (user.getVip().equals(1)) return Result.getResultJson(201, "该用户为永久VIP", null);
-            if (user.getVip() > timeStamp) {
-                user.setVip(user.getVip() + (86400 * days));
+            if (giftUser.getVip().equals(1)) return Result.getResultJson(201, "该用户为永久VIP", null);
+            if (giftUser.getVip() > timeStamp) {
+                giftUser.setVip(giftUser.getVip() + (86400 * days));
             } else {
-                user.setVip((int) (timeStamp + (86400 * days)));
+                giftUser.setVip((int) (timeStamp + (86400 * days)));
             }
             // 写入信息
             Inbox inbox = new Inbox();
             inbox.setText("管理员赠送了您" + days + "天的会员");
             inbox.setUid(0);
-            inbox.setTouid(user.getUid());
+            inbox.setTouid(giftUser.getUid());
             inbox.setType("system");
             inbox.setIsread(0);
             inbox.setValue(days);
             inboxService.insert(inbox);
-            service.update(user);
+            service.update(giftUser);
             return Result.getResultJson(200, "赠送成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2184,14 +2062,10 @@ public class UsersController {
     public String sign(HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
 
             if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
                 return Result.getResultJson(200, "今天已签到", null);
@@ -2239,18 +2113,15 @@ public class UsersController {
     public String tasks(HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
             // 初始化返回信息
-            Integer isSign = 0;
-            Integer likes = 0;
-            Integer views = 0;
-            Integer shares = 0;
-            Integer marks = 0;
+            int isSign = 0;
+            int likes = 0;
+            int views = 0;
+            int shares = 0;
+            int marks = 0;
 
             Map<String, Object> data = new HashMap<>();
             if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
@@ -2301,5 +2172,29 @@ public class UsersController {
             e.printStackTrace();
             return Result.getResultJson(400, "接口错误", null);
         }
+    }
+
+    /***
+     * 权限判断
+     * @param user
+     * @return
+     */
+    private boolean permission(Users user) {
+        if (user.getUid() == null || user.getUid().equals(0)) return false;
+        if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) return true;
+        return false;
+    }
+
+    /***
+     * 获取用户信息
+     * @param token
+     * @return
+     */
+    private Users getUser(String token) {
+        if (token == null || token.isEmpty()) return new Users();
+        // 获取用户信息
+        DecodedJWT verify = JWT.verify(token);
+        Users user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+        return user;
     }
 }
