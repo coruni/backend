@@ -310,9 +310,16 @@ public class ArticleController {
             data.put("showText", showText);
             // 移除信息
             data.remove("passowrd");
-            JSONObject object = JSONObject.parseObject(opt.getJSONArray("files") != null ? opt.getJSONArray("files").get(0).toString() : null);
+            Optional<JSONObject> objectOptional = Optional.ofNullable(opt)
+                    .map(o -> o.getJSONArray("files"))
+                    .filter(filesArray -> filesArray != null && filesArray.size() > 0)
+                    .map(filesArray -> JSONObject.parseObject(filesArray.get(0).toString()));
+            JSONObject object = new JSONObject();
+            if (objectOptional.isPresent()) {
+                object = objectOptional.get();
+            }
             // 判断是是否是隐藏内容
-            if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object.containsKey("link") && !permission) {
+            if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object != null && object.containsKey("link") && !permission) {
                 data.put("opt", null);
                 data.put("isHide", 1);
             } else {
