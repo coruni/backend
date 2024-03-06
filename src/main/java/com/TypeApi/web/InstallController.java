@@ -661,6 +661,7 @@ public class InstallController {
             category.setPermission(0);
             category.setIsrecommend(1);
             category.setName("默认分类");
+            category.setType("category");
             category.setDescription("初始默认分类");
             categoryService.insert(category);
 
