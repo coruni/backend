@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TypeApi.dao.RaffleDao">
+
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Raffle" >
+        <result column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="type" property="type" />
+        <result column="chance" property="chance" />
+        <result column="image" property="image" />
+        <result column="description" property="description" />
+        <result column="quantity" property="quantity" />
+        <result column="value" property="value" />
+        <result column="expiry_date" property="expiry_date" />
+        <result column="created_at" property="created_at" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `id`,
+        `name`,
+        `type`,
+        `chance`,
+        `image`,
+        `description`,
+        `quantity`,
+        `value`,
+        `expiry_date`,
+        `created_at`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.TypeApi.entity.Raffle">
+        INSERT INTO ${prefix}_raffle
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                `id`,
+            </if>
+            <if test ='null != name'>
+                `name`,
+            </if>
+            <if test ='null != type'>
+                `type`,
+            </if>
+            <if test ='null != chance'>
+                `chance`,
+            </if>
+            <if test ='null != image'>
+                `image`,
+            </if>
+            <if test ='null != description'>
+                `description`,
+            </if>
+            <if test ='null != quantity'>
+                `quantity`,
+            </if>
+            <if test ='null != value'>
+                `value`,
+            </if>
+            <if test ='null != expiry_date'>
+                `expiry_date`,
+            </if>
+            <if test ='null != created_at'>
+                `created_at`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                #{id},
+            </if>
+            <if test ='null != name'>
+                #{name},
+            </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
+            <if test ='null != chance'>
+                #{chance},
+            </if>
+            <if test ='null != image'>
+                #{image},
+            </if>
+            <if test ='null != description'>
+                #{description},
+            </if>
+            <if test ='null != quantity'>
+                #{quantity},
+            </if>
+            <if test ='null != value'>
+                #{value},
+            </if>
+            <if test ='null != expiry_date'>
+                #{expiry_date},
+            </if>
+            <if test ='null != created_at'>
+                #{created_at}
+            </if>
+        </trim>
+    </insert>
+
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.TypeApi.entity.Raffle">
+        UPDATE ${prefix}_raffle
+        <set>
+            <if test ='null != name'>`name` = #{name},</if>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != chance'>`chance` = #{chance},</if>
+            <if test ='null != image'>`image` = #{image},</if>
+            <if test ='null != description'>`description` = #{description},</if>
+            <if test ='null != quantity'>`quantity` = #{quantity},</if>
+            <if test ='null != value'>`value` = #{value},</if>
+            <if test ='null != expiry_date'>`expiry_date` = #{expiry_date},</if>
+            <if test ='null != created_at'>`created_at` = #{created_at}</if>
+        </set>
+        WHERE `id` = #{id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_raffle
+        WHERE `id` = #{key}
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_raffle
+        WHERE `id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_raffle
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != name'>
+                and `name` = #{name}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != chance'>
+                and `chance` = #{chance}
+            </if>
+            <if test ='null != image'>
+                and `image` = #{image}
+            </if>
+            <if test ='null != description'>
+                and `description` = #{description}
+            </if>
+            <if test ='null != quantity'>
+                and `quantity` = #{quantity}
+            </if>
+            <if test ='null != value'>
+                and `value` = #{value}
+            </if>
+            <if test ='null != expiry_date'>
+                and `expiry_date` = #{expiry_date}
+            </if>
+            <if test ='null != created_at'>
+                and `created_at` = #{created_at}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_raffle
+        <where>
+            <if test ='null != raffle.id'>
+                and `id` = #{raffle.id}
+            </if>
+            <if test ='null != raffle.name'>
+                and `name` = #{raffle.name}
+            </if>
+            <if test ='null != raffle.type'>
+                and `type` = #{raffle.type}
+            </if>
+            <if test ='null != raffle.chance'>
+                and `chance` = #{raffle.chance}
+            </if>
+            <if test ='null != raffle.image'>
+                and `image` = #{raffle.image}
+            </if>
+            <if test ='null != raffle.description'>
+                and `description` = #{raffle.description}
+            </if>
+            <if test ='null != raffle.quantity'>
+                and `quantity` = #{raffle.quantity}
+            </if>
+            <if test ='null != raffle.value'>
+                and `value` = #{raffle.value}
+            </if>
+            <if test ='null != raffle.expiry_date'>
+                and `expiry_date` = #{raffle.expiry_date}
+            </if>
+            <if test ='null != raffle.created_at'>
+                and `created_at` = #{raffle.created_at}
+            </if>
+            <if test ='"" != searchKey'>
+                and CONCAT(IFNULL(`name`,'')) LIKE '%${searchKey}%'
+            </if>
+        </where>
+        order by description desc
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_raffle
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != name'>
+                and `name` = #{name}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != chance'>
+                and `chance` = #{chance}
+            </if>
+            <if test ='null != image'>
+                and `image` = #{image}
+            </if>
+            <if test ='null != description'>
+                and `description` = #{description}
+            </if>
+            <if test ='null != quantity'>
+                and `quantity` = #{quantity}
+            </if>
+            <if test ='null != value'>
+                and `value` = #{value}
+            </if>
+            <if test ='null != expiry_date'>
+                and `expiry_date` = #{expiry_date}
+            </if>
+            <if test ='null != created_at'>
+                and `created_at` = #{created_at}
+            </if>
+        </where>
+    </select>
+</mapper>

@@ -14,7 +14,10 @@ import com.TypeApi.service.CategoryService;
 import com.TypeApi.service.UsersService;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import org.apache.xmlbeans.impl.xb.xsdschema.Public;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -476,6 +479,8 @@ public class InstallController {
                     "  `uploadPicMax` int(11) DEFAULT '5' COMMENT '图片最大上传大小'," +
                     "  `uploadMediaMax` int(11) DEFAULT '50' COMMENT '媒体最大上传大小'," +
                     "  `uploadFilesMax` int(11) DEFAULT '20' COMMENT '其他文件最大上传大小'," +
+                    "  `raffleCoin` int(11) DEFAULT '10' COMMENT '抽奖花费'," +
+                    "  `raffleNum` int(11) DEFAULT '3' COMMENT '每天抽奖次数'," +
                     "PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='api配置信息表';";
             jdbcTemplate.execute(createTableSQL);
@@ -625,6 +630,7 @@ public class InstallController {
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='应用表（web应用和APP应用）';";
             jdbcTemplate.execute(createTableSQL);
 
+            // 安装兑换表
             createTableSQL = "CREATE TABLE IF NOT EXISTS`" + prefix + "_exchange` (" +
                     "  `id` int(11) NOT NULL AUTO_INCREMENT," +
                     "  `name` text NOT NULL COMMENT '兑换名称'," +
@@ -636,6 +642,34 @@ public class InstallController {
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='兑换表';";
             jdbcTemplate.execute(createTableSQL);
 
+            // 安装抽奖表
+            createTableSQL = "CREATE TABLE IF NOT EXISTS`" + prefix + "_raffle` (" +
+                    "  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '奖励ID'," +
+                    "  `name` varchar(255) NOT NULL COMMENT '奖励名称'," +
+                    "  `type` varchar(255) NOT NULL DEFAULT 'point' COMMENT '奖励类型，默认为积分'," +
+                    "  `chance` float NOT NULL DEFAULT 1.0 COMMENT '中奖概率，默认为1'," +
+                    "  `image` text COMMENT '奖励图片'," +
+                    "  `description` text COMMENT '奖励描述信息'," +
+                    "  `quantity` int(11) DEFAULT NULL COMMENT '奖品数量'," +
+                    "  `value` int(10) DEFAULT '0' COMMENT '奖励价值'," +
+                    "  `expiry_date` int(10) DEFAULT NULL COMMENT '奖励过期日期'," +
+                    "  `created_at` int(10) NOT NULL DEFAULT 0 COMMENT '奖励创建时间'," +
+                    "PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='抽奖表';";
+            jdbcTemplate.execute(createTableSQL);
+
+            // 安装抽奖记录表
+            createTableSQL = "CREATE TABLE IF NOT EXISTS`" + prefix + "_reward_log` (" +
+                    "  `id` int(11) NOT NULL AUTO_INCREMENT," +
+                    "  `name` varchar(255) DEFAULT NULL," +
+                    "  `reward_id` int(11) DEFAULT NULL," +
+                    "  `description` varchar(255) DEFAULT NULL," +
+                    "  `uid` int(10) NOT NULL DEFAULT '0'," +
+                    "  `expired` int(10) DEFAULT NULL," +
+                    "  `created` int(11) DEFAULT NULL," +
+                    "PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='抽奖记录表';";
+            jdbcTemplate.execute(createTableSQL);
             // 数据表安装ok 开始初始化
             App app = new App();
             app.setName("应用名称");
@@ -697,6 +731,40 @@ public class InstallController {
                 permission = permission(user);
                 if (!permission) return Result.getResultJson(201, "无权限", null);
             }
+
+            String createTableSQL;
+            // 安装抽奖表
+            createTableSQL = "CREATE TABLE IF NOT EXISTS`" + prefix + "_raffle` (" +
+                    "  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '奖励ID'," +
+                    "  `name` varchar(255) NOT NULL COMMENT '奖励名称'," +
+                    "  `type` varchar(255) NOT NULL DEFAULT 'point' COMMENT '奖励类型，默认为积分'," +
+                    "  `chance` float NOT NULL DEFAULT 1.0 COMMENT '中奖概率，默认为1'," +
+                    "  `image` text COMMENT '奖励图片'," +
+                    "  `description` text COMMENT '奖励描述信息'," +
+                    "  `quantity` int(11) DEFAULT NULL COMMENT '奖品数量'," +
+                    "  `value` int(10) DEFAULT '0' COMMENT '奖励价值'," +
+                    "  `expiry_date` int(10) DEFAULT NULL COMMENT '奖励过期日期'," +
+                    "  `created_at` int(10) NOT NULL DEFAULT 0 COMMENT '奖励创建时间'," +
+                    "PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='抽奖表';";
+            jdbcTemplate.execute(createTableSQL);
+
+            // 安装抽奖记录表
+            createTableSQL = "CREATE TABLE IF NOT EXISTS`" + prefix + "_reward_log` (" +
+                    "  `id` int(11) NOT NULL AUTO_INCREMENT," +
+                    "  `name` varchar(255) DEFAULT NULL," +
+                    "  `reward_id` int(11) DEFAULT NULL," +
+                    "  `description` varchar(255) DEFAULT NULL," +
+                    "  `uid` int(10) NOT NULL DEFAULT '0'," +
+                    "  `expired` int(10) DEFAULT NULL," +
+                    "  `created` int(11) DEFAULT NULL," +
+                    "PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='抽奖记录表';";
+            jdbcTemplate.execute(createTableSQL);
+            // 检查字段 添加
+            hasColumn("raffleCoin", prefix + "_apiconfig", "INT(10) DEFAULT '10' COMMENT '抽奖积分'");
+            hasColumn("raffleNum", prefix + "_apiconfig", "INT(10) DEFAULT '3' COMMENT '每次抽奖次数'");
+
             return Result.getResultJson(200, "更新完成", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -705,15 +773,16 @@ public class InstallController {
 
     }
 
-    /***
-     * 权限判断
-     * @param user
-     * @return
-     */
-    private Boolean permission(Users user) {
-        if (user.getUid() == null) return false;
-        if (user.getGroup().equals("administrator")) return true;
-        return false;
+
+
+    private void hasColumn(String column, String tableName, String arr) {
+        Integer i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = ? and column_name = ?",
+                Integer.class, tableName, column);
+        if (i == 0) addColumn(column, tableName, arr);
+    }
+
+    private void addColumn(String column, String tableName, String arr) {
+        jdbcTemplate.execute("alter table " + tableName + " ADD " + column + " " + arr + " ;");
     }
 
     /***
@@ -744,5 +813,18 @@ public class InstallController {
             return Result.getResultJson(1, "操作失败", null);
         }
 
+    }
+    /***
+     * 权限判断
+     *
+     * @param user
+     * @return
+     */
+    private boolean permission(Users user) {
+        if (user.getUid() == null || user.getUid().equals(0))
+            return false;
+        if (user.getGroup().equals("administrator") || user.getGroup().equals("editor"))
+            return true;
+        return false;
     }
 }

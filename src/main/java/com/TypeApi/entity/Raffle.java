@@ -56,7 +56,7 @@ public class Raffle implements Serializable {
     /**
      * expiry_date 奖品过期时间
      */
-    private Date expiry_date;
+    private Integer expiry_date;
 
     /**
      * created_at  创建时间

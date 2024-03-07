@@ -40,7 +40,7 @@ public interface RaffleDao {
     /**
      * [分页条件查询]
      **/
-    List<Raffle> selectPage (@Param("Raffle") Raffle raffle, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey);
+    List<Raffle> selectPage (@Param("raffle") Raffle raffle, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey);
 
     /**
      * [总量查询]

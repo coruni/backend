@@ -41,7 +41,7 @@ public class Reward_log implements Serializable {
     /**
      * expired  过期时间
      */
-    private Date expired;
+    private Integer expired;
 
     /**
      * created  创建时间

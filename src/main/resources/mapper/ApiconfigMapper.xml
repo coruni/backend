@@ -104,6 +104,8 @@
         <result column="compress" property="compress" />
         <result column="quality" property="quality" />
         <result column="levelExp" property="levelExp" />
+        <result column="raffleCoin" property="raffleCoin" />
+        <result column="raffleNum" property="raffleNum" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -210,6 +212,8 @@
 
         `quality`,
         `levelExp`,
+        `raffleCoin`,
+        `raffleNum`,
         `compress`
 
     </sql>
@@ -790,6 +794,12 @@
             <if test ='null != levelExp'>
                 #{levelExp},
             </if>
+            <if test ='null != raffleCoin'>
+                #{raffleCoin},
+            </if>
+            <if test ='null != raffleNum'>
+                #{raffleNum},
+            </if>
             <if test ='null != compress'>
                 #{compress}
             </if>
@@ -898,6 +908,8 @@
             <if test ='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax},</if>
             <if test ='null != quality'>`quality` = #{quality},</if>
             <if test ='null != levelExp'>`levelExp` = #{levelExp},</if>
+            <if test ='null != raffleCoin'>`raffleCoin` = #{raffleCoin},</if>
+            <if test ='null != raffleNum'>`raffleNum` = #{raffleNum},</if>
             <if test ='null != compress'>`compress` = #{compress}</if>
 
         </set>
