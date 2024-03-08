@@ -50,7 +50,6 @@ public class AdsController {
 
     RedisHelp redisHelp =new RedisHelp();
     ResultAll Result = new ResultAll();
-    baseFull baseFull = new baseFull();
     UserStatus UStatus = new UserStatus();
     EditFile editFile = new EditFile();
 
