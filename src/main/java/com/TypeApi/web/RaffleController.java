@@ -298,6 +298,34 @@ public class RaffleController {
     }
 
     /***
+     * 删除
+     * @param id
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/delete")
+    @ResponseBody
+    public String delete(@RequestParam(value = "id") Integer id,
+                         HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+
+            Raffle raffle = raffleService.selectByKey(id);
+            if (raffle.getId() == null || raffle.toString().isEmpty())
+                return Result.getResultJson(201, "数据不存在", null);
+
+            raffleService.delete(id);
+            return Result.getResultJson(200, "删除成功", null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    /***
      * 权限判断
      *
      * @param user
