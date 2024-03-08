@@ -765,6 +765,10 @@ public class InstallController {
             hasColumn("raffleCoin", prefix + "_apiconfig", "INT(10) DEFAULT '10' COMMENT '抽奖积分'");
             hasColumn("raffleNum", prefix + "_apiconfig", "INT(10) DEFAULT '3' COMMENT '每次抽奖次数'");
 
+            Apiconfig apiconfig = apiconfigService.selectByKey(1);
+            Map configJson = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
+            redisHelp.delete(dataprefix + "_" + "config", redisTemplate);
+            redisHelp.setKey(dataprefix + "_" + "config", configJson, 6000, redisTemplate);
             return Result.getResultJson(200, "更新完成", null);
         } catch (Exception e) {
             e.printStackTrace();
