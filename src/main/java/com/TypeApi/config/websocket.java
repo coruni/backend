@@ -4,21 +4,15 @@ import com.TypeApi.common.*;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.websocket.*;
-import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.TypeApi.config.WebSocketPingScheduler;
 
 @ServerEndpoint("/websocket")
 @Component
@@ -103,8 +97,7 @@ public class websocket {
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        WebSocketPingScheduler.stopPingScheduler();
-        error.printStackTrace();
+        // 添加更多异常处理逻辑，例如重新连接或通知管理员
     }
 
     public void sendMessage(String message) throws IOException {
