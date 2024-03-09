@@ -732,6 +732,7 @@ public class InstallController {
             }
 
             String createTableSQL;
+
             // 安装抽奖表
             createTableSQL = "CREATE TABLE IF NOT EXISTS`" + prefix + "_raffle` (" +
                     "  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '奖励ID'," +
