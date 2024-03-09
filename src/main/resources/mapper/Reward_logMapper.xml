@@ -54,8 +54,8 @@
             <if test ='null != status'>
                 `status`,
             </if>
-            <if test ='null != tarcking_number'>
-                `tarcking_number`,
+            <if test ='null != tracking_number'>
+                `tracking_number`,
             </if>
             <if test ='null != expired'>
                 `expired`,
