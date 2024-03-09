@@ -324,7 +324,9 @@ public class UsersController {
             data.put("nextExp", nextExp);
             // 移除敏感数据
             data.remove("password");
-            data.remove("address");
+
+            if(!user.getUid().equals(own.getUid())) data.remove("address");
+
             data.remove("mail");
 
             return Result.getResultJson(200, "获取成功", data);

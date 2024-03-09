@@ -195,11 +195,15 @@ public class RaffleController {
             int num = 1;
             if (temp != null) num = Integer.parseInt(temp);
             if (num > apiconfig.getRaffleNum())
-                return Result.getResultJson(201, "抽奖次数已达上线", null);
+                return Result.getResultJson(201, "抽奖次数已达上限", null);
 
             // 判断用户积分是否足够
             if (user.getAssets() == null || user.getAssets() < apiconfig.getRaffleCoin())
                 return Result.getResultJson(201, "积分不足", null);
+
+            // 开始扣除积分
+            user.setAssets(user.getAssets() - apiconfig.getRaffleCoin());
+            usersService.update(user);
 
             // 获取奖品数据库
             long timestamp = System.currentTimeMillis() / 1000;
@@ -226,7 +230,7 @@ public class RaffleController {
             raffleService.update(winner);
             Raffle r = raffleService.selectByKey(winner.getId());
             // 积分
-            if (Objects.equals(r.getType(), "point")) {
+            if (Objects.equals(r.getType(), "point") && r.getValue() != 0) {
                 // 添加日志
                 Paylog paylog = new Paylog();
                 paylog.setUid(user.getUid());
@@ -269,6 +273,8 @@ public class RaffleController {
             reward_log.setName(r.getName());
             reward_log.setReward_id(r.getId());
             reward_log.setDescription(r.getDescription());
+            reward_log.setType(r.getType());
+            reward_log.setStatus(r.getType().equals("point") || r.getType().equals("vip")?"issued":"pending");
             reward_log.setExpired(r.getExpiry_date());
             reward_log.setCreated((int) (timestamp));
             reward_logService.insert(reward_log);
@@ -289,12 +295,100 @@ public class RaffleController {
             data.put("data", r);
             redisHelp.delete("raffle_" + user.getName(), redisTemplate);
             redisHelp.setRedis("raffle_" + user.getName(), String.valueOf(num + 1), baseFull.endTime(), redisTemplate);
-            System.out.println(redisHelp.getRedis("raffle_" + user.getName(), redisTemplate));
             return data.toString();
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
         }
+    }
+
+    @RequestMapping(value = "/log")
+    @ResponseBody
+    public String log(@RequestParam(value = "type", required = false, defaultValue = "point") String type,
+                      @RequestParam(value = "status", required = false, defaultValue = "issued") String status,
+                      @RequestParam(value = "id", required = false) Integer id,
+                      @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                      @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                      @RequestParam(value = "all",required = false,defaultValue = "0") Integer all,
+                      HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            Boolean permission = permission(user);
+            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在", null);
+            if (!permission && id != null) return Result.getResultJson(201, "无权限", null);
+
+            Reward_log reward_log = new Reward_log();
+            reward_log.setType(type);
+            reward_log.setStatus(status);
+            reward_log.setUid(permission? id!=null ? id: user.getUid() : user.getUid());
+            if(permission && all.equals(1)) reward_log.setUid(null);
+
+            PageList<Reward_log> rewardLogPageList = reward_logService.selectPage(reward_log, page, limit, "");
+            List<Reward_log> rewardLogList = rewardLogPageList.getList();
+            List dataList = new ArrayList<>();
+            if(permission(user) && all.equals(1)){
+                for(Reward_log _rewardLog :rewardLogList){
+                    Map<String,Object> data = JSONObject.parseObject(JSONObject.toJSONString(_rewardLog),Map.class);
+                    JSONObject address = new JSONObject();
+                    // 查询出用户的数据
+                    Users rewardUser = usersService.selectByKey(_rewardLog.getUid());
+                    if(rewardUser.getAddress()!=null && !rewardUser.getAddress().toString().isEmpty()){
+                        address = JSONObject.parseObject(rewardUser.getAddress());
+                    }
+
+                    // 取出用户基础信息 screenName name address
+                    JSONObject userInfo = new JSONObject();
+                    userInfo.put("name",rewardUser.getName());
+                    userInfo.put("screenName",rewardUser.getScreenName());
+                    userInfo.put("address",address);
+                    data.put("userInfo",userInfo);
+                    dataList.add(data);
+                }
+            }else{
+                dataList = rewardLogList;
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("count", rewardLogList.size());
+            data.put("total", reward_logService.total(reward_log));
+            data.put("data", dataList);
+            data.put("page", page);
+            return Result.getResultJson(200, "获取成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    @RequestMapping(value = "/track")
+    @ResponseBody
+    public String track(@RequestParam(value = "id") Integer id,
+                        @RequestParam(value = "tracking_number") String tracking_number,
+                        HttpServletRequest request){
+        try{
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if(!permission(user)) return Result.getResultJson(201,"无权限",null);
+
+            Reward_log reward_log = reward_logService.selectByKey(id);
+            if(reward_log.getId()==null) return Result.getResultJson(201,"奖品记录不存在",null);
+            reward_log.setTracking_number(tracking_number);
+            reward_log.setStatus("issued");
+            reward_logService.update(reward_log);
+            // 给中奖用户发消息
+            Inbox inbox = new Inbox();
+            inbox.setText("你的奖品"+ reward_log.getName()+"已发货，请注意物流信息；物流单号："+tracking_number);
+            inbox.setTouid(reward_log.getUid());
+            inbox.setIsread(0);
+            inbox.setCreated((int)System.currentTimeMillis()/1000);
+            inbox.setType("system");
+            inboxService.insert(inbox);
+            return Result.getResultJson(200,"发货成功",null);
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(400,"接口异常",null);
+        }
+
     }
 
     /***

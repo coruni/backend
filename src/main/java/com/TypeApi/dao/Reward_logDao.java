@@ -40,7 +40,7 @@ public interface Reward_logDao {
     /**
      * [分页条件查询]
      **/
-    List<Reward_log> selectPage (@Param("Reward_log") Reward_log reward_log, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey);
+    List<Reward_log> selectPage (@Param("reward_log") Reward_log reward_log, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey);
 
     /**
      * [总量查询]

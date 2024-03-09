@@ -761,9 +761,14 @@ public class InstallController {
                     "PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='抽奖记录表';";
             jdbcTemplate.execute(createTableSQL);
-            // 检查字段 添加
+            // 检查apiconfig 添加
             hasColumn("raffleCoin", prefix + "_apiconfig", "INT(10) DEFAULT '10' COMMENT '抽奖积分'");
             hasColumn("raffleNum", prefix + "_apiconfig", "INT(10) DEFAULT '3' COMMENT '每次抽奖次数'");
+
+            // 检查reward_log
+            hasColumn("type", prefix + "_reward_log", "VARCHAR(40) NOT NULL DEFAULT 'point' COMMENT '类型'");
+            hasColumn("status", prefix + "_reward_log", "VARCHAR(40) NOT NULL DEFAULT 'issued' COMMENT '发货状态'");
+            hasColumn("tracking_number", prefix + "_reward_log", "VARCHAR(100) NULL  COMMENT '物流单号'");
 
             Apiconfig apiconfig = apiconfigService.selectByKey(1);
             Map configJson = JSONObject.parseObject(JSONObject.toJSONString(apiconfig), Map.class);
@@ -776,8 +781,6 @@ public class InstallController {
         }
 
     }
-
-
 
     private void hasColumn(String column, String tableName, String arr) {
         Integer i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = ? and column_name = ?",
@@ -818,6 +821,7 @@ public class InstallController {
         }
 
     }
+
     /***
      * 权限判断
      *

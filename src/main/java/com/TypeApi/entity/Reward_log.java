@@ -39,6 +39,16 @@ public class Reward_log implements Serializable {
     private Integer uid;
 
     /**
+     * type  类型
+     */
+    private String type;
+
+    /**
+     * status  状态
+     */
+    private String status;
+
+    /**
      * expired  过期时间
      */
     private Integer expired;
@@ -47,5 +57,10 @@ public class Reward_log implements Serializable {
      * created  创建时间
      */
     private Integer created;
+
+    /***
+     * tracking_number 运单号
+     */
+    private String tracking_number;
 
 }

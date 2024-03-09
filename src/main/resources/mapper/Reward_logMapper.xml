@@ -9,6 +9,9 @@
         <result column="reward_id" property="reward_id" />
         <result column="description" property="description" />
         <result column="uid" property="uid" />
+        <result column="type" property="type" />
+        <result column="status" property="status" />
+        <result column="tracking_number" property="tracking_number" />
         <result column="expired" property="expired" />
         <result column="created" property="created" />
     </resultMap>
@@ -19,6 +22,9 @@
         `reward_id`,
         `description`,
         `uid`,
+        `type`,
+        `status`,
+        `tracking_number`,
         `expired`,
         `created`
     </sql>
@@ -41,6 +47,15 @@
             </if>
             <if test ='null != uid'>
                 `uid`,
+            </if>
+            <if test ='null != type'>
+                `type`,
+            </if>
+            <if test ='null != status'>
+                `status`,
+            </if>
+            <if test ='null != tarcking_number'>
+                `tarcking_number`,
             </if>
             <if test ='null != expired'>
                 `expired`,
@@ -65,6 +80,15 @@
             <if test ='null != uid'>
                 #{uid},
             </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
+            <if test ='null != status'>
+                #{status},
+            </if>
+            <if test ='null != tracking_number'>
+                #{tracking_number},
+            </if>
             <if test ='null != expired'>
                 #{expired},
             </if>
@@ -83,6 +107,9 @@
             <if test ='null != reward_id'>`reward_id` = #{reward_id},</if>
             <if test ='null != description'>`description` = #{description},</if>
             <if test ='null != uid'>`uid` = #{uid},</if>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != status'>`status` = #{status},</if>
+            <if test ='null != tracking_number'>`tracking_number` = #{tracking_number},</if>
             <if test ='null != expired'>`expired` = #{expired},</if>
             <if test ='null != created'>`created` = #{created}</if>
         </set>
@@ -122,6 +149,15 @@
             <if test ='null != uid'>
                 and `uid` = #{uid}
             </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != status'>
+                and `status` = #{status}
+            </if>
+            <if test ='null != tracking_number'>
+                and `tracking_number` = #{tracking_number}
+            </if>
             <if test ='null != expired'>
                 and `expired` = #{expired}
             </if>
@@ -151,6 +187,15 @@
             <if test ='null != reward_log.uid'>
                 and `uid` = #{reward_log.uid}
             </if>
+            <if test ='null != reward_log.type'>
+                and `type` = #{reward_log.type}
+            </if>
+            <if test ='null != reward_log.status'>
+                and `status` = #{reward_log.status}
+            </if>
+            <if test ='null != reward_log.tracking_number'>
+                and `tracking_number` = #{reward_log.tracking_number}
+            </if>
             <if test ='null != reward_log.expired'>
                 and `expired` = #{reward_log.expired}
             </if>
@@ -169,25 +214,34 @@
     <select id="total" resultType="java.lang.Integer">
         SELECT count(*) FROM ${prefix}_reward_log
         <where>
-            <if test ='null != id'>
+            <if test='null != id'>
                 and `id` = #{id}
             </if>
-            <if test ='null != name'>
+            <if test='null != name'>
                 and `name` = #{name}
             </if>
-            <if test ='null != reward_id'>
+            <if test='null != reward_id'>
                 and `reward_id` = #{reward_id}
             </if>
-            <if test ='null != description'>
+            <if test='null != description'>
                 and `description` = #{description}
             </if>
-            <if test ='null != uid'>
+            <if test='null != uid'>
                 and `uid` = #{uid}
             </if>
-            <if test ='null != expired'>
+            <if test='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test='null != status'>
+                and `status` = #{status}
+            </if>
+            <if test='null != tracking_number'>
+                and `tracking_number` = #{tracking_number}
+            </if>
+            <if test='null != expired'>
                 and `expired` = #{expired}
             </if>
-            <if test ='null != created'>
+            <if test='null != created'>
                 and `created` = #{created}
             </if>
         </where>

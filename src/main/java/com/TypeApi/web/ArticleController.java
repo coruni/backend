@@ -533,8 +533,8 @@ public class ArticleController {
 
                 // 是否点赞或者是否收藏
                 Userlog userlog = new Userlog();
-                Integer isLike = 0;
-                Integer isMark = 0;
+                int isLike = 0;
+                int isMark = 0;
                 if (user != null && !user.toString().isEmpty()) {
                     userlog.setType("articleLike");
                     userlog.setCid(article.getCid());
