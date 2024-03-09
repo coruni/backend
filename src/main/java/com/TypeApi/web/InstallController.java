@@ -214,7 +214,6 @@ public class InstallController {
                     "KEY `created` (`created`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='文章评论表';";
             jdbcTemplate.execute(createTableSQL);
-
             // 安装分类表
             createTableSQL = "CREATE TABLE IF NOT EXISTS`" + metas + "` (" +
                     "`mid` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '分类ID'," +
