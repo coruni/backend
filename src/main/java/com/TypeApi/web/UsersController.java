@@ -1590,6 +1590,7 @@ public class UsersController {
                             articleData.put("title", article.getTitle());
                             articleData.put("authorId", article.getAuthorId());
                             articleData.put("id", article.getCid());
+                            articleData.put("type",article.getType());
                         } else {
                             articleData.put("title", "文章已被删除");
                             articleData.put("id", 0);
@@ -1629,7 +1630,7 @@ public class UsersController {
             if (user.getUid() == null || user.toString().isEmpty())
                 return Result.getResultJson(201, "用户不存在，请重新登录", null);
             Inbox inbox = new Inbox();
-            inbox.setUid(user.getUid());
+            inbox.setTouid(user.getUid());
             inbox.setIsread(0);
             inbox.setType("comment");
             int comments = inboxService.total(inbox);
@@ -1640,7 +1641,7 @@ public class UsersController {
 
             Map<String, Object> data = new HashMap<>();
             data.put("comments", comments);
-            data.put("system", systems);
+            data.put("systems", systems);
             data.put("finances", finances);
             data.put("total", comments + systems + finances);
             return Result.getResultJson(200, "获取成功", data);
