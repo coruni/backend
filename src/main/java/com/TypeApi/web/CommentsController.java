@@ -327,6 +327,7 @@ public class CommentsController {
             Article article = contentsService.selectByKey(id);
             Integer commentsNum = article.getCommentsNum() + 1;
             article.setCommentsNum(commentsNum);
+            article.setReplyTime((int)System.currentTimeMillis()/1000);
             contentsService.update(article);
             Users articleUser = usersService.selectByKey(article.getAuthorId());
 

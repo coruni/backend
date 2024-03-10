@@ -41,6 +41,8 @@ public class PaykeyServiceImpl implements PaykeyService {
     	return dao.delete(key);
     }
 
+	@Override
+	public int typeDelete(Object type) {return dao.typeDelete(type);}
     @Override
     public int batchDelete(List<Object> keys) {
         return dao.batchDelete(keys);

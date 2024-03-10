@@ -110,6 +110,12 @@
         WHERE `id` = #{key}
     </delete>
 
+    <!-- 条件删除-->
+    <delete id ="typeDelete">
+        DELETE FROM ${prefix}_paykey
+        WHERE  `status` = #{status}
+    </delete>
+
     <!-- 批量删除 -->
     <delete id="batchDelete" parameterType = "java.util.List">
         DELETE FROM ${prefix}_paykey WHERE id IN

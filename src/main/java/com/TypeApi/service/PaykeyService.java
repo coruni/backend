@@ -31,6 +31,11 @@ public interface PaykeyService {
      **/
     int delete(Object key);
 
+    /***
+     * [条件删除]
+     */
+    int typeDelete(Object type);
+
     /**
      * [批量删除]
      **/

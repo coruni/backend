@@ -767,6 +767,36 @@ public class PayController {
 
     }
 
+    /***
+     * 清除无用卡密
+     * @param status
+     * @param request
+     * @return
+     */
+
+    @RequestMapping(value = "/clear")
+    @ResponseBody
+    public String clear(@RequestParam(value = "status") Integer status,
+                        HttpServletRequest request){
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if(token!=null && !token.isEmpty()){
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            }
+            if(!permission(user)) return Result.getResultJson(201,"无权限",null);
+            // 根据type 清除对应类型的卡密
+            // 0 未使用
+            // 1 已使用
+            paykeyService.typeDelete(status);
+            return Result.getResultJson(200,"已清除",null);
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(400,"接口异常",null);
+        }
+    }
+
     /**
      * 彩虹易支付相关
      **/
