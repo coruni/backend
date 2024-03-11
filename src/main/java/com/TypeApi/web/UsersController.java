@@ -325,7 +325,7 @@ public class UsersController {
             // 移除敏感数据
             data.remove("password");
 
-            if(!user.getUid().equals(own.getUid())) data.remove("address");
+            if(user.getUid()==null ||!user.getUid().equals(own.getUid())) data.remove("address");
 
             data.remove("mail");
 

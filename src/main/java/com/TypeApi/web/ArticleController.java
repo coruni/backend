@@ -1372,8 +1372,8 @@ public class ArticleController {
                 Integer taskLike = redisHelp.getRedis("likes_" + user.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("likes_" + user.getName(), redisTemplate)) : 0;
                 if (taskLike < 3) {
                     // 点赞送经验和积分
-                    user.setAssets(user.getAssets() + 2);
-                    user.setExperience(user.getExperience() + 5);
+                    user.setAssets(user.getAssets()!=null? user.getAssets() + 2:0+2);
+                    user.setExperience(user.getExperience()!=null? user.getExperience() + 5:0+5);
                     redisHelp.delete("likes_" + user.getName(), redisTemplate);
                     redisHelp.setRedis("likes_" + user.getName(), String.valueOf(taskLike + 1), endTime, redisTemplate);
                     usersService.update(user);
