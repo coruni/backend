@@ -57,7 +57,7 @@ public class ArticleServiceImpl implements ArticleService {
 	}
 
 	@Override
-	public PageList<Article> selectPage(Article article, Integer offset, Integer pageSize , String searchKey, String order, Integer random) {
+	public PageList<Article> selectPage(Article article, Integer offset, Integer pageSize , String searchKey, String order, Integer random,Integer tag) {
 		PageList<Article> pageList = new PageList<>();
 
 		int total = this.total(article,searchKey);
@@ -71,7 +71,7 @@ public class ArticleServiceImpl implements ArticleService {
 
 		int page = (offset - 1) * pageSize;
 
-		List<Article> list = dao.selectPage(article, page, pageSize,searchKey,order,random);
+		List<Article> list = dao.selectPage(article, page, pageSize,searchKey,order,random,tag);
 
 		pageList.setList(list);
 		pageList.setStartPageNo(offset);

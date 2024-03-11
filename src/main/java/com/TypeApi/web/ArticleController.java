@@ -10,6 +10,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import net.dreamlu.mica.xss.core.XssCleanIgnore;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.xwpf.usermodel.IBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -376,6 +377,7 @@ public class ArticleController {
                               @RequestParam(value = "params", required = false) String params,
                               @RequestParam(value = "random", required = false, defaultValue = "0") Integer random,
                               @RequestParam(value = "searchKey", required = false) String searchKey,
+                              @RequestParam(value = "tag",required = false) Integer tagId,
                               @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
                               HttpServletRequest request) {
         try {
@@ -398,7 +400,7 @@ public class ArticleController {
             }
             if (permission) query.setStatus(null);
 
-            PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random);
+            PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random,tagId);
             List<Article> articleList = articlePage.getList();
             List dataList = new ArrayList<>();
             for (Article article : articleList) {

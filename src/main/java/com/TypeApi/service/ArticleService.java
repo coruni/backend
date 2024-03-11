@@ -50,7 +50,7 @@ public interface ArticleService {
     /**
      * [分页条件查询]
      **/
-    PageList<Article> selectPage (Article article, Integer page, Integer pageSize, String searchKey, String order, Integer random);
+    PageList<Article> selectPage (Article article, Integer page, Integer pageSize, String searchKey, String order, Integer random, Integer tag);
 
     /**
      * [总量查询]

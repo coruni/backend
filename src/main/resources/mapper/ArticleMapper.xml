@@ -390,6 +390,10 @@
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_contents
         <where>
+            <!-- 判断是否要求存在指定标签id -->
+            <if test="null != tag">
+                AND cid IN (SELECT r.cid FROM ${prefix}_relationships r WHERE r.mid = #{tag})
+            </if>
             <if test ='null != article.mid'>
                 and `mid` = #{article.mid}
             </if>
@@ -465,6 +469,7 @@
             <if test ='null != article.isCircleTop'>
                 and `isCircleTop` = #{article.isCircleTop}
             </if>
+
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`title`, '')) LIKE CONCAT('%', #{searchKey}, '%')
             </if>

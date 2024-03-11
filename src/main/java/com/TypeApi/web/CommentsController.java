@@ -434,7 +434,7 @@ public class CommentsController {
             }
             Comments comments = service.selectByKey(id);
             if (comments == null || comments.toString().isEmpty()) return Result.getResultJson(201, "评论不存在", null);
-            if (!permission || user.getUid().equals(comments.getUid()))
+            if (!permission && user.getUid().equals(comments.getUid()))
                 return Result.getResultJson(201, "无权限", null);
 
             service.delete(id);
