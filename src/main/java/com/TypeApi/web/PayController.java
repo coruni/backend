@@ -714,7 +714,7 @@ public class PayController {
             }
 
             Paykey paykey = paykeyService.selectByCard(card);
-            if (paykey.getValue() == null) return Result.getResultJson(201, "卡密不存在", null);
+            if (paykey==null || paykey.getValue() == null) return Result.getResultJson(201, "卡密不存在", null);
             Integer pirce = paykey.getPrice();
             if (!paykey.getStatus().equals(0)) {
                 return Result.getResultJson(201, "卡密已失效", null);
