@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -84,102 +85,79 @@ public class PayController {
      */
     @RequestMapping(value = "/scancodePay")
     @ResponseBody
-    public String scancodepay(@RequestParam(value = "num", required = false) String num, @RequestParam(value = "token", required = false) String token) throws AlipayApiException {
+    public String scancodepay(@RequestParam(value = "num", required = false) String num,
+                              HttpServletRequest request) throws AlipayApiException {
 
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-        }
-
-        Pattern pattern = Pattern.compile("[0-9]*");
-        if (!pattern.matcher(num).matches()) {
-            return Result.getResultJson(0, "充值金额必须为正整数", null);
-        }
-        if (Integer.parseInt(num) <= 0) {
-            return Result.getResultJson(0, "充值金额不正确", null);
-        }
-
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid = Integer.parseInt(map.get("uid").toString());
-        //登录情况下，恶意充值攻击拦截
-        String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
-        if (isSilence != null) {
-            return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
-        }
-        String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
-        if (isRepeated == null) {
-            redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 2, redisTemplate);
-        } else {
-            Integer frequency = Integer.parseInt(isRepeated) + 1;
-            if (frequency == 3) {
-                securityService.safetyMessage("用户ID：" + uid + "，在微信充值接口疑似存在攻击行为，请及时确认处理。", "system");
-                redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
-                return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
-            } else {
-                redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
+        try {
+            //攻击拦截结束
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
             }
-            return Result.getResultJson(0, "你的操作太频繁了", null);
+            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
+            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+
+            final String APPID = apiconfig.getAlipayAppId();
+            String RSA2_PRIVATE = apiconfig.getAlipayPrivateKey();
+            String ALIPAY_PUBLIC_KEY = apiconfig.getAlipayPublicKey();
+
+            Date now = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");//可以方便地修改日期格式
+            String timeID = dateFormat.format(now);
+            String order_no = timeID + "scancodealipay";
+            String body = "";
+
+
+            String total_fee = num;  //真实金钱
+
+            AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", APPID, RSA2_PRIVATE, "json",
+                    "UTF-8", ALIPAY_PUBLIC_KEY, "RSA2"); //获得初始化的AlipayClient
+            AlipayTradePrecreateRequest httpRequest = new AlipayTradePrecreateRequest();//创建API对应的request类
+            httpRequest.setBizContent("{" +
+                    "    \"out_trade_no\":\"" + order_no + "\"," +
+                    "    \"total_amount\":\"" + total_fee + "\"," +
+                    "    \"body\":\"" + body + "\"," +
+                    "    \"subject\":\"商品购买\"," +
+                    "    \"timeout_express\":\"90m\"}");//设置业务参数
+            httpRequest.setNotifyUrl(apiconfig.getAlipayNotifyUrl());
+            AlipayTradePrecreateResponse response = alipayClient.execute(httpRequest);//通过alipayClient调用API，获得对应的response类
+            System.out.print(response.getBody());
+
+            //根据response中的结果继续业务逻辑处理
+            if (response.getMsg().equals("Success")) {
+                //先生成订单
+                Long date = System.currentTimeMillis();
+                String created = String.valueOf(date).substring(0, 10);
+                Paylog paylog = new Paylog();
+                Integer TotalAmount = Integer.parseInt(total_fee) * apiconfig.getScale();
+                paylog.setStatus(0);
+                paylog.setCreated(Integer.parseInt(created));
+                paylog.setUid(user.getUid());
+                paylog.setOutTradeNo(order_no);
+                paylog.setTotalAmount(TotalAmount.toString());
+                paylog.setPaytype("scancodePay");
+                paylog.setSubject("扫码支付");
+                paylogService.insert(paylog);
+                //再返回二维码
+                String qrcode = response.getQrCode();
+                JSONObject toResponse = new JSONObject();
+                toResponse.put("code", 1);
+                toResponse.put("data", qrcode);
+                toResponse.put("msg", "获取成功");
+                return toResponse.toString();
+            } else {
+                JSONObject toResponse = new JSONObject();
+                toResponse.put("code", 0);
+                toResponse.put("data", "");
+                toResponse.put("msg", "请求失败");
+                return toResponse.toString();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
-        //攻击拦截结束
-
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-
-        final String APPID = apiconfig.getAlipayAppId();
-        String RSA2_PRIVATE = apiconfig.getAlipayPrivateKey();
-        String ALIPAY_PUBLIC_KEY = apiconfig.getAlipayPublicKey();
-
-        Date now = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");//可以方便地修改日期格式
-        String timeID = dateFormat.format(now);
-        String order_no = timeID + "scancodealipay";
-        String body = "";
-
-
-        String total_fee = num;  //真实金钱
-
-        AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", APPID, RSA2_PRIVATE, "json",
-                "UTF-8", ALIPAY_PUBLIC_KEY, "RSA2"); //获得初始化的AlipayClient
-        AlipayTradePrecreateRequest request = new AlipayTradePrecreateRequest();//创建API对应的request类
-        request.setBizContent("{" +
-                "    \"out_trade_no\":\"" + order_no + "\"," +
-                "    \"total_amount\":\"" + total_fee + "\"," +
-                "    \"body\":\"" + body + "\"," +
-                "    \"subject\":\"商品购买\"," +
-                "    \"timeout_express\":\"90m\"}");//设置业务参数
-        request.setNotifyUrl(apiconfig.getAlipayNotifyUrl());
-        AlipayTradePrecreateResponse response = alipayClient.execute(request);//通过alipayClient调用API，获得对应的response类
-        System.out.print(response.getBody());
-
-        //根据response中的结果继续业务逻辑处理
-        if (response.getMsg().equals("Success")) {
-            //先生成订单
-            Long date = System.currentTimeMillis();
-            String created = String.valueOf(date).substring(0, 10);
-            Paylog paylog = new Paylog();
-            Integer TotalAmount = Integer.parseInt(total_fee) * apiconfig.getScale();
-            paylog.setStatus(0);
-            paylog.setCreated(Integer.parseInt(created));
-            paylog.setUid(uid);
-            paylog.setOutTradeNo(order_no);
-            paylog.setTotalAmount(TotalAmount.toString());
-            paylog.setPaytype("scancodePay");
-            paylog.setSubject("扫码支付");
-            paylogService.insert(paylog);
-            //再返回二维码
-            String qrcode = response.getQrCode();
-            JSONObject toResponse = new JSONObject();
-            toResponse.put("code", 1);
-            toResponse.put("data", qrcode);
-            toResponse.put("msg", "获取成功");
-            return toResponse.toString();
-        } else {
-            JSONObject toResponse = new JSONObject();
-            toResponse.put("code", 0);
-            toResponse.put("data", "");
-            toResponse.put("msg", "请求失败");
-            return toResponse.toString();
-        }
-
     }
 
     @RequestMapping(value = "/notify", method = RequestMethod.POST)
@@ -669,6 +647,7 @@ public class PayController {
             return Result.getResultJson(400, "接口异常", null);
         }
     }
+
     @RequestMapping(value = "/delete")
     @ResponseBody
     public String delete(@RequestParam(value = "id") int id,
@@ -714,7 +693,7 @@ public class PayController {
             }
 
             Paykey paykey = paykeyService.selectByCard(card);
-            if (paykey==null || paykey.getValue() == null) return Result.getResultJson(201, "卡密不存在", null);
+            if (paykey == null || paykey.getValue() == null) return Result.getResultJson(201, "卡密不存在", null);
             Integer pirce = paykey.getPrice();
             if (!paykey.getStatus().equals(0)) {
                 return Result.getResultJson(201, "卡密已失效", null);
@@ -777,23 +756,23 @@ public class PayController {
     @RequestMapping(value = "/clear")
     @ResponseBody
     public String clear(@RequestParam(value = "status") Integer status,
-                        HttpServletRequest request){
+                        HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             Users user = new Users();
-            if(token!=null && !token.isEmpty()){
+            if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
             }
-            if(!permission(user)) return Result.getResultJson(201,"无权限",null);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
             // 根据type 清除对应类型的卡密
             // 0 未使用
             // 1 已使用
             paykeyService.typeDelete(status);
-            return Result.getResultJson(200,"已清除",null);
-        }catch (Exception e){
+            return Result.getResultJson(200, "已清除", null);
+        } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(400,"接口异常",null);
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
 
@@ -802,39 +781,18 @@ public class PayController {
      **/
     @RequestMapping(value = "/EPay")
     @ResponseBody
-    public String EPay(@RequestParam(value = "type", required = false) String type, @RequestParam(value = "money", required = false) Integer money, @RequestParam(value = "device", required = false) String device, @RequestParam(value = "token", required = false) String token, HttpServletRequest request) {
-        if (type == null && money == null && money == null && device == null) {
-            return Result.getResultJson(0, "参数不正确", null);
-        }
+    public String EPay(@RequestParam(value = "type", required = false) String type,
+                       @RequestParam(value = "money", required = false) Integer money,
+                       @RequestParam(value = "device", required = false) String device,
+                       HttpServletRequest request) {
         try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
             }
-
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid = Integer.parseInt(map.get("uid").toString());
-            //登录情况下，恶意充值攻击拦截
-            String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
-            if (isSilence != null) {
-                return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
-            }
-            String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
-            if (isRepeated == null) {
-                redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 2, redisTemplate);
-            } else {
-                Integer frequency = Integer.parseInt(isRepeated) + 1;
-                if (frequency == 3) {
-                    securityService.safetyMessage("用户ID：" + uid + "，在微信充值接口疑似存在攻击行为，请及时确认处理。", "system");
-                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
-                    return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
-                } else {
-                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
-                }
-                return Result.getResultJson(0, "你的操作太频繁了", null);
-            }
-            //攻击拦截结束
-
+            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             String url = apiconfig.getEpayUrl();
             Date now = new Date();
@@ -848,7 +806,7 @@ public class PayController {
             sign.put("out_trade_no", outTradeNo);
             sign.put("notify_url", apiconfig.getEpayNotifyUrl());
             sign.put("clientip", clientip);
-            sign.put("name", "在线充值金额");
+            sign.put("name", "积分充值");
             sign.put("money", money.toString());
             sign = sortByKey(sign);
             String signStr = "";
@@ -879,7 +837,7 @@ public class PayController {
                 Integer TotalAmount = money * apiconfig.getScale();
                 paylog.setStatus(0);
                 paylog.setCreated(Integer.parseInt(created));
-                paylog.setUid(uid);
+                paylog.setUid(user.getUid());
                 paylog.setOutTradeNo(outTradeNo);
                 paylog.setTotalAmount(TotalAmount.toString());
                 paylog.setPaytype("ePay_" + type);

@@ -77,6 +77,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
                 .addPathPatterns("/pay/cardList")
                 .addPathPatterns("/pay/cardExport")
                 .addPathPatterns("/pay/chargeCard")
+                .addPathPatterns("/pay/EPay")
                 .addPathPatterns("/exchange/add")
                 .addPathPatterns("/exchange/delete")
                 .addPathPatterns("/exchange/update")
