@@ -99,16 +99,6 @@ public class ArticleController {
     @Autowired
     private RedisTemplate redisTemplate;
 
-    @Autowired
-    private MailService MailService;
-
-    @Value("${webinfo.contentCache}")
-    private Integer contentCache;
-
-    @Value("${webinfo.contentInfoCache}")
-    private Integer contentInfoCache;
-
-
     @Value("${web.prefix}")
     private String dataprefix;
 
@@ -122,8 +112,6 @@ public class ArticleController {
     ResultAll Result = new ResultAll();
     baseFull baseFull = new baseFull();
     UserStatus UStatus = new UserStatus();
-    HttpClient HttpClient = new HttpClient();
-    EditFile editFile = new EditFile();
 
     /***
      * 文章详情
@@ -134,97 +122,28 @@ public class ArticleController {
                        HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Boolean permission = false;
-            Users user = new Users();
+            Users user = getUser(token);
+            Boolean permission = permission(user);
             int user_id = 0;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user != null && (user.getGroup().equals("administrator") || user.getGroup().equals("editor"))) {
-                    permission = true;
-                }
-                if (user != null) user_id = user.getUid();
-            }
+            if(user.getUid()!=null) user_id = user.getUid();
             // 查询文章
-            Article article = service.selectByKey(id);
-            Integer views = article.getViews() + 1;
-            article.setViews(views);
+            Article article = getArticle(id);
+            if(article.getCid()==null) return Result.getResultJson(201,"数据不存在",null);
+            article.setViews(article.getViews()+1);
             service.update(article);
+
             //格式化数据
-            JSONObject opt = new JSONObject();
-            opt = article.getOpt() != null && !article.getOpt().isEmpty() ? JSONObject.parseObject(article.getOpt()) : null;
-            // 删除<!--markdown-->
-            String text = article.getText().replace("<!--markdown-->", "");
+            JSONObject opt = opt = article.getOpt() != null && !article.getOpt().isEmpty() ? JSONObject.parseObject(article.getOpt()) : null;
             // 取出内容中的图片
-            List<String> images = baseFull.getImageSrc(text);
-
+            List<String> images = baseFull.getImageSrc(article.getText());
             // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
-            Boolean isReply = false;
-            Boolean isPaid = false;
-
-            Userlog userlog = new Userlog();
-            int isLike = 0;
-            int isMark = 0;
-            if (user != null && !user.toString().isEmpty()) {
-                // 获取评论状态
-                Comments replyStatus = new Comments();
-                replyStatus.setCid(article.getCid());
-                replyStatus.setUid(user.getUid());
-                int rStatus = commentsService.total(replyStatus, null);
-                if (rStatus > 0) {
-                    isReply = true;
-                }
-                // 获取购买状态
-                Paylog paylog = new Paylog();
-                paylog.setPaytype("article");
-                paylog.setUid(user.getUid());
-                paylog.setCid(article.getCid());
-                int pStatus = paylogService.total(paylog);
-                if (pStatus > 0) {
-                    isPaid = true;
-                }
-
-                // 是否点赞或者是否收藏
-                userlog.setType("articleLike");
-                userlog.setCid(article.getCid());
-                userlog.setUid(user.getUid());
-                List<Userlog> userlogList = userlogService.selectList(userlog);
-                if (userlogList.size() > 0) isLike = 1;
-                userlog.setType("articleMark");
-                userlogList = userlogService.selectList(userlog);
-                if (userlogList.size() > 0) isMark = 1;
-            }
-
-
-            Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
-            Matcher matcher = pattern.matcher(text);
-            StringBuffer replacedText = new StringBuffer();
-            while (matcher.find()) {
-                String type = matcher.group(1);
-                String content = matcher.group(2);
-                String replacement = "";
-                if (type.equals("pay") && !isPaid && !article.getAuthorId().equals(user_id) && !permission) {
-                    replacement = "【付费查看：这是付费内容，付费后可查看】";
-                } else if (type.equals("reply") && !isReply && !article.getAuthorId().equals(user_id) && !permission) {
-                    replacement = "【回复查看：这是回复内容，回复后可查看】";
-                } else {
-                    replacement = content;  // 如果不需要替换，则保持原样
-                }
-                matcher.appendReplacement(replacedText, replacement);
-            }
-            text = matcher.appendTail(replacedText).toString();
-
-            // 获取分类和tag
-            Category category = metasService.selectByKey(article.getMid());
-            Map<String, Object> cateMap = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
-            JSONObject cateOpt = new JSONObject();
-            if (category != null && category.getOpt() != null && category.getOpt().toString() != null && !category.getOpt().toString().isEmpty()) {
-                cateOpt = JSONObject.parseObject(category.getOpt().toString());
-                cateMap.put("opt", cateOpt);
-            }
-
+            Boolean isReply = hasComment(user,article);
+            Boolean isPaid = hasPay(user,article);
+            Boolean isLike = hasLike(user,article);
+            Boolean isMark = hasMark(user,article);
+            String text = hideText(isPaid,isReply,permission,article,user_id);
+            Map<String,Object> category = getCategory(article.getMid());
             // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
-
             Boolean showText = showText(user, article, category);
             if (!showText && !permission) text = "";
             // 标签
@@ -244,66 +163,17 @@ public class ArticleController {
                     tagDataList.add(tagData);
                 }
             }
-
-            // 加入作者信息
-            Users info = usersService.selectByKey(article.getAuthorId());
-            Map<String, Object> authorInfo;
-            if (info == null || info.toString().isEmpty()) {
-                authorInfo = new HashMap<>();
-            } else {
-                authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-            }
-            if (info != null && !info.toString().isEmpty()) {
-                List result = baseFull.getLevel(info.getExperience(), dataprefix, apiconfigService, redisTemplate);
-                Integer level = (Integer) result.get(0);
-                Integer nextLevel = (Integer) result.get(1);
-                JSONObject authorOpt = new JSONObject();
-                authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
-
-                // 是否VIP
-                Integer isVip = info.getVip() > System.currentTimeMillis() / 1000 ? 1 : 0;
-                Integer isFollow = 0;
-                if (user != null && !user.toString().isEmpty() && user_id != 0) {
-                    // 获取关注
-                    Fan fan = new Fan();
-                    fan.setUid(user_id);
-                    fan.setTouid(article.getAuthorId());
-                    if (fanService.selectList(fan).size() > 0) isFollow = 1;
-                }
-
-                // 是否注销
-                if (info.getStatus().equals(0)) authorInfo.put("screenName", "用户已注销");
-
-                //加入信息
-                authorInfo.put("isFollow", isFollow);
-                authorInfo.put("level", level);
-                authorInfo.put("nextLevel", nextLevel);
-                authorInfo.put("opt", authorOpt);
-                authorInfo.put("isVip", isVip);
-                // 移除敏感信息
-                authorInfo.remove("address");
-                authorInfo.remove("assets");
-                authorInfo.remove("password");
-            } else {
-                //加入信息
-                authorInfo.put("isFollow", 0);
-                authorInfo.put("level", 0);
-                authorInfo.put("nextLevel", 0);
-                authorInfo.put("isVip", 0);
-                authorInfo.put("screenName", "用户已注销");
-            }
-
-
+            // 获取作者信息
+            Map<String, Object> authorInfo = getAuthorInfo(user_id,article);
             // 返回信息
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-
             // 加入信息
             if (article.getImages() != null && !article.getImages().isEmpty())
                 data.put("images", JSONArray.parseArray(article.getImages()));
             else data.put("images", images);
             data.put("opt", opt);
             data.put("text", text);
-            data.put("category", cateMap);
+            data.put("category", category);
             data.put("tag", tagDataList);
             data.put("isLike", isLike);
             data.put("isMark", isMark);
@@ -326,44 +196,13 @@ public class ArticleController {
             } else {
                 data.put("isHide", 0);
             }
-
-            if (user != null && !user.toString().isEmpty()) {
-                // 开始写入访问次数至多两次
-                Integer endTime = baseFull.endTime();
-                // views 存入今天的数据 最多三次
-                Integer taskViews = redisHelp.getRedis("views_" + user.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + user.getName(), redisTemplate)) : 0;
-                if (taskViews < 2) {
-                    // 点赞送经验和积分
-                    user.setAssets((user.getAssets() != null ? user.getAssets() : 0) + 2);
-                    user.setExperience((user.getExperience() != null ? user.getExperience() : 0) + 5);
-                    redisHelp.delete("views_" + user.getName(), redisTemplate);
-                    redisHelp.setRedis("views_" + user.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
-                    usersService.update(user);
-                }
-            }
+            // 添加访问经验
+            addView(user);
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口错误", null);
         }
-    }
-
-    /***
-     * 判断是否是会员可见
-     * @param user
-     * @param article
-     * @return
-     */
-    private Boolean showText(Users user, Article article, Category category) {
-        if (category.getIsvip().equals(0)) return true;
-
-        if (user.getUid() != null && !user.getUid().equals(0)) {
-            if ((category.getIsvip().equals(1) && (user.getVip() > System.currentTimeMillis() / 1000)) || article.getAuthorId().equals(user.getUid())) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
 
@@ -381,18 +220,11 @@ public class ArticleController {
                               @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
                               HttpServletRequest request) {
         try {
-            Boolean permission = false;
             String token = request.getHeader("Authorization");
-            Users user = new Users();
+            Users user = getUser(token);
+            Boolean permission = permission(user);
             int user_id = 0;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user != null && user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
-                    permission = true;
-                }
-                if (user != null) user_id = user.getUid();
-            }
+            if(user.getUid()!=null) user_id = user.getUid();
             Article query = new Article();
             if (params != null && !params.isEmpty()) {
                 query = JSONObject.parseObject(params, Article.class);
@@ -405,66 +237,20 @@ public class ArticleController {
             List dataList = new ArrayList<>();
             for (Article article : articleList) {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-                //移除信息
-                data.remove("password");
                 //格式化数据
-                JSONObject opt = new JSONObject();
-                opt = article.getOpt() != null && !article.getOpt().toString().isEmpty() ? JSONObject.parseObject(article.getOpt().toString()) : null;
-
+                JSONObject opt = article.getOpt() != null && !article.getOpt().isEmpty() ? JSONObject.parseObject(article.getOpt()) : null;
+                // 取出内容中的图片
+                List<String> images = baseFull.getImageSrc(article.getText());
                 // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
-                Boolean isReply = false;
-                Boolean isPaid = false;
-                if (user != null && !user.toString().isEmpty()) {
-                    // 获取评论状态
-                    Comments replyStatus = new Comments();
-                    replyStatus.setCid(article.getCid());
-                    replyStatus.setUid(user.getUid());
-                    int rStatus = commentsService.total(replyStatus, null);
-                    if (rStatus > 0) {
-                        isReply = true;
-                    }
-                    // 获取购买状态
-                    Paylog paylog = new Paylog();
-                    paylog.setPaytype("article");
-                    paylog.setUid(user.getUid());
-                    paylog.setCid(article.getCid());
-                    int pStatus = paylogService.total(paylog);
-                    if (pStatus > 0) {
-                        isPaid = true;
-                    }
-                }
-                // 替换隐藏内容
-                String text = article.getText();
-                Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
-                Matcher matcher = pattern.matcher(text);
-                StringBuffer replacedText = new StringBuffer();
-                while (matcher.find()) {
-                    String type = matcher.group(1);
-                    String content = matcher.group(2);
-                    String replacement = "";
-                    if (type.equals("pay") && !isPaid && !article.getAuthorId().equals(user_id) && !permission) {
-                        replacement = "【付费查看：这是付费内容，付费后可查看】";
-                    } else if (type.equals("reply") && !isReply && !article.getAuthorId().equals(user_id) && !permission) {
-                        replacement = "【回复查看：这是回复内容，回复后可查看】";
-                    } else {
-                        replacement = content;  // 如果不需要替换，则保持原样
-                    }
-                    matcher.appendReplacement(replacedText, replacement);
-                }
-                text = matcher.appendTail(replacedText).toString();
-                text = text.replace("<!--markdown-->", "");
-                text = baseFull.toStrByChinese(text);
-                // 获取文章图片
-                List images = baseFull.getImageSrc(article.getText());
-
-                // 获取分类和tag
-                Category category = metasService.selectByKey(article.getMid());
-                Map<String, Object> cateMap = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
-                JSONObject cateOpt = new JSONObject();
-                if (category != null && category.getOpt() != null && category.getOpt().toString() != null && !category.getOpt().toString().isEmpty()) {
-                    cateOpt = JSONObject.parseObject(category.getOpt().toString());
-                    cateMap.put("opt", cateOpt);
-                }
+                Boolean isReply = hasComment(user,article);
+                Boolean isPaid = hasPay(user,article);
+                Boolean isLike = hasLike(user,article);
+                Boolean isMark = hasMark(user,article);
+                String text = hideText(isPaid,isReply,permission,article,user_id);
+                Map<String,Object> category = getCategory(article.getMid());
+                // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
+                Boolean showText = showText(user, article, category);
+                if (!showText && !permission) text = "";
                 // 标签
                 Relationships tagQuery = new Relationships();
                 tagQuery.setCid(article.getCid());
@@ -481,86 +267,38 @@ public class ArticleController {
                         tagData.remove("opt");
                         tagDataList.add(tagData);
                     }
-
                 }
-
-                // 加入作者信息
-                Users info = usersService.selectByKey(article.getAuthorId());
-                Map<String, Object> authorInfo;
-                if (info == null || info.toString().isEmpty()) {
-                    authorInfo = new HashMap<>();
-                } else {
-                    authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-                }
-                if (info != null && !info.toString().isEmpty()) {
-                    List result = baseFull.getLevel(info.getExperience(), dataprefix, apiconfigService, redisTemplate);
-                    Integer level = (Integer) result.get(0);
-                    Integer nextLevel = (Integer) result.get(1);
-                    JSONObject authorOpt = new JSONObject();
-                    authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
-                    // 是否VIP
-                    Integer isVip = 0;
-                    if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
-                    Integer isFollow = 0;
-                    if (user != null && !user.toString().isEmpty() && user_id != 0) {
-                        // 获取关注
-                        Fan fan = new Fan();
-                        fan.setUid(user.getUid());
-                        fan.setTouid(article.getAuthorId());
-                        if (fanService.total(fan) > 0) isFollow = 1;
-                    }
-
-                    // 是否注销
-                    if (info.getStatus().equals(0)) authorInfo.put("screenName", "用户已注销");
-
-                    //加入信息
-                    authorInfo.put("isFollow", isFollow);
-                    authorInfo.put("level", level);
-                    authorInfo.put("nextLevel", nextLevel);
-                    authorInfo.put("isVip", isVip);
-                    authorInfo.put("opt", authorOpt);
-
-                    // 移除敏感信息
-                    authorInfo.remove("address");
-                    authorInfo.remove("assets");
-                    authorInfo.remove("password");
-                } else {
-                    //加入信息
-                    authorInfo.put("isFollow", 0);
-                    authorInfo.put("level", 0);
-                    authorInfo.put("nextLevel", 0);
-                    authorInfo.put("isVip", 0);
-                    authorInfo.put("screenName", "账户已注销");
-                }
-
-                // 是否点赞或者是否收藏
-                Userlog userlog = new Userlog();
-                int isLike = 0;
-                int isMark = 0;
-                if (user != null && !user.toString().isEmpty()) {
-                    userlog.setType("articleLike");
-                    userlog.setCid(article.getCid());
-                    userlog.setUid(user.getUid());
-                    List<Userlog> userlogList = userlogService.selectList(userlog);
-                    if (userlogList.size() > 0) isLike = 1;
-                    userlog.setType("articleMark");
-                    userlogList = userlogService.selectList(userlog);
-                    if (userlogList.size() > 0) isMark = 1;
-                }
-
+                // 获取作者信息
+                Map<String, Object> authorInfo = getAuthorInfo(user_id,article);
                 // 加入信息
                 if (article.getImages() != null && !article.getImages().isEmpty())
                     data.put("images", JSONArray.parseArray(article.getImages()));
                 else data.put("images", images);
+                data.put("opt", opt);
                 data.put("text", text);
-                data.put("category", cateMap);
+                data.put("category", category);
                 data.put("tag", tagDataList);
                 data.put("isLike", isLike);
                 data.put("isMark", isMark);
                 data.put("authorInfo", authorInfo);
+                data.put("showText", showText);
                 // 移除信息
                 data.remove("passowrd");
-                data.remove("opt");
+                Optional<JSONObject> objectOptional = Optional.ofNullable(opt)
+                        .map(o -> o.getJSONArray("files"))
+                        .filter(filesArray -> filesArray != null && filesArray.size() > 0)
+                        .map(filesArray -> JSONObject.parseObject(filesArray.get(0).toString()));
+                JSONObject object = new JSONObject();
+                if (objectOptional.isPresent()) {
+                    object = objectOptional.get();
+                }
+                // 判断是是否是隐藏内容
+                if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object != null && object.containsKey("link") && !permission) {
+                    data.put("opt", null);
+                    data.put("isHide", 1);
+                } else {
+                    data.put("isHide", 0);
+                }
                 dataList.add(data);
             }
             // 返回信息
@@ -571,7 +309,6 @@ public class ArticleController {
             data.put("total", service.total(query, searchKey));
             data.put("count", articleList.size());
             return Result.getResultJson(200, "获取成功", data);
-
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
@@ -596,28 +333,17 @@ public class ArticleController {
                              @RequestParam(value = "discount", required = false, defaultValue = "1") Float discount,
                              HttpServletRequest request) {
         try {
-            String token = request.getHeader("Authorization");
-            Boolean permission = false;
-            int user_id = 0;
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
-                user_id = user.getUid();
-                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
-                    permission = true;
-                }
-                // 封禁
-                if (user.getBantime() != null && user.getBantime() > System.currentTimeMillis() / 1000) {
-                    return Result.getResultJson(201, "用户封禁中", null);
-                }
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            Boolean permission = permission(user);
+            int user_id = 0;
+            if(user.getUid()==null) return Result.getResultJson(201,"用户不存在，请重新登录",null);
+            if (user.getBantime() != null && user.getBantime() > System.currentTimeMillis() / 1000) {
+                return Result.getResultJson(201, "用户封禁中", null);
             }
             // 判断
             Long timeStamp = System.currentTimeMillis() / 1000;
-
             if (title == null || title.length() < 3) {
                 return Result.getResultJson(201, "标题太短", null);
             }
@@ -701,17 +427,7 @@ public class ArticleController {
 
     }
 
-    private void postAddExp(Users user) {
-        Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-        user.setExperience(user.getExperience() != null ? user.getExperience() + apiconfig.getPostExp() : 0 + apiconfig.getPostExp());
-        usersService.update(user);
-        Userlog log = new Userlog();
-        log.setType("postExp");
-        log.setToid(user.getUid());
-        log.setNum(apiconfig.getPostExp());
-        log.setCreated((int) (System.currentTimeMillis() / 1000));
-        userlogService.insert(log);
-    }
+
 
     /***
      * 文章更新
@@ -731,20 +447,15 @@ public class ArticleController {
                          HttpServletRequest request) {
 
         try {
-            Boolean permission = false;
-            Integer uid = null;
             String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            Boolean permission = permission(user);
+            int user_id = 0;
+            if(user.getUid()!=null) user_id = user.getUid();
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             Article article = service.selectByKey(id);
 
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                uid = user.getUid();
-                if (article.getAuthorId().equals(uid) || user.getGroup().equals("administrator") || user.getGroup().equals("editor"))
-                    permission = true;
-                else return Result.getResultJson(201, "无权限", null);
-            }
+            if(!permission && !article.getAuthorId().equals(user_id)) return Result.getResultJson(201,"无权限",null);
             // 更新分类
             relationshipsService.delete(article.getCid());
             Relationships relate = new Relationships();
@@ -769,11 +480,7 @@ public class ArticleController {
             article.setModified((int) (System.currentTimeMillis() / 1000));
             if (apiconfig.getContentAuditlevel().equals(1)) article.setStatus("waiting");
             if (apiconfig.getContentAuditlevel().equals(2)) {
-                if (!permission) article.setStatus("waiting");
-            }
-            Integer articleUpdate = service.update(article);
-            if (articleUpdate == null) {
-                return Result.getResultJson(201, "更新失败", null);
+                if (!permission &&article.getStatus().equals("waiting")) article.setStatus("waiting");
             }
             return Result.getResultJson(200, "更新成功", null);
         } catch (Exception e) {
@@ -789,20 +496,23 @@ public class ArticleController {
     public String delete(@RequestParam(value = "id") Integer id,
                          HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) {
-                return Result.getResultJson(201, "无权限", null);
-            }
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            Boolean permission = permission( user);
+            int user_id = 0;
+            if(user.getUid()!=null) user_id = user.getUid();
             Article article = service.selectByKey(id);
+            if(!permission && article.getAuthorId().equals(user_id));
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-            Users user = usersService.selectByKey(article.getAuthorId());
+            Users author = usersService.selectByKey(article.getAuthorId());
             // 删除
             service.delete(id);
             // 处理链表
             relationshipsService.delete(article.getCid());
             // 更新用户经验
-            Integer exp = user.getExperience() - apiconfig.getDeleteExp();
-            user.setExperience(exp);
-            usersService.update(user);
+            Integer exp = author.getExperience() - apiconfig.getDeleteExp();
+            author.setExperience(exp);
+            usersService.update(author);
 
             // inbox信箱
             Inbox inbox = new Inbox();
@@ -818,19 +528,6 @@ public class ArticleController {
         }
     }
 
-    private boolean permission(String token) {
-        if (token != null && !token.isEmpty()) {
-            DecodedJWT verify = JWT.verify(token);
-            Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
 
     /***
      * 文章审核
@@ -842,13 +539,13 @@ public class ArticleController {
                         @RequestParam(value = "text") String text,
                         HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) {
-                return Result.getResultJson(201, "无权限", null);
-            }
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if(!permission(user)) return Result.getResultJson(201, "无权限", null);
 
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             Article article = service.selectByKey(id);
-            Users user = usersService.selectByKey(article.getAuthorId());
+            Users author = usersService.selectByKey(article.getAuthorId());
             Inbox inbox = new Inbox();
             inbox.setTouid(article.getAuthorId());
             inbox.setValue(article.getCid());
@@ -863,10 +560,9 @@ public class ArticleController {
             }
             if (apiconfig.getIsPush().equals(1)) {
                 try {
-                    pushService.sendPushMsg(user.getClientId(), "审核通知", "文章[" + article.getTitle() + "]" + (type.equals(0) ? "审核不通过" : "审核通过"), "payload", article.getCid().toString());
+                    pushService.sendPushMsg(author.getClientId(), "审核通知", "文章[" + article.getTitle() + "]" + (type.equals(0) ? "审核不通过" : "审核通过"), "payload", article.getCid().toString());
                 } catch (Exception e) {
                     e.printStackTrace();
-                    System.err.println(e);
                 }
             }
             service.update(article);
@@ -890,9 +586,9 @@ public class ArticleController {
                          @RequestParam(value = "type") String type,
                          HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) {
-                return Result.getResultJson(201, "无权限", null);
-            }
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if(!permission(user)) return Result.getResultJson(201, "无权限", null);
             Article article = service.selectByKey(id);
             switch (type) {
                 case "recommend":
@@ -930,16 +626,11 @@ public class ArticleController {
                       @RequestParam(value = "id") int id) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
+            Users user = getUser(token);
             Long timeStamp = System.currentTimeMillis() / 1000;
             Boolean vip = false;
+            if(user.getUid()!=null &&user.getVip()>System.currentTimeMillis()/100) vip =true;
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-                if (user.getVip() > timeStamp) vip = true;
-            }
             // 文章信息
             Article article = service.selectByKey(id);
             if (article.getAuthorId().equals(user.getUid())) {
@@ -1115,9 +806,10 @@ public class ArticleController {
     @RequestMapping(value = "/allData")
     @ResponseBody
     public String allData(HttpServletRequest request) {
-        if (!permission(request.getHeader("Authorization"))) {
-            return Result.getResultJson(201, "无权限", null);
-        }
+        String token = request.getHeader("Authorization");
+        Users user = getUser(token);
+        if(!permission(user)) return Result.getResultJson(201, "无权限", null);
+
         JSONObject data = new JSONObject();
         Article contents = new Article();
         contents.setStatus("publish");
@@ -1182,12 +874,10 @@ public class ArticleController {
                          HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            Boolean permission = permission(request.getHeader("Authorization"));
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            int user_id = 0;
+            if(user.getUid()!=null) user_id = user.getUid();
+            Boolean permission = permission(user);
             int offset = (page - 1) * limit; // 计算偏移量
             String sql = "SELECT content.* FROM " + prefix + "_contents AS content JOIN " + prefix + "_fan AS fan ON content.authorId = fan.touid WHERE fan.uid = ? AND content.status = 'publish' ORDER BY content.created DESC LIMIT ?, ?";
             List<Map<String, Object>> articleList = jdbcTemplate.queryForList(sql, user.getUid().toString(), offset, limit);
@@ -1195,66 +885,20 @@ public class ArticleController {
             for (Map<String, Object> article : articleList) {
                 Article articleData = JSONObject.parseObject(JSONObject.toJSONString(article), Article.class);
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-                //移除信息
-                data.remove("password");
                 //格式化数据
-                JSONObject opt = new JSONObject();
-                opt = articleData.getOpt() != null && !articleData.getOpt().toString().isEmpty() ? JSONObject.parseObject(articleData.getOpt().toString()) : null;
-
+                JSONObject opt = articleData.getOpt() != null && !articleData.getOpt().isEmpty() ? JSONObject.parseObject(articleData.getOpt()) : null;
+                // 取出内容中的图片
+                List<String> images = baseFull.getImageSrc(articleData.getText());
                 // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
-                Integer isReply = 0;
-                Integer isPaid = 0;
-                if (user.getUid() != null && user.getUid() != 0) {
-                    // 获取评论状态
-                    Comments replyStatus = new Comments();
-                    replyStatus.setCid(articleData.getCid());
-                    replyStatus.setUid(user.getUid());
-                    Integer rStatus = commentsService.total(replyStatus, null);
-                    if (rStatus > 0) {
-                        isReply = 1;
-                    }
-                    // 获取购买状态
-                    Paylog paylog = new Paylog();
-                    paylog.setPaytype("article");
-                    paylog.setUid(user.getUid());
-                    paylog.setCid(articleData.getCid());
-                    Integer pStatus = paylogService.total(paylog);
-                    if (pStatus > 0) {
-                        isPaid = 1;
-                    }
-                }
-                // 替换隐藏内容
-                String text = articleData.getText();
-                Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
-                Matcher matcher = pattern.matcher(text);
-                StringBuffer replacedText = new StringBuffer();
-                while (matcher.find()) {
-                    String type = matcher.group(1);
-                    String content = matcher.group(2);
-                    String replacement = "";
-                    if ("pay".equals(type) && isPaid == 0 && user.getUid() != articleData.getAuthorId() && !permission) {
-                        replacement = "【付费查看：这是付费内容，付费后可查看】";
-                    } else if ("reply".equals(type) && isReply == 0 && user.getUid() != articleData.getAuthorId() && !permission) {
-                        replacement = "【回复查看：这是回复内容，回复后可查看】";
-                    } else {
-                        replacement = content;  // 如果不需要替换，则保持原样
-                    }
-                    matcher.appendReplacement(replacedText, replacement);
-                }
-                text = matcher.appendTail(replacedText).toString();
-                text = text.replace("<!--markdown-->", "");
-                text = baseFull.toStrByChinese(text);
-                // 获取文章图片
-                List images = baseFull.getImageSrc(articleData.getText());
-
-                // 获取分类和tag
-                Category category = metasService.selectByKey(articleData.getMid());
-                Map<String, Object> cateMap = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
-                JSONObject cateOpt = new JSONObject();
-                if (category != null && category.getOpt() != null && category.getOpt().toString() != null && !category.getOpt().toString().isEmpty()) {
-                    cateOpt = JSONObject.parseObject(category.getOpt().toString());
-                    cateMap.put("opt", cateOpt);
-                }
+                Boolean isReply = hasComment(user,articleData);
+                Boolean isPaid = hasPay(user,articleData);
+                Boolean isLike = hasLike(user,articleData);
+                Boolean isMark = hasMark(user,articleData);
+                String text = hideText(isPaid,isReply,permission,articleData,user_id);
+                Map<String,Object> category = getCategory(articleData.getMid());
+                // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
+                Boolean showText = showText(user, articleData, category);
+                if (!showText && !permission) text = "";
                 // 标签
                 Relationships tagQuery = new Relationships();
                 tagQuery.setCid(articleData.getCid());
@@ -1271,47 +915,38 @@ public class ArticleController {
                         tagData.remove("opt");
                         tagDataList.add(tagData);
                     }
-
                 }
-
-                // 加入作者信息
-                Users info = usersService.selectByKey(articleData.getAuthorId());
-                Map<String, Object> authorInfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-                List result = baseFull.getLevel(info.getExperience(), dataprefix, apiconfigService, redisTemplate);
-                Integer level = (Integer) result.get(0);
-                Integer nextLevel = (Integer) result.get(1);
-                JSONObject authorOpt = new JSONObject();
-                authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
-                // 是否VIP
-                Integer isVip = 0;
-                if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
-                // 获取关注
-                Fan fan = new Fan();
-                fan.setUid(user.getUid());
-                fan.setTouid(articleData.getAuthorId());
-                Integer isFollow = fanService.total(fan);
-
-                //加入信息
-                authorInfo.put("isFollow", isFollow);
-                authorInfo.put("level", level);
-                authorInfo.put("nextLevel", nextLevel);
-                authorInfo.put("isVip", isVip);
-                authorInfo.put("opt", authorOpt);
-                // 移除敏感信息
-                authorInfo.remove("address");
-                authorInfo.remove("assets");
-                authorInfo.remove("password");
+                // 获取作者信息
+                Map<String, Object> authorInfo = getAuthorInfo(user_id,articleData);
                 // 加入信息
                 if (articleData.getImages() != null && !articleData.getImages().isEmpty())
                     data.put("images", JSONArray.parseArray(articleData.getImages()));
                 else data.put("images", images);
                 data.put("opt", opt);
                 data.put("text", text);
-                data.put("category", cateMap);
+                data.put("category", category);
                 data.put("tag", tagDataList);
+                data.put("isLike", isLike);
+                data.put("isMark", isMark);
                 data.put("authorInfo", authorInfo);
+                data.put("showText", showText);
                 // 移除信息
                 data.remove("passowrd");
+                Optional<JSONObject> objectOptional = Optional.ofNullable(opt)
+                        .map(o -> o.getJSONArray("files"))
+                        .filter(filesArray -> filesArray != null && filesArray.size() > 0)
+                        .map(filesArray -> JSONObject.parseObject(filesArray.get(0).toString()));
+                JSONObject object = new JSONObject();
+                if (objectOptional.isPresent()) {
+                    object = objectOptional.get();
+                }
+                // 判断是是否是隐藏内容
+                if (!articleData.getAuthorId().equals(user_id) && !isPaid && articleData.getPrice() != 0 && object != null && object.containsKey("link") && !permission) {
+                    data.put("opt", null);
+                    data.put("isHide", 1);
+                } else {
+                    data.put("isHide", 0);
+                }
                 dataList.add(data);
             }
             Map<String, Object> data = new HashMap<>();
@@ -1340,12 +975,8 @@ public class ArticleController {
                        HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
 
             Article article = service.selectByKey(id);
             if (article == null || article.toString().isEmpty()) return Result.getResultJson(201, "文章不存在", null);
@@ -1394,12 +1025,8 @@ public class ArticleController {
                        HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
 
             Article article = service.selectByKey(id);
             if (article == null || article.toString().isEmpty()) return Result.getResultJson(201, "文章不存在", null);
@@ -1448,12 +1075,8 @@ public class ArticleController {
                            HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             // 查询出收藏列表
             Userlog userlog = new Userlog();
             userlog.setType("articleMark");
@@ -1512,5 +1135,221 @@ public class ArticleController {
             return Result.getResultJson(400, "接口异常", null);
         }
 
+    }
+
+    /***
+     * 权限判断
+     * @param user
+     * @return
+     */
+    private boolean permission(Users user) {
+        if (user.getUid() == null || user.getUid().equals(0)) return false;
+        if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) return true;
+        return false;
+    }
+
+    /***
+     * 获取用户信息
+     * @param token
+     * @return
+     */
+    private Users getUser(String token) {
+        if (token == null || token.isEmpty()) return new Users();
+        // 获取用户信息
+        DecodedJWT verify = JWT.verify(token);
+        Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+        return user;
+    }
+
+    private Article getArticle(int id){
+        Article article = service.selectByKey(id);
+        return article;
+    }
+
+    private Boolean hasLike(Users user,Article article){
+        if(user.getUid()==null) return false;
+        Userlog userlog = new Userlog();
+        // 是否点赞或者是否收藏
+        userlog.setType("articleLike");
+        userlog.setCid(article.getCid());
+        userlog.setUid(user.getUid());
+        List<Userlog> userlogList = userlogService.selectList(userlog);
+        if (userlogList.size() > 0) return true;
+        return false;
+    }
+
+    private Boolean hasMark(Users user,Article article){
+        if(user.getUid()==null) return false;
+        Userlog userlog = new Userlog();
+        userlog.setType("articleMark");
+        List<Userlog> userlogList = userlogService.selectList(userlog);
+        if (userlogList.size() > 0) return true;
+        return false;
+    }
+
+    /***
+     * 处理隐藏内同
+     * @param isPaid
+     * @param isReply
+     * @param permission
+     * @param article
+     * @param user_id
+     * @return
+     */
+    private String hideText(Boolean isPaid, Boolean isReply,Boolean permission, Article article,Integer user_id){
+        Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
+        Matcher matcher = pattern.matcher(article.getText());
+        StringBuffer replacedText = new StringBuffer();
+        while (matcher.find()) {
+            String type = matcher.group(1);
+            String content = matcher.group(2);
+            String replacement = "";
+            if (type.equals("pay") && !isPaid && !article.getAuthorId().equals(user_id) && !permission) {
+                replacement = "【付费查看：这是付费内容，付费后可查看】";
+            } else if (type.equals("reply") && !isReply && !article.getAuthorId().equals(user_id) && !permission) {
+                replacement = "【回复查看：这是回复内容，回复后可查看】";
+            } else {
+                replacement = content;  // 如果不需要替换，则保持原样
+            }
+            matcher.appendReplacement(replacedText, replacement);
+        }
+        return matcher.appendTail(replacedText).toString();
+    }
+
+    /***
+     * 是否评论
+     * @param user
+     * @param article
+     * @return
+     */
+    private  Boolean hasComment(Users user,Article article){
+        if(user.getUid()==null) return false;
+        // 获取评论状态
+        Comments replyStatus = new Comments();
+        replyStatus.setCid(article.getCid());
+        replyStatus.setUid(user.getUid());
+        int rStatus = commentsService.total(replyStatus, null);
+        if (rStatus > 0) return true;
+        return false;
+    }
+
+    /***
+     * 是否支付
+     * @param user
+     * @param article
+     * @return
+     */
+    private Boolean hasPay(Users user ,Article article){
+        if(user.getUid()==null) return false;
+        // 获取购买状态
+        Paylog paylog = new Paylog();
+        paylog.setPaytype("article");
+        paylog.setUid(user.getUid());
+        paylog.setCid(article.getCid());
+        int pStatus = paylogService.total(paylog);
+        if (pStatus > 0) return true;
+
+        return false;
+    }
+
+    /***
+     * 获取分类信息
+     * @param id
+     * @return
+     */
+    private Map<String,Object> getCategory(Integer id){
+        // 获取分类和tag
+        Category category = metasService.selectByKey(id);
+        Map<String,Object> data = JSONObject.parseObject(JSONObject.toJSONString(category),Map.class);
+        if(category.getOpt()!=null){
+            data.put("opt",JSONObject.parseObject(category.getOpt()));
+        }
+        return data;
+    }
+
+    /***
+     * 判断是否是会员可见
+     * @param user
+     * @param article
+     * @return
+     */
+    private Boolean showText(Users user, Article article, Map<String,Object> category) {
+        if (category.get("isvip").equals(0)) return true;
+        if (user.getUid() != null && !user.getUid().equals(0)) {
+            if ((category.get("isvip").equals(1) && (user.getVip() > System.currentTimeMillis() / 1000)) || article.getAuthorId().equals(user.getUid())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Map<String,Object> getAuthorInfo(Integer user_id,Article article){
+        Users author = usersService.selectByKey(article.getAuthorId());
+        Map<String,Object> data = JSONObject.parseObject(JSONObject.toJSONString(author),Map.class);
+        List levelResult = baseFull.getLevel(author.getExperience(), dataprefix, apiconfigService, redisTemplate);
+        int level = (int) levelResult.get(0);
+        int nextLevel = (int) levelResult.get(1);
+        Boolean isFollow = false;
+        Boolean isVip = false;
+
+        // 查询是否关注 是否会员
+        if(author.getUid()!=null){
+            if(author.getVip()> System.currentTimeMillis()/1000) isVip = true;
+            Fan fan  =new Fan();
+            fan.setUid(user_id);
+            fan.setTouid(article.getAuthorId());
+            if(fanService.total(fan)>0) isFollow = true;
+            if(author.getStatus().equals(0)) data.put("screenName","用户已注销");
+        }
+        //加入信息
+        data.put("isFollow", isFollow);
+        data.put("level", level);
+        data.put("nextLevel", nextLevel);
+        if(author.getOpt()!=null) {
+            data.put("opt",JSONObject.parseObject(author.getOpt()));
+        }
+        data.put("isVip", isVip);
+        // 移除敏感信息
+        data.remove("address");
+        data.remove("mail");
+        data.remove("assets");
+        data.remove("password");
+
+        if(author.getUid()==null){
+            data.put("isFollow", 0);
+            data.put("level", 0);
+            data.put("nextLevel", 0);
+            data.put("isVip", 0);
+            data.put("screenName", "用户不存在");
+        }
+        return data;
+    }
+
+    private void addView(Users user){
+        if(user.getUid()==null) return;
+        // 开始写入访问次数至多两次
+        Integer endTime = baseFull.endTime();
+        // views 存入今天的数据 最多三次
+        Integer taskViews = redisHelp.getRedis("views_" + user.getName(), redisTemplate) != null ? Integer.parseInt(redisHelp.getRedis("views_" + user.getName(), redisTemplate)) : 0;
+        if (taskViews < 2) {
+            // 点赞送经验和积分
+            user.setAssets((user.getAssets() != null ? user.getAssets() : 0) + 2);
+            user.setExperience((user.getExperience() != null ? user.getExperience() : 0) + 5);
+            redisHelp.delete("views_" + user.getName(), redisTemplate);
+            redisHelp.setRedis("views_" + user.getName(), String.valueOf(taskViews + 1), endTime, redisTemplate);
+            usersService.update(user);
+        }
+    }
+
+    private void postAddExp(Users user) {
+        Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
+        user.setExperience(user.getExperience() != null ? user.getExperience() + apiconfig.getPostExp() : 0 + apiconfig.getPostExp());
+        usersService.update(user);
+        Userlog log = new Userlog();
+        log.setType("postExp");
+        log.setToid(user.getUid());
+        log.setNum(apiconfig.getPostExp());
+        log.setCreated((int) (System.currentTimeMillis() / 1000));
+        userlogService.insert(log);
     }
 }
