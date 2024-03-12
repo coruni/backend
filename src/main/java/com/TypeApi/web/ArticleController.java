@@ -246,7 +246,7 @@ public class ArticleController {
                 Boolean isPaid = hasPay(user,article);
                 Boolean isLike = hasLike(user,article);
                 Boolean isMark = hasMark(user,article);
-                String text = hideText(isPaid,isReply,permission,article,user_id);
+                String text = baseFull.toStrByChinese(hideText(isPaid,isReply,permission,article,user_id));
                 Map<String,Object> category = getCategory(article.getMid());
                 // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
                 Boolean showText = showText(user, article, category);
@@ -894,7 +894,7 @@ public class ArticleController {
                 Boolean isPaid = hasPay(user,articleData);
                 Boolean isLike = hasLike(user,articleData);
                 Boolean isMark = hasMark(user,articleData);
-                String text = hideText(isPaid,isReply,permission,articleData,user_id);
+                String text = baseFull.toStrByChinese(hideText(isPaid,isReply,permission,articleData,user_id));
                 Map<String,Object> category = getCategory(articleData.getMid());
                 // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
                 Boolean showText = showText(user, articleData, category);
