@@ -185,7 +185,6 @@ public class PayController {
         boolean flag = AlipaySignature.rsaCheckV1(params, ALIPAY_PUBLIC_KEY, CHARSET, "RSA2");
 
         if (flag) {//验证成功
-
             if (tradeStatus.equals("TRADE_FINISHED") || tradeStatus.equals("TRADE_SUCCESS")) {
                 //支付完成后，写入充值日志
                 String trade_no = params.get("trade_no");
@@ -781,84 +780,42 @@ public class PayController {
      **/
     @RequestMapping(value = "/EPay")
     @ResponseBody
-    public String EPay(@RequestParam(value = "type", required = false) String type,
-                       @RequestParam(value = "money", required = false) Integer money,
+    public String EPay(@RequestParam(value = "type") String type,
+                       @RequestParam(value = "money") Integer money,
                        @RequestParam(value = "device", required = false) String device,
                        HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
-            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            Users user = getUserFromToken(token, usersService);
+            if (user == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
+
+            Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             String url = apiconfig.getEpayUrl();
-            Date now = new Date();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");//可以方便地修改日期格式
-            String timeID = dateFormat.format(now);
-            String outTradeNo = timeID + "Epay_" + type;
+            String outTradeNo = generateOutTradeNo(type);
             String clientip = baseFull.getIpAddr(request);
-            Map<String, String> sign = new HashMap<>();
-            sign.put("pid", apiconfig.getEpayPid().toString());
-            sign.put("type", type.toString());
-            sign.put("out_trade_no", outTradeNo);
-            sign.put("notify_url", apiconfig.getEpayNotifyUrl());
-            sign.put("clientip", clientip);
-            sign.put("name", "积分充值");
-            sign.put("money", money.toString());
-            sign = sortByKey(sign);
-            String signStr = "";
-            for (Map.Entry<String, String> m : sign.entrySet()) {
-                signStr += m.getKey() + "=" + m.getValue() + "&";
-            }
-            signStr = signStr.substring(0, signStr.length() - 1);
-            signStr += apiconfig.getEpayKey();
-            signStr = DigestUtils.md5DigestAsHex(signStr.getBytes());
+
+            Map<String, String> sign = generateSignParams(apiconfig, type, outTradeNo, clientip, money);
+            String signStr = generateSignString(sign, apiconfig.getEpayKey());
             sign.put("sign_type", "MD5");
             sign.put("sign", signStr);
 
-            String param = "";
-            for (Map.Entry<String, String> m : sign.entrySet()) {
-                param += m.getKey() + "=" + m.getValue() + "&";
-            }
-            param = param.substring(0, param.length() - 1);
+            String param = generateRequestParams(sign);
             String data = HttpClient.doPost(url + "mapi.php", param);
             if (data == null) {
                 return Result.getResultJson(0, "易支付接口请求失败，请检查配置", null);
             }
+
             HashMap jsonMap = JSON.parseObject(data, HashMap.class);
             if (jsonMap.get("code").toString().equals("1")) {
-                //先生成订单
-                Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0, 10);
-                Paylog paylog = new Paylog();
-                Integer TotalAmount = money * apiconfig.getScale();
-                paylog.setStatus(0);
-                paylog.setCreated(Integer.parseInt(created));
-                paylog.setUid(user.getUid());
-                paylog.setOutTradeNo(outTradeNo);
-                paylog.setTotalAmount(TotalAmount.toString());
-                paylog.setPaytype("ePay_" + type);
-                paylog.setSubject("扫码支付");
-                paylogService.insert(paylog);
-                //再返回数据
-                JSONObject toResponse = new JSONObject();
-                toResponse.put("code", 1);
-                toResponse.put("payapi", apiconfig.getEpayUrl());
-                toResponse.put("data", jsonMap);
-                toResponse.put("msg", "获取成功");
-                return toResponse.toString();
+                savePaylog(user, apiconfig, outTradeNo, money, type);
+                return generateSuccessResponse(apiconfig.getEpayUrl(), jsonMap);
             } else {
-                return Result.getResultJson(0, jsonMap.get("msg").toString(), null);
+                return Result.getResultJson(201, jsonMap.get("msg").toString(), null);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口请求异常，请联系管理员", null);
         }
-
-
     }
 
     public static <K extends Comparable<? super K>, V> Map<K, V> sortByKey(Map<K, V> map) {
@@ -929,6 +886,87 @@ public class PayController {
             return "fail";
         }
 
+    }
+
+    private Users getUserFromToken(String token, UsersService usersService) {
+        if (token != null && !token.isEmpty()) {
+            DecodedJWT verify = JWT.verify(token);
+            return usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+        }
+        return null;
+    }
+
+    private String generateOutTradeNo(String type) {
+        Date now = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+        String timeID = dateFormat.format(now);
+        return timeID + "Epay_" + type;
+    }
+
+    private Map<String, String> generateSignParams(Apiconfig apiconfig, String type, String outTradeNo, String clientip, Integer money) {
+        Map<String, String> sign = new HashMap<>();
+        sign.put("pid", apiconfig.getEpayPid().toString());
+        sign.put("type", type);
+        sign.put("out_trade_no", outTradeNo);
+        sign.put("notify_url", apiconfig.getEpayNotifyUrl());
+        sign.put("clientip", clientip);
+        sign.put("name", "积分充值");
+        sign.put("money", money.toString());
+        return sortByKey(sign);
+    }
+
+    private String generateSignString(Map<String, String> sign, String epayKey) {
+        // 1. 获取所有参数名,并进行排序
+        List<String> keys = new ArrayList<>(sign.keySet());
+        Collections.sort(keys);
+
+        // 2. 按照排序后的参数名顺序,拼接参数名和参数值
+        StringBuilder signStr = new StringBuilder();
+        for (String key : keys) {
+            signStr.append(key).append("=").append(sign.get(key)).append("&");
+        }
+
+        // 3. 删除最后一个&符号,并拼接密钥KEY
+        signStr.deleteCharAt(signStr.length() - 1);
+        signStr.append(epayKey);
+
+        // 4. 进行MD5加密并返回结果
+        System.out.println(signStr);
+        String md5 = DigestUtils.md5DigestAsHex(signStr.toString().getBytes());
+        System.out.println(md5);
+        return md5;
+    }
+
+    private String generateRequestParams(Map<String, String> sign) {
+        StringBuilder param = new StringBuilder();
+        for (Map.Entry<String, String> entry : sign.entrySet()) {
+            param.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
+        }
+        return param.deleteCharAt(param.length() - 1).toString();
+    }
+
+    private void savePaylog(Users user, Apiconfig apiconfig, String outTradeNo, Integer money, String type) {
+        Long date = System.currentTimeMillis();
+        String created = String.valueOf(date).substring(0, 10);
+        Paylog paylog = new Paylog();
+        Integer TotalAmount = money * apiconfig.getScale();
+        paylog.setStatus(0);
+        paylog.setCreated(Integer.parseInt(created));
+        paylog.setUid(user.getUid());
+        paylog.setOutTradeNo(outTradeNo);
+        paylog.setTotalAmount(TotalAmount.toString());
+        paylog.setPaytype("ePay_" + type);
+        paylog.setSubject("三方支付");
+        paylogService.insert(paylog);
+    }
+
+    private String generateSuccessResponse(String epayUrl, HashMap jsonMap) {
+        JSONObject toResponse = new JSONObject();
+        toResponse.put("code", 200);
+        toResponse.put("payapi", epayUrl);
+        toResponse.put("data", jsonMap);
+        toResponse.put("msg", "获取成功");
+        return toResponse.toString();
     }
 
 }
