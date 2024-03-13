@@ -49,7 +49,6 @@ public class UploadController {
     @Autowired
     private RedisTemplate redisTemplate;
 
-    EditFile editFile = new EditFile();
     RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
     baseFull baseFull = new baseFull();
@@ -109,14 +108,14 @@ public class UploadController {
             long filesMax = uploadFilesMax * 1024 * 1024;
             if (file.getSize() > filesMax) {
                 // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(201, "文件大小不能超过" + filesMax + "M", null);
+                return Result.getResultJson(201, "文件大小不能超过" + uploadFilesMax + "M", null);
             }
         }
         if (flieUploadType.equals(1)) {
             long picMax = uploadPicMax * 1024 * 1024;
             if (file.getSize() > picMax) {
                 // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(201, "图片大小不能超过" + picMax + "M", null);
+                return Result.getResultJson(201, "图片大小不能超过" + uploadPicMax + "M", null);
             }
         }
 
@@ -124,7 +123,7 @@ public class UploadController {
             long mediaMax = uploadMediaMax * 1024 * 1024;
             if (file.getSize() > mediaMax) {
                 // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(201, "媒体大小不能超过" + mediaMax + "M", null);
+                return Result.getResultJson(201, "媒体大小不能超过" + uploadMediaMax + "M", null);
             }
         }
 

@@ -337,7 +337,6 @@ public class ArticleController {
             String token = request.getHeader("Authorization");
             Users user = getUser(token);
             Boolean permission = permission(user);
-            int user_id = 0;
             if(user.getUid()==null) return Result.getResultJson(201,"用户不存在，请重新登录",null);
             if (user.getBantime() != null && user.getBantime() > System.currentTimeMillis() / 1000) {
                 return Result.getResultJson(201, "用户封禁中", null);
@@ -365,7 +364,7 @@ public class ArticleController {
             // 写入文章信息
             Article article = new Article();
             article.setStatus("publish");
-            article.setAuthorId(user_id);
+            article.setAuthorId(user.getUid());
             article.setText(text);
             article.setTitle(title);
             article.setMid(category);
