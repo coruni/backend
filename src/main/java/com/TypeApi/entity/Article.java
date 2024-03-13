@@ -88,6 +88,11 @@ public class Article implements Serializable {
     private String images;
 
     /**
+     * videos
+     */
+    private String videos;
+
+    /**
      * allowComment  
      */
     private String allowComment;

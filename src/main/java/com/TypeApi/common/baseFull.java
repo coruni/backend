@@ -261,7 +261,7 @@ public class baseFull {
     }
     public static Boolean isVideo(String type){
         String lowerCaseType = type.toLowerCase();
-        if (lowerCaseType.equals(".mp4") || lowerCaseType.equals(".avi") || lowerCaseType.equals(".mkv")) {
+        if (lowerCaseType.equals("mp4") || lowerCaseType.equals("avi") || lowerCaseType.equals("mkv")) {
             return true; // 是视频
         } else {
             return false; // 不是视频

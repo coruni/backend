@@ -186,7 +186,6 @@ public class RaffleController {
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             String token = request.getHeader("Authorization");
             Users user = getUser(token);
-
             if (user.getUid() == null || user.toString().isEmpty())
                 return Result.getResultJson(201, "用户不存在", null);
 

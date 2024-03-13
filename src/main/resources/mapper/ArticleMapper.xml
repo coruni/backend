@@ -18,6 +18,7 @@
         <result column="password" property="password" />
         <result column="commentsNum" property="commentsNum" />
         <result column="images" property="images" />
+        <result column="videos" property="videos" />
         <result column="allowComment" property="allowComment" />
         <result column="allowPing" property="allowPing" />
         <result column="allowFeed" property="allowFeed" />
@@ -51,6 +52,7 @@
         `password`,
         `commentsNum`,
         `images`,
+        `videos`,
         `allowComment`,
         `allowPing`,
         `allowFeed`,
@@ -142,7 +144,10 @@
                 `isCircleTop`,
             </if>
             <if test ='null != images'>
-                `images`
+                `images`,
+            </if>
+            <if test ='null != videos'>
+                `videos`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -216,7 +221,10 @@
                 #{isCircleTop},
             </if>
             <if test ='null != images'>
-                #{images}
+                #{images},
+            </if>
+            <if test ='null != videos'>
+                #{videos}
             </if>
         </trim>
     </insert>
@@ -248,7 +256,8 @@
             #{curr.discount},
             #{curr.opt},
             #{curr.isCircleTop},
-            #{curr.images}
+            #{curr.images},
+            #{curr.videos}
             )
         </foreach>
     </insert>
@@ -285,7 +294,8 @@
             <if test ='null != replyTime'>`replyTime` = #{replyTime},</if>
             <if test ='null != opt'>`opt` = #{opt},</if>
             <if test ='null != isCircleTop'>`isCircleTop` = #{isCircleTop},</if>
-            <if test ='null != images'>`images` = #{images}</if>
+            <if test ='null != images'>`images` = #{images},</if>
+            <if test ='null != videos'>`videos` = #{videos}</if>
         </set>
         WHERE `cid` = #{cid}
     </update>
