@@ -54,8 +54,8 @@ public class ArticleController {
     @Autowired
     private ArticleService articleService;
 
-    @Autowired
-    private HeadpictureService headpictureService;
+//    @Autowired
+//    private HeadpictureService headpictureService;
 
     @Autowired
     private CategoryService metasService;
@@ -63,8 +63,8 @@ public class ArticleController {
     @Autowired
     private UsersService usersService;
 
-    @Autowired
-    private SecurityService securityService;
+//    @Autowired
+//    private SecurityService securityService;
 
     @Autowired
     private CommentsService commentsService;
@@ -147,7 +147,7 @@ public class ArticleController {
                 tagsQuery.setMid(tag.getMid());
                 tagsQuery.setType("tag");
                 List<Category> tagInfo = metasService.selectList(tagsQuery);
-                if (tagInfo.size() > 0) {
+                if (!tagInfo.isEmpty()) {
                     Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
                     // 移除信息
                     tagData.remove("opt");
@@ -175,7 +175,7 @@ public class ArticleController {
             data.remove("passowrd");
             Optional<JSONObject> objectOptional = Optional.ofNullable(opt)
                     .map(o -> o.getJSONArray("files"))
-                    .filter(filesArray -> filesArray != null && filesArray.size() > 0)
+                    .filter(filesArray -> filesArray != null && !filesArray.isEmpty())
                     .map(filesArray -> JSONObject.parseObject(filesArray.get(0).toString()));
             JSONObject object = new JSONObject();
             if (objectOptional.isPresent()) {
@@ -256,7 +256,7 @@ public class ArticleController {
                     tagsQuery.setMid(tag.getMid());
                     tagsQuery.setType("tag");
                     List<Category> tagInfo = metasService.selectList(tagsQuery);
-                    if (tagInfo.size() > 0) {
+                    if (!tagInfo.isEmpty()) {
                         Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
                         // 移除信息
                         tagData.remove("opt");
@@ -282,14 +282,14 @@ public class ArticleController {
                 data.remove("passowrd");
                 Optional<JSONObject> objectOptional = Optional.ofNullable(opt)
                         .map(o -> o.getJSONArray("files"))
-                        .filter(filesArray -> filesArray != null && filesArray.size() > 0)
+                        .filter(filesArray -> filesArray != null && !filesArray.isEmpty())
                         .map(filesArray -> JSONObject.parseObject(filesArray.get(0).toString()));
                 JSONObject object = new JSONObject();
                 if (objectOptional.isPresent()) {
                     object = objectOptional.get();
                 }
                 // 判断是是否是隐藏内容
-                if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object != null && object.containsKey("link") && !permission) {
+                if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object.containsKey("link") && !permission) {
                     data.put("opt", null);
                     data.put("isHide", 1);
                 } else {
@@ -333,13 +333,13 @@ public class ArticleController {
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             String token = request.getHeader("Authorization");
             Users user = getUser(token);
-            Boolean permission = permission(user);
+            boolean permission = permission(user);
             if (user.getUid() == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
             if (user.getBantime() != null && user.getBantime() > System.currentTimeMillis() / 1000) {
                 return Result.getResultJson(201, "用户封禁中", null);
             }
             // 判断
-            Long timeStamp = System.currentTimeMillis() / 1000;
+
             if (title == null || title.length() < 3) {
                 return Result.getResultJson(201, "标题太短", null);
             }
@@ -379,7 +379,7 @@ public class ArticleController {
             }
 
             // 判断redis是否有缓存
-            String redisKey = "articleAdd_" + user.getName().toString();
+            String redisKey = "articleAdd_" + user.getName();
             String redisValue = redisHelp.getRedis(redisKey, redisTemplate);
             int tempNum;
             if (redisValue != null) {
@@ -500,7 +500,7 @@ public class ArticleController {
             int user_id = 0;
             if (user.getUid() != null) user_id = user.getUid();
             Article article = service.selectByKey(id);
-            if (!permission && article.getAuthorId().equals(user_id)) ;
+            if (!permission && article.getAuthorId().equals(user_id)) return Result.getResultJson(201,"无权限",null);
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             Users author = usersService.selectByKey(article.getAuthorId());
             // 删除
@@ -625,8 +625,8 @@ public class ArticleController {
         try {
             String token = request.getHeader("Authorization");
             Users user = getUser(token);
-            Long timeStamp = System.currentTimeMillis() / 1000;
-            Boolean vip = false;
+            long timeStamp = System.currentTimeMillis() / 1000;
+            boolean vip = false;
             if (user.getUid() != null && user.getVip() > System.currentTimeMillis() / 100) vip = true;
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             // 文章信息
@@ -638,7 +638,7 @@ public class ArticleController {
             Paylog buyStatus = new Paylog();
             buyStatus.setUid(user.getUid());
             buyStatus.setCid(id);
-            Integer isBuy = paylogService.total(buyStatus);
+            int isBuy = paylogService.total(buyStatus);
             if (isBuy > 0) {
                 return Result.getResultJson(201, "无需重复购买", null);
             }
@@ -718,7 +718,7 @@ public class ArticleController {
 
             PageList<Userlog> userlogPageList = userlogService.selectPage(userlog, page, limit);
             List<Userlog> userlogList = userlogPageList.getList();
-            List dataList = new ArrayList<>();
+            List<Object> dataList = new ArrayList<>();
             for (Userlog _userlog : userlogList) {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(usersService.selectByKey(_userlog.getUid())));
                 //移除铭感信息
@@ -726,7 +726,6 @@ public class ArticleController {
                 data.remove("password");
                 data.remove("assets");
                 data.remove("opt");
-
                 dataList.add(data);
             }
 
@@ -775,7 +774,6 @@ public class ArticleController {
             paylog.setCreated(timeStamp);
 
             // 扣米
-            Paylog log = new Paylog();
             paylog.setUid(article.getAuthorId());
             paylog.setSubject("文章打赏");
             paylog.setTotalAmount(String.valueOf(num * -1));
@@ -1175,7 +1173,7 @@ public class ArticleController {
         userlog.setCid(article.getCid());
         userlog.setUid(user.getUid());
         List<Userlog> userlogList = userlogService.selectList(userlog);
-        if (userlogList.size() > 0) return true;
+        if (!userlogList.isEmpty()) return true;
         return false;
     }
 
@@ -1183,8 +1181,10 @@ public class ArticleController {
         if (user.getUid() == null) return false;
         Userlog userlog = new Userlog();
         userlog.setType("articleMark");
+        userlog.setUid(user.getUid());
+        userlog.setCid(article.getCid());
         List<Userlog> userlogList = userlogService.selectList(userlog);
-        if (userlogList.size() > 0) return true;
+        if (!userlogList.isEmpty()) return true;
         return false;
     }
 

@@ -22,13 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 控制层
- * TypechoMetasController
- *
- * @author buxia97
- * @date 2021/11/29
- */
+
 @Component
 @Controller
 @RequestMapping(value = "/category")
@@ -38,19 +32,7 @@ public class CategoryController {
     CategoryService service;
 
     @Autowired
-    private RelationshipsService relationshipsService;
-
-    @Autowired
-    private ArticleService contentsService;
-
-
-    @Autowired
-    private FanService fanService;
-    @Autowired
     private UsersService usersService;
-
-    @Autowired
-    private ApiconfigService apiconfigService;
 
     @Autowired
     private UserlogService userlogService;
@@ -65,12 +47,7 @@ public class CategoryController {
     private String dataprefix;
 
 
-    RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
-    baseFull baseFull = new baseFull();
-    UserStatus UStatus = new UserStatus();
-    EditFile editFile = new EditFile();
-
 
     /***
      * 查询分类和标签
@@ -105,9 +82,9 @@ public class CategoryController {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
                 // 格式化信息
                 JSONObject opt = new JSONObject();
-                opt = category.getOpt() != null && !category.getOpt().toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
+                opt = category.getOpt() != null && !category.getOpt().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
                 // 查询是否关注
-                Integer isFollow = 0;
+                int isFollow = 0;
                 Userlog userlog = new Userlog();
                 userlog.setNum(category.getMid());
                 userlog.setType("category");
@@ -336,7 +313,7 @@ public class CategoryController {
             List<Userlog> userlogList = userlogService.selectList(userlog);
             category.setFollows(category.getFollows() + 1);
             // 存在就删除记录并返回取消关注成功
-            if (userlogList.size() > 0) {
+            if (!userlogList.isEmpty()) {
                 category.setFollows(category.getFollows() > 0 ? category.getFollows() - 1 : 0);
                 userlogService.delete(userlogList.get(0).getId());
                 service.update(category);
