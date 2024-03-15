@@ -7,15 +7,18 @@
         <result column="id" property="id" />
         <result column="value" property="value" />
         <result column="price" property="price" />
+        <result column="type" property="type" />
         <result column="status" property="status" />
         <result column="created" property="created" />
         <result column="uid" property="uid" />
+
     </resultMap>
 
     <sql id="Base_Column_List">
         `id`,
         `value`,
         `price`,
+        `type`,
         `status`,
         `created`,
         `uid`
@@ -33,6 +36,9 @@
             </if>
             <if test ='null != price'>
                 `price`,
+            </if>
+            <if test ='null != type'>
+                `type`,
             </if>
             <if test ='null != status'>
                 `status`,
@@ -54,6 +60,9 @@
             <if test ='null != price'>
                 #{price},
             </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
             <if test ='null != status'>
                 #{status},
             </if>
@@ -74,6 +83,7 @@
                 #{curr.id},
                 #{curr.value},
                 #{curr.price},
+                #{curr.type},
                 #{curr.status},
                 #{curr.created},
                 #{curr.uid}
@@ -100,6 +110,12 @@
         WHERE `id` = #{key}
     </delete>
 
+    <!-- 条件删除-->
+    <delete id ="typeDelete">
+        DELETE FROM ${prefix}_paykey
+        WHERE  `status` = #{status}
+    </delete>
+
     <!-- 批量删除 -->
     <delete id="batchDelete" parameterType = "java.util.List">
         DELETE FROM ${prefix}_paykey WHERE id IN
@@ -108,11 +124,18 @@
         </foreach>
     </delete>
 
-    <!-- 根据value查询 -->
+    <!-- 根据card查询 -->
+    <select id="selectByCard" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_paykey
+        WHERE `value` = #{card}
+    </select>
+
+    <!-- 根据id查询 -->
     <select id="selectByKey" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_paykey
-        WHERE `value` = #{key}
+        WHERE `id` = #{key}
     </select>
 
     <!-- 条件查询 -->
@@ -128,6 +151,9 @@
             </if>
             <if test ='null != price'>
                 and `price` = #{price}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
             </if>
             <if test ='null != status'>
                 and `status` = #{status}
@@ -154,6 +180,9 @@
             </if>
             <if test ='null != paykey.price'>
                 and `price` = #{paykey.price}
+            </if>
+            <if test ='null != paykey.type'>
+                and `type` = #{paykey.type}
             </if>
             <if test ='null != paykey.status'>
                 and `status` = #{paykey.status}
@@ -183,6 +212,9 @@
             </if>
             <if test ='null != price'>
                 and `price` = #{price}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
             </if>
             <if test ='null != status'>
                 and `status` = #{status}

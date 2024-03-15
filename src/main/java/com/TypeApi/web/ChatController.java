@@ -1,14 +1,16 @@
 package com.TypeApi.web;
 
+import com.TypeApi.config.websocket;
 import com.TypeApi.common.*;
+import com.TypeApi.entity.Chat;
+import com.TypeApi.entity.ChatMsg;
+import com.TypeApi.entity.Users;
+import com.TypeApi.service.*;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.TypeApi.entity.*;
-import com.TypeApi.service.*;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 控制层
@@ -36,9 +40,6 @@ public class ChatController {
     ChatMsgService chatMsgService;
 
     @Autowired
-    private SecurityService securityService;
-
-    @Autowired
     private ApiconfigService apiconfigService;
 
     @Autowired
@@ -47,20 +48,52 @@ public class ChatController {
     @Autowired
     private UsersService usersService;
 
-    @Value("${web.prefix}")
-    private String dataprefix;
+    websocket websocket = new websocket();
 
-    @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
-    private PushService pushService;
-
-    RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
-    UserStatus UStatus = new UserStatus();
-    baseFull baseFull = new baseFull();
-    EditFile editFile = new EditFile();
+
+    /***
+     * 获取聊天室id
+     */
+
+    @RequestMapping(value = "/getChatId")
+    @ResponseBody
+    public String getChatId(@RequestParam(value = "receiver_id") Integer receiver_id,
+                            HttpServletRequest request){
+        try{
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if(token!=null && !token.isEmpty()){
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if(user==null || user.toString().isEmpty()) return Result.getResultJson(201,"用户不存在，请重新登录！",null);
+            }
+
+            // 查询接收用户是否存在
+            Users receiveUser = usersService.selectByKey(receiver_id);
+            if(receiveUser==null || receiveUser.toString().isEmpty()) return Result.getResultJson(201,"目标用户不存在",null);
+
+            // 验证结束 开始查询聊天列表是否存在
+            Chat chat =new Chat();
+            chat.setSender_id(user.getUid());
+            chat.setReceiver_id(receiveUser.getUid());
+            List<Chat> chatList = service.selectList(chat);
+            if(!chatList.isEmpty()){
+               Map<String,Object> data = JSONObject.parseObject(JSONObject.toJSONString(chatList.get(0)),Map.class);
+               return Result.getResultJson(201,"获取成功",data);
+            }else{
+                chat.setType(0);
+                chat.setCreated((int) (System.currentTimeMillis()/1000));
+                service.insert(chat);
+                Map<String,Object> data = JSONObject.parseObject(JSONObject.toJSONString(chat),Map.class);
+                return Result.getResultJson(200,"生成成功",data);
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(400,"接口异常",null);
+        }
+    }
 
     /***
      * 用户聊天记录
@@ -80,19 +113,21 @@ public class ChatController {
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
-            Users receiver = usersService.selectByKey(id);
-            if (receiver == null || receiver.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            ChatMsg chatMsg = new ChatMsg();
-            chatMsg.setSender_id(user.getUid());
-            chatMsg.setReceiver_id(receiver.getUid());
-            PageList<ChatMsg> chatMsgPageList = chatMsgService.selectPage(chatMsg, page, limit);
-            List<ChatMsg> chatMsgList = chatMsgPageList.getList();
-            // 只获取一次接收者用户信息 防止太多查询
-            Users receiverUser = usersService.selectByKey(receiver.getUid());
+           // 查找聊天室 是否存在
+            Chat chat = service.selectByKey(id);
+            if(chat==null || chat.toString().isEmpty()) return Result.getResultJson(201,"聊天室不存在",null);
+
+            Users receiverUser = new Users();
+            // 是否是查询对面
+            if(chat.getReceiver_id().equals(user.getUid())){
+                receiverUser = usersService.selectByKey(chat.getSender_id());
+            }else{
+                receiverUser = usersService.selectByKey(chat.getReceiver_id());
+            }
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(receiverUser));
             // 格式化opt
-            JSONObject opt = new JSONObject();
-            JSONArray head_picture = new JSONArray();
+            JSONObject opt;
+            JSONArray head_picture;
             opt = receiverUser.getOpt() != null && !receiverUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(receiverUser.getOpt()) : null;
             head_picture = receiverUser.getHead_picture() != null && !receiverUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(receiverUser.getHead_picture()) : null;
             // 处理头像框
@@ -104,6 +139,13 @@ public class ChatController {
             data.remove("password");
             data.remove("mail");
             data.remove("address");
+
+            // 查询聊天室聊天记录
+            ChatMsg chatMsg = new ChatMsg();
+            chatMsg.setChat_id(chat.getId());
+            PageList<ChatMsg> chatMsgPageList = chatMsgService.selectPage(chatMsg,page,limit);
+            List<ChatMsg> chatMsgList =  chatMsgPageList.getList();
+
             JSONArray dataList = new JSONArray();
             for (ChatMsg _chatMsg : chatMsgList) {
                 Map<String, Object> msgData = JSONObject.parseObject(JSONObject.toJSONString(_chatMsg), Map.class);
@@ -131,7 +173,6 @@ public class ChatController {
     @ResponseBody
     public String sendMsg(@RequestParam(value = "id") Integer id,
                           @RequestParam(value = "text") String text,
-                          @RequestParam(value = "type", defaultValue = "0") Integer type,
                           HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -141,40 +182,32 @@ public class ChatController {
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user == null && user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
-            // 查询接收者信息
-            Users recevierUser = usersService.selectByKey(id);
-            if (recevierUser == null || recevierUser.toString().isEmpty())
-                return Result.getResultJson(201, "用户不存在", null);
             // 查询列表是否存在
-            Long timeStamp = System.currentTimeMillis() / 1000;
-            Chat chat = new Chat();
-            chat.setSender_id(user.getUid());
-            chat.setReceiver_id(recevierUser.getUid());
-            chat.setType(type);
-            List<Chat> chatList = service.selectList(chat);
-            // 如果不存在就新增一条
-            if (chatList.size() < 1) {
-                chat.setCreated(Math.toIntExact(timeStamp));
-                service.insert(chat);
-            } else {
-                chat = chatList.get(0);
-                chat.setLastTime(Math.toIntExact(timeStamp));
-                // 如果存在就更新最后发送时间
-                service.update(chat);
-            }
             if (text == null || text.equals("") || text.isEmpty()) return Result.getResultJson(201, "请输入消息", null);
 
+            // 查询聊天室是否存在
+            Chat chat = service.selectByKey(id);
+            if(chat==null || chat.toString().isEmpty()) return Result.getResultJson(202,"聊天室不存在",null);
             // 写入信息
             ChatMsg chatMsg = new ChatMsg();
-            chatMsg.setType(type);
+            chatMsg.setType(chat.getType());
             chatMsg.setSender_id(user.getUid());
-            chatMsg.setReceiver_id(recevierUser.getUid());
+            chatMsg.setChat_id(chat.getId());
             chatMsg.setText(text);
             chatMsg.setCreated((int) (System.currentTimeMillis() / 1000));
             chatMsgService.insert(chatMsg);
 
+            chat.setLastTime((int) (System.currentTimeMillis() / 1000));
+            service.update(chat);
             // 将信息返回
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(chatMsg), Map.class);
+             // 使用webSocket 给目标用户发消息
+            try{
+                int user_id = chat.getReceiver_id().equals(user.getUid())?chat.getSender_id():chat.getReceiver_id();
+                websocket.sendChatText(text,5);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
 
             return Result.getResultJson(200, "发送成功", data);
 
@@ -212,7 +245,12 @@ public class ChatController {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_chat), Map.class);
                 // 如果type为0查询接收者的信息
                 if (_chat.getType().equals(0)) {
-                    Users chatUser = usersService.selectByKey(_chat.getReceiver_id());
+                    Users chatUser = new Users();
+                    if(_chat.getReceiver_id().equals(user.getUid())){
+                        chatUser = usersService.selectByKey(_chat.getSender_id());
+                    }else{
+                        chatUser = usersService.selectByKey(_chat.getReceiver_id());
+                    }
                     Map<String, Object> userInfo = JSONObject.parseObject(JSONObject.toJSONString(chatUser), Map.class);
                     userInfo.remove("password");
                     userInfo.remove("address");

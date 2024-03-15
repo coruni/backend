@@ -5,35 +5,27 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
-/**
- * dao层接口
- * TypechoFieldsDao
- * @author buxia97
- * @date 2021/11/29
- */
 @Mapper
-public interface FieldsDao {
-
+public interface RankDao {
     /**
      * [新增]
      **/
-    int insert(Fields fields);
+    int insert(Rank rank);
 
     /**
      * [批量新增]
      **/
-    int batchInsert(List<Fields> list);
+    int batchInsert(List<Rank> list);
 
     /**
      * [更新]
      **/
-    int update(Fields fields);
+    int update(Rank rank);
 
     /**
      * [删除]
      **/
-    int delete(Integer cid,String name);
+    int delete(Object key);
 
     /**
      * [批量删除]
@@ -43,20 +35,20 @@ public interface FieldsDao {
     /**
      * [主键查询]
      **/
-    List<Fields> selectByKey(Object key);
+    Rank selectByKey(Object key);
 
     /**
      * [条件查询]
      **/
-    List<Fields> selectList (Fields fields);
+    List<Rank> selectList (Rank rank);
 
     /**
      * [分页条件查询]
      **/
-    List<Fields> selectPage (@Param("fields") Fields fields, @Param("page") Integer page, @Param("pageSize") Integer pageSize);
+    List<Rank> selectPage (@Param("rank") Rank rank, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey, @Param("order") String order);
 
     /**
      * [总量查询]
      **/
-    int total(Fields fields);
+    int total(@Param("rank") Rank rank, @Param("searchKey") String searchKey);
 }

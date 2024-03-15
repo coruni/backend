@@ -19,6 +19,7 @@ import com.qiniu.storage.Configuration;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.storage.model.DefaultPutRet;
 import com.qiniu.util.Auth;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.boot.system.ApplicationHome;
@@ -30,6 +31,10 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,104 +129,59 @@ public class UploadServiceImpl implements UploadService {
         }
     }
 
-    public String localUpload(MultipartFile file, String dataprefix, Apiconfig apiconfig, Integer uid) {
+    public String localUpload(MultipartFile file, String dataprefix, Apiconfig apiconfig, Integer uid) throws IOException {
+        if (apiconfig.getUploadLevel().equals(1)) return Result.getResultJson(201, "已关闭上传功能", null);
+
+        // 获取文件名和扩展名
         String filename = file.getOriginalFilename();
-        //String filetype = filename.substring(filename.lastIndexOf("."));
-        //下面代码是解决app上传剪裁后图片无后缀问题。
-        String filetype = "";
-        try {
-            filetype = filename.substring(filename.lastIndexOf("."));
-        } catch (Exception e) {
-            filename = filename + ".png";
-            filetype = filename.substring(filename.lastIndexOf("."));
-        }
-        String randomName = String.valueOf(UUID.randomUUID());
-        String newfile = randomName + filetype;
-        //根据权限等级检查是否为图片
-        Integer uploadLevel = apiconfig.getUploadLevel();
-        Boolean isVideo = baseFull.isVideo(filetype);
-        if (uploadLevel.equals(1)) {
-            return Result.getResultJson(201, "管理员已关闭上传功能", null);
-        }
-        if (uploadLevel.equals(0)) {
-            //检查是否是图片
-            BufferedImage bi = null;
-            try {
-                bi = ImageIO.read(file.getInputStream());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (bi == null && !filetype.equals(".WEBP") && !filetype.equals(".webp")) {
-                return Result.getResultJson(201, "当前只允许上传图片文件", null);
-            }
-        }
-        if (uploadLevel.equals(2)) {
-            //检查是否是图片或视频
-            BufferedImage bi = null;
-            try {
-                bi = ImageIO.read(file.getInputStream());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        String fileExtension = getFileExtension(filename);
 
-            if (bi == null && !filetype.equals(".WEBP") && !filetype.equals(".webp") && !isVideo) {
-                return Result.getResultJson(201, "请上传图片或者视频文件", null);
-            }
+        // 判断是否为视频文件
+        boolean isVideo = baseFull.isVideo(fileExtension);
+
+        // 如果上传级别为0且为视频文件,则返回错误信息
+        if (apiconfig.getUploadLevel().equals(0) && isVideo) {
+            return Result.getResultJson(201, "当前只允许上传图片文件", null);
         }
 
-        /*解决文件路径中的空格问题*/
-        ApplicationHome h = new ApplicationHome(getClass());
-        File jarF = h.getSource();
-        /* 配置文件路径 */
-        String classespath = jarF.getParentFile().toString() + "/files";
-        String decodeClassespath = null;
-        try {
-            decodeClassespath = URLDecoder.decode(classespath, "utf-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        //System.out.println(decodeClassespath);
+        String filepath = UUID.randomUUID() + "." + StringUtils.defaultIfBlank(fileExtension, "png");
+        String compressedFilepath = filepath + "_compress.webp";
 
+        // 获取日期
         Calendar cal = Calendar.getInstance();
         int year = cal.get(Calendar.YEAR);
         int month = cal.get(Calendar.MONTH) + 1;
         int day = cal.get(Calendar.DATE);
-        String compressType = "_compress.webp";
-        // 创建缩略图
-        // 如果开启本地压缩才执行压缩
-        if (apiconfig.getCompress() == 1 && !isVideo) {
-            try {
-                byte[] compressedImageData = ImageUtils.compressImage(file.getBytes(), apiconfig.getQuality());
-                File outputFile = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile + compressType);
-                try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-                    fos.write(compressedImageData);
-                }
-                if (!outputFile.getParentFile().exists()) {
-                    outputFile.getParentFile().mkdirs();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+        Path localPath = Paths.get(String.format("files/static/upload/%s/%s/%s/%s", year, month, day, uid));
+
+        // 如果上传目录不存在,则创建
+        if (!Files.exists(localPath)) {
+            Files.createDirectories(localPath);
+        }
+
+        // 将文件写入磁盘
+        try (InputStream inputStream = file.getInputStream()) {
+            Path originalFilePath = localPath.resolve(filepath);
+            Path compressedFilePath = localPath.resolve(compressedFilepath);
+
+            // 保存原始文件
+            Files.copy(inputStream, originalFilePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // 如果开启了本地压缩且不是视频文件,则进行压缩
+            if (apiconfig.getCompress().equals(1) && !isVideo) {
+                // 读取文件字节数组
+                byte[] fileBytes = file.getBytes();
+                // 进行图片压缩
+                byte[] compressedBytes = ImageUtils.compressImage(fileBytes, apiconfig.getQuality());
+                // 将压缩后的图片写入磁盘
+                Files.write(compressedFilePath, compressedBytes);
             }
         }
-        /**/
-        File file1 = new File(decodeClassespath + "/static/upload/" + "/" + year + "/" + month + "/" + day + "/" + newfile);
-        if (!file1.exists()) {
-            file1.getParentFile().mkdirs();
-        }
-        try {
-            Map<String, String> info = new HashMap<String, String>();
-            file.transferTo(file1);
-            // 这里加个选择 是否返回压缩的图片
 
-            String url = apiconfig.getWebinfoUploadUrl() + "upload" + "/" + year + "/" + month + "/" + day + "/" + newfile + (apiconfig.getCompress() == 1 && !isVideo ? compressType : "");
-            info.put("url", url);
-            editFile.setLog("用户" + uid + "通过localUpload成功上传了图片");
-            return Result.getResultJson(200, "上传成功", info);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        editFile.setLog("用户" + uid + "通过localUpload上传图片失败");
-        return Result.getResultJson(201, "上传失败", null);
+        Map<String, Object> data = new HashMap<>();
+        String fileUrl = String.format("%supload/%s/%s/%s/%s/%s", apiconfig.getWebinfoUploadUrl(), year, month, day, uid, apiconfig.getCompress().equals(1) && !isVideo ? compressedFilepath : filepath);
+        data.put("url", fileUrl);
+        return Result.getResultJson(200, "上传成功", data);
     }
 
     public String ossUpload(MultipartFile file, String dataprefix, Apiconfig apiconfig, Integer uid) {
@@ -499,5 +459,16 @@ public class UploadServiceImpl implements UploadService {
             editFile.setLog("用户" + uid + "通过ftpUpload上传图片失败");
             return Result.getResultJson(201, "上传失败", null);
         }
+    }
+
+    /**
+     * 获取文件扩展名
+     *
+     * @param fileName 文件名
+     * @return 文件扩展名
+     */
+    private String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
     }
 }

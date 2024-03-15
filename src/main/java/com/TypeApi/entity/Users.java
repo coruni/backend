@@ -89,11 +89,6 @@ public class Users implements Serializable {
     private String pay;
 
     /**
-     * customize（自定义头衔）
-     */
-    private String customize;
-
-    /**
      * vip（到期时间）
      */
     private Integer vip;
@@ -147,5 +142,15 @@ public class Users implements Serializable {
      * opt
      */
     private String opt;
+
+    /***
+     * rank 头衔
+     */
+    private String rank;
+
+    /***
+     * 用户状态
+     */
+    private Integer status;
 
 }

@@ -73,11 +73,12 @@ public class HeadpictureController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在，请重新登录", null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
             Long timeStamp = System.currentTimeMillis() / 1000;
             if (!permission(request.getHeader("Authorization")) && user.getVip() < timeStamp)
-                return Result.getResultJson(201, "该功能会员可用", null);
+                return Result.getResultJson(201, "该功能会员可用或权限不足", null);
 
             // 写入数据 type 0是私人 1 是公开
             Headpicture headpicture = new Headpicture();
@@ -120,7 +121,6 @@ public class HeadpictureController {
      *
      * @param page
      * @param limit
-     * @param id
      * @param self
      * @param order
      * @param request
@@ -131,7 +131,6 @@ public class HeadpictureController {
     @ResponseBody
     public String list(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                        @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
-                       @RequestParam(value = "id", required = false) Integer id,
                        @RequestParam(value = "self", required = false) Integer self,
                        @RequestParam(value = "order", required = false) String order,
                        HttpServletRequest request) {
@@ -179,8 +178,7 @@ public class HeadpictureController {
     // 设置头像框
     @RequestMapping(value = "/set")
     @ResponseBody
-    public String set(HttpServletRequest request,
-                      @RequestParam(value = "id") Integer id) {
+    public String set(HttpServletRequest request, @RequestParam(value = "id") Integer id) {
         try {
             String token = request.getHeader("Authorization");
             Users user = new Users();
@@ -197,10 +195,10 @@ public class HeadpictureController {
 
             JSONArray head_picture = user.getHead_picture() != null ? JSONArray.parseArray(user.getHead_picture()) : null;
             JSONObject opt = user.getOpt() != null ? JSONObject.parseObject(user.getOpt()) : null;
-            if(opt==null)opt = new JSONObject();
+            if (opt == null) opt = new JSONObject();
             // 先判断头像框权限
             if (headpicture != null && headpicture.getPermission() != null && headpicture.getPermission().equals(0)) {
-                if (head_picture != null && head_picture.contains(headpicture.getId())) {
+                if (head_picture != null && head_picture.contains(headpicture.getId()) || permission || headpicture.getType().equals(1)) {
                     opt.put("head_picture", headpicture.getLink().toString());
                 } else {
                     return Result.getResultJson(201, "你没有获得这个头像框", null);
@@ -222,6 +220,42 @@ public class HeadpictureController {
     }
 
     /***
+     * 清除头像框
+     * @param request
+     * @return
+     */
+
+    @RequestMapping(value = "/clear")
+    @ResponseBody
+    public String clear(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+
+            if (user.getOpt() != null && !user.getOpt().toString().isEmpty()) {
+                // 将opt格式化成Object
+                JSONObject opt = JSONObject.parseObject(user.getOpt());
+                // 清空opt中的head_picture数据
+                opt.put("head_picture", null);
+
+                // 写入数据库
+                user.setOpt(opt.toString());
+                usersService.update(user);
+            }
+
+            return Result.getResultJson(200, "已取消头像框", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    /***
      *
      * @param id
      * @param request
@@ -229,8 +263,7 @@ public class HeadpictureController {
      */
     @RequestMapping(value = "/delete")
     @ResponseBody
-    public String delete(@RequestParam(value = "id") Integer id,
-                         HttpServletRequest request) {
+    public String delete(@RequestParam(value = "id") Integer id, HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             Users user = new Users();
@@ -248,9 +281,7 @@ public class HeadpictureController {
                 return Result.getResultJson(201, "无权限", null);
 
             service.delete(headpicture.getId());
-
             return Result.getResultJson(200, "删除成功", null);
-
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);

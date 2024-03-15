@@ -53,7 +53,7 @@ public interface ArticleDao {
     /**
      * [分页条件查询]
      **/
-    List<Article> selectPage (@Param("article") Article article, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey, @Param("order") String order, @Param("random") Integer random);
+    List<Article> selectPage (@Param("article") Article article, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey, @Param("order") String order, @Param("random") Integer random,@Param("tag") Integer tag);
 
     /**
      * [总量查询]

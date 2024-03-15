@@ -488,4 +488,19 @@ public class Apiconfig implements Serializable {
      */
     private Float quality;
 
+    /***
+     * 等级经验
+     */
+    private String levelExp;
+
+    /***
+     * 抽奖积分
+     */
+    private Integer raffleCoin;
+
+    /***
+     * 每天抽奖次数
+     */
+    private  Integer raffleNum;
+
 }

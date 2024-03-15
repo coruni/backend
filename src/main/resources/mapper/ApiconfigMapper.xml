@@ -51,8 +51,6 @@
         <result column="wxpayNotifyUrl" property="wxpayNotifyUrl" />
         <result column="auditlevel" property="auditlevel" />
         <result column="forbidden" property="forbidden" />
-        <result column="fields" property="fields" />
-
         <result column="pushAdsPrice" property="pushAdsPrice" />
         <result column="pushAdsNum" property="pushAdsNum" />
         <result column="bannerAdsPrice" property="bannerAdsPrice" />
@@ -105,6 +103,9 @@
         <result column="uploadFilesMax" property="uploadFilesMax" />
         <result column="compress" property="compress" />
         <result column="quality" property="quality" />
+        <result column="levelExp" property="levelExp" />
+        <result column="raffleCoin" property="raffleCoin" />
+        <result column="raffleNum" property="raffleNum" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -159,7 +160,6 @@
 
         `auditlevel`,
         `forbidden`,
-        `fields`,
 
         `pushAdsPrice`,
         `pushAdsNum`,
@@ -211,6 +211,9 @@
         `uploadFilesMax`,
 
         `quality`,
+        `levelExp`,
+        `raffleCoin`,
+        `raffleNum`,
         `compress`
 
     </sql>
@@ -363,9 +366,6 @@
             <if test ='null != forbidden'>
                 `forbidden`,
             </if>
-            <if test ='null != fields'>
-                `fields`,
-            </if>
 
             <if test ='null != pushAdsPrice'>
                 `pushAdsPrice`,
@@ -501,6 +501,9 @@
             </if>
             <if test ='null != compress'>
                 `compress`,
+            </if>
+            <if test ='null != levelExp'>
+                `levelExp`,
             </if>
             <if test ='null != quality'>
                 `quality`
@@ -652,9 +655,7 @@
             <if test ='null != forbidden'>
                 #{forbidden},
             </if>
-            <if test ='null != fields'>
-                #{fields},
-            </if>
+
             <if test ='null != pushAdsPrice'>
                 #{pushAdsPrice},
             </if>
@@ -790,6 +791,15 @@
             <if test ='null != quality'>
                 #{quality},
             </if>
+            <if test ='null != levelExp'>
+                #{levelExp},
+            </if>
+            <if test ='null != raffleCoin'>
+                #{raffleCoin},
+            </if>
+            <if test ='null != raffleNum'>
+                #{raffleNum},
+            </if>
             <if test ='null != compress'>
                 #{compress}
             </if>
@@ -849,7 +859,6 @@
             <if test ='null != mchApiV3Key'>`mchApiV3Key` = #{mchApiV3Key},</if>
             <if test ='null != auditlevel'>`auditlevel` = #{auditlevel},</if>
             <if test ='null != forbidden'>`forbidden` = #{forbidden},</if>
-            <if test ='null != fields'>`fields` = #{fields},</if>
             <if test ='null != pushAdsPrice'>`pushAdsPrice` = #{pushAdsPrice},</if>
             <if test ='null != pushAdsNum'>`pushAdsNum` = #{pushAdsNum},</if>
             <if test ='null != bannerAdsPrice'>`bannerAdsPrice` = #{bannerAdsPrice},</if>
@@ -898,6 +907,9 @@
             <if test ='null != uploadMediaMax'>`uploadMediaMax` = #{uploadMediaMax},</if>
             <if test ='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax},</if>
             <if test ='null != quality'>`quality` = #{quality},</if>
+            <if test ='null != levelExp'>`levelExp` = #{levelExp},</if>
+            <if test ='null != raffleCoin'>`raffleCoin` = #{raffleCoin},</if>
+            <if test ='null != raffleNum'>`raffleNum` = #{raffleNum},</if>
             <if test ='null != compress'>`compress` = #{compress}</if>
 
         </set>

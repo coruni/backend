@@ -88,6 +88,11 @@ public class Article implements Serializable {
     private String images;
 
     /**
+     * videos
+     */
+    private String videos;
+
+    /**
      * allowComment  
      */
     private String allowComment;
@@ -157,5 +162,9 @@ public class Article implements Serializable {
      */
     private Integer marks;
 
+    /***
+     * 圈子置顶
+     */
+    private Integer isCircleTop;
 
 }

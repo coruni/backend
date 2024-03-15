@@ -10,7 +10,17 @@ import com.alibaba.fastjson.TypeReference;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import net.dreamlu.mica.core.result.R;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -140,13 +150,8 @@ public class UsersController {
         try {
             limit = limit > 50 ? 50 : limit;
             String token = request.getHeader("Authorization");
-            Boolean permission = false;
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) permission = true;
-            }
+            Users user = getUser(token);
+            Boolean permission = permission(user);
             // 获取查询参数
             Users query = new Users();
             if (StringUtils.isNotBlank(params)) {
@@ -168,7 +173,7 @@ public class UsersController {
                 address = item.getAddress() != null && !item.getAddress().toString().isEmpty() ? JSONObject.parseObject(item.getAddress().toString()) : null;
                 // 处理头像框
                 // 加入其他数据等级等
-                List result = baseFull.getLevel(item.getExperience());
+                List result = baseFull.getLevel(item.getExperience(), dataprefix, apiconfigService, redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
 
@@ -212,76 +217,6 @@ public class UsersController {
     }
 
     /***
-     * 用户数据
-     */
-    @RequestMapping(value = "/userData")
-    @ResponseBody
-    public String userData(@RequestParam(value = "id", required = false) Integer id, HttpServletRequest request) {
-        try {
-            Map data = new HashMap<>();
-            Integer uid = id;
-            String token = request.getHeader("Authorization");
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
-            if (uid != null && !uid.toString().isEmpty()) {
-                // 获取文章数量
-                Article article = new Article();
-                article.setAuthorId(uid);
-                article.setStatus("publish");
-                Integer articleNum = contentsService.total(article, null);
-
-                // 获取粉丝数量
-                Fan fan = new Fan();
-                fan.setTouid(uid);
-                Integer fans = fanService.total(fan);
-
-                // 获取关注数量
-                fan.setUid(uid);
-                fan.setTouid(null);
-                Integer follows = fanService.total(fan);
-
-                // 是否签到
-                Userlog log = new Userlog();
-                log.setUid(uid);
-                log.setType("clock");
-                List<Userlog> logList = userlogService.selectList(log);
-                Integer clock = 0;
-                if (logList.size() > 0) {
-                    log = logList.get(0);
-                    Long timeStmap = System.currentTimeMillis();
-                    Long clockTime = Long.valueOf(log.getCreated());
-                    // 将时间格式化为yyMMdd
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd");
-                    String currentTimeFormatted = sdf.format(new Date(timeStmap));
-                    String createdTimeFormatted = sdf.format(new Date(clockTime));
-
-                    if (currentTimeFormatted.equals(createdTimeFormatted)) {
-                        clock = 1;
-                    }
-                }
-                // 获取评论
-                Comments comment = new Comments();
-                comment.setUid(uid);
-                Integer comments = commentsService.total(comment, null);
-                // 加入数据
-                data.put("articles", articleNum);
-                data.put("fans", fans);
-                data.put("follows", follows);
-                data.put("clock", clock);
-                data.put("comments", comments);
-            }
-
-            // 用户数据
-            return Result.getResultJson(200, "请求成功", data);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.getResultJson(400, "接口异常", null);
-        }
-    }
-
-    /***
      * 用户信息
      */
     @RequestMapping(value = "/userInfo")
@@ -291,10 +226,11 @@ public class UsersController {
             String token = request.getHeader("Authorization");
             Integer isFollow = 0;
             Integer fromFollow = 0;
-            Integer related = 0;
-            Integer isVip = 0;
+            int related = 0;
+            int isVip = 0;
             Users user = new Users();
             Users own = new Users();
+
             if (id != null && !id.equals(0)) {
                 user = service.selectByKey(id);
                 if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
@@ -316,21 +252,68 @@ public class UsersController {
                     if (isFollow.equals(fromFollow)) related = 1;
                 }
             }
+
             // 处理opt、地址以及头像框
             JSONObject opt = new JSONObject();
             JSONObject address = new JSONObject();
-            opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt()) : null;
-            address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : null;
+            opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt()) : new JSONObject();
+            address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : new JSONObject();
 
             // 处理会员
             if (user != null && user.getVip() != null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
 
             // 处理等级
-            List levelInfo = baseFull.getLevel(user.getExperience());
+            List levelInfo = baseFull.getLevel(user.getExperience(), dataprefix, apiconfigService, redisTemplate);
             Integer level = Integer.parseInt(levelInfo.get(0).toString());
             Integer nextExp = Integer.parseInt(levelInfo.get(1).toString());
-
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+            if (user != null && !user.toString().isEmpty()) {
+                // 获取文章数量
+                Article article = new Article();
+                article.setAuthorId(user.getUid());
+                article.setStatus("publish");
+                Integer articleNum = contentsService.total(article, null);
+
+                // 获取粉丝数量
+                Fan fan = new Fan();
+                fan.setTouid(user.getUid());
+                Integer fans = fanService.total(fan);
+
+                // 获取关注数量
+                fan.setUid(user.getUid());
+                fan.setTouid(null);
+                Integer follows = fanService.total(fan);
+
+                // 是否签到
+                Userlog log = new Userlog();
+                log.setUid(user.getUid());
+                log.setType("clock");
+                List<Userlog> logList = userlogService.selectList(log);
+                Integer clock = 0;
+                if (logList.size() > 0) {
+                    log = logList.get(0);
+                    Long timeStmap = System.currentTimeMillis();
+                    Long clockTime = Long.valueOf(log.getCreated());
+                    // 将时间格式化为yyMMdd
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd");
+                    String currentTimeFormatted = sdf.format(new Date(timeStmap));
+                    String createdTimeFormatted = sdf.format(new Date(clockTime));
+
+                    if (currentTimeFormatted.equals(createdTimeFormatted)) {
+                        clock = 1;
+                    }
+                }
+                // 获取评论
+                Comments comment = new Comments();
+                comment.setUid(user.getUid());
+                Integer comments = commentsService.total(comment, null);
+                // 加入数据
+                data.put("articles", articleNum);
+                data.put("fans", fans);
+                data.put("follows", follows);
+                data.put("clock", clock);
+                data.put("comments", comments);
+            }
             // 加入数据
             data.put("address", address);
             data.put("opt", opt);
@@ -341,12 +324,11 @@ public class UsersController {
             data.put("nextExp", nextExp);
             // 移除敏感数据
             data.remove("password");
-            if (!own.getUid().equals(user.getUid()) &&
-                    !("administrator".equals(user.getGroup()) || "editor".equals(user.getGroup()))) {
-                data.remove("assets");
-                data.remove("address");
-                data.remove("mail");
-            }
+
+            if(user.getUid()==null ||!user.getUid().equals(own.getUid())) data.remove("address");
+
+            data.remove("mail");
+
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -374,7 +356,10 @@ public class UsersController {
             if (!userResult.hasUser) {
                 return Result.getResultJson(201, "用户不存在", null);
             }
+
             Users user = userResult.user;
+
+            if (user.getStatus().equals(0)) return Result.getResultJson(201, "账号已注销", null);
             // 验证密码
             Boolean isPass = phpass.CheckPassword(password, user.getPassword());
             if (!isPass) {
@@ -384,8 +369,9 @@ public class UsersController {
             Map token = new HashMap<>();
             token.put("sub ", "login");
             token.put("aud", user.getUid().toString());
-            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), new TypeReference<Map<String, Object>>() {
-            });
+
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+
 
             if (user.getAddress() != null && !user.getAddress().isEmpty()) {
                 data.put("address", JSONObject.parseObject(user.getAddress()));
@@ -429,268 +415,182 @@ public class UsersController {
         return new CheckUserResult(hasUser, user);
     }
 
+
     /***
-     * 社会化登陆
-     * @param params Bean对象JSON字符串
+     *
+     * @param provider
+     * @param openid
+     * @param access_token
+     * @param code
+     * @return
      */
-    @RequestMapping(value = "/apiLogin")
+    @RequestMapping(value = "/OAuth")
     @ResponseBody
-    public String apiLogin(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) {
-
-        Map jsonToMap = null;
-        String oldpw = null;
+    public String OAuth(@RequestParam(value = "provider") String provider,
+                        @RequestParam(value = "openid", required = false) String openid,
+                        @RequestParam(value = "access_token", required = false) String access_token,
+                        @RequestParam(value = "code", required = false) String code) {
         try {
-            if (StringUtils.isNotBlank(params)) {
-                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-            } else {
-                return Result.getResultJson(0, "请输入正确的参数", null);
-            }
-            String ip = baseFull.getIpAddr(request);
-            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            Integer isInvite = apiconfig.getIsInvite();
-            //如果是微信，则走两步判断，是小程序还是APP
-            if (jsonToMap.get("appLoginType").toString().equals("weixin")) {
-
-                //走官方接口获取accessToken和openid
-                if (jsonToMap.get("js_code") == null) {
-                    return Result.getResultJson(0, "APP配置异常，js_code参数不存在", null);
-                }
-                String js_code = jsonToMap.get("js_code").toString();
-                if (jsonToMap.get("type").toString().equals("applets")) {
-                    String requestUrl = "https://api.weixin.qq.com/sns/jscode2session?appid=" + apiconfig.getAppletsAppid() + "&secret=" + apiconfig.getAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
-                    String res = HttpClient.doGet(requestUrl);
-                    System.out.println(res);
-                    if (res == null) {
-                        return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
-                    }
-                    System.out.println("微信登录小程序接口返回" + res);
-                    HashMap data = JSON.parseObject(res, HashMap.class);
-                    if (data.get("openid") == null) {
-                        return Result.getResultJson(0, "接口配置异常，小程序openid获取失败", null);
-                    }
-                    jsonToMap.put("accessToken", data.get("openid"));
-                    jsonToMap.put("openId", data.get("openid"));
+            Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
+            //定义一个变量存储获取到的第三方信息
+            Map<String, Object> data = new HashMap<>();
+            Users user = new Users();
+            //先判定provider
+            if (provider.equals("qq")) {
+                Map<String, Object> userInfo = getOauthResult(access_token, openid, code, provider, apiconfig);
+                if (userInfo.get("status").equals(0)) return Result.getResultJson(201, "数据不匹配", null);
+                // 提取数据
+                System.out.println(userInfo.get("info").toString());
+                Map<String, Object> info = JSONObject.parseObject(JSONObject.toJSONString(userInfo.get("info")), Map.class);
+                // 查询数据库是否存在
+                Userapi userapi = new Userapi();
+                userapi.setOpenId(openid);
+                userapi.setAppLoginType(provider);
+                List<Userapi> userapiList = userapiService.selectList(userapi);
+                if (userapiList.size() == 0) {
+                    // 数据为0 为用户创建新的账号
+                    user.setStatus(1);
+                    user.setAvatar(info.get("figureurl_qq_2").toString());
+                    user.setScreenName(info.get("nickname").toString());
+                    user.setName(userInfo.get("openid").toString().substring(0, 8));
+                    user.setSex(info.get("gender").toString());
+                    service.insert(user);
+                    userapi.setAppLoginType(provider);
+                    userapi.setOpenId(openid);
+                    userapi.setUid(user.getUid());
+                    userapiService.insert(userapi);
+                    user = service.selectByKey(user.getUid());
                 } else {
-                    String requestUrl = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=" + apiconfig.getWxAppId() + "&secret=" + apiconfig.getWxAppSecret() + "&code=" + js_code + "&grant_type=authorization_code";
-                    String res = HttpClient.doGet(requestUrl);
-                    System.out.println(res);
-                    if (res == null) {
-                        return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
-                    }
-                    System.out.println("微信登录app接口返回" + res);
-                    HashMap data = JSON.parseObject(res, HashMap.class);
-                    if (data.get("openid") == null) {
-                        return Result.getResultJson(0, "接口配置异常，openid获取失败", null);
-                    }
-                    jsonToMap.put("accessToken", data.get("openid"));
-                    jsonToMap.put("openId", data.get("openid"));
+                    user = service.selectByKey(userapiList.get(0).getUid());
                 }
-
-
             }
 
-            //QQ也要走两步判断
-            if (jsonToMap.get("appLoginType").toString().equals("qq")) {
+            if (provider.equals("weixin")) {
+                String url = String.format("https://api.weixin.qq.com/sns/oauth2/access_token?appid=$s&secret=%s&code=%s&grant_type=authorization_code", apiconfig.getWxAppId(), apiconfig.getWxAppSecret(), code);
+                CloseableHttpClient httpClient = HttpClients.createDefault();
+                HttpGet httpGet = new HttpGet(url);
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                try {
+                    HttpEntity entity = response.getEntity();
+                    String result = EntityUtils.toString(entity);
+                    EntityUtils.consume(entity);
+                    Map<String, Object> info = JSONObject.parseObject(result, Map.class);
+                    if (info.containsKey("access_token")) {
+                        httpGet = new HttpGet(String.format("https://api.weixin.qq.com/sns/userinfo?access_token=%s&openid=%s", info.get("access_token"), info.get("openid")));
+                        CloseableHttpResponse userResponse = httpClient.execute(httpGet);
+                        try {
+                            entity = userResponse.getEntity();
+                            String userResult = EntityUtils.toString(entity);
+                            EntityUtils.consume(entity);
+                            Map<String, Object> userInfo = JSONObject.parseObject(userResult, Map.class);
+                            Userapi userapi = new Userapi();
+                            // 获取到了openid查询数据库是否存在
+                            userapi.setOpenId(userInfo.get("openid").toString());
+                            userapi.setAppLoginType(provider);
+                            List<Userapi> userapiList = userapiService.selectList(userapi);
+                            if (userapiList.size() == 0) {
+                                // 数据为0 为用户创建新的账号
+                                user.setStatus(1);
+                                user.setGroup("contributor");
+                                user.setAvatar(userInfo.get("headimgurl").toString());
+                                user.setScreenName(userInfo.get("nickname").toString());
+                                // 暂空 需要写入一个用户名
+                                user.setSex(userInfo.get("sex").toString());
+                                service.insert(user);
+                                userapi.setAppLoginType(provider);
+                                userapi.setOpenId(openid);
+                                userapi.setUid(user.getUid());
+                                userapiService.insert(userapi);
+                                user = service.selectByKey(user.getUid());
+                            } else {
+                                user = service.selectByKey(userapiList.get(0).getUid());
 
-
-                if (jsonToMap.get("type").toString().equals("applets")) {
-                    if (jsonToMap.get("js_code") == null) {
-                        return Result.getResultJson(0, "APP配置异常，js_code参数不存在", null);
-                    }
-                    String js_code = jsonToMap.get("js_code").toString();
-                    //如果是小程序，走官方接口获取accessToken和openid
-
-
-                    String requestUrl = "https://api.q.qq.com/sns/jscode2session?appid=" + apiconfig.getQqAppletsAppid() + "&secret=" + apiconfig.getQqAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
-                    String res = HttpClient.doGet(requestUrl);
-                    System.out.println("QQ接口返回" + res);
-                    if (res == null) {
-                        return Result.getResultJson(0, "接口配置异常，QQ官方接口请求失败", null);
-                    }
-
-                    HashMap data = JSON.parseObject(res, HashMap.class);
-                    if (data.get("openid") == null) {
-                        return Result.getResultJson(0, "接口配置异常，openid获取失败", null);
-                    }
-                    jsonToMap.put("accessToken", data.get("openid"));
-                    jsonToMap.put("openId", data.get("openid"));
-                } else {
-                    if (jsonToMap.get("accessToken") == null) {
-                        return Result.getResultJson(0, "登录配置异常，accessToken参数不存在", null);
-                    }
-                    jsonToMap.put("accessToken", jsonToMap.get("openId"));
-                    jsonToMap.put("openId", jsonToMap.get("openId"));
-                }
-            } else {
-                if (jsonToMap.get("accessToken") == null) {
-                    return Result.getResultJson(0, "登录配置异常，accessToken参数不存在", null);
-                }
-            }
-            Userapi userapi = JSON.parseObject(JSON.toJSONString(jsonToMap), Userapi.class);
-            String openid = userapi.getOpenId();
-            String loginType = userapi.getAppLoginType();
-            Userapi isApi = new Userapi();
-            isApi.setOpenId(openid);
-            isApi.setAppLoginType(loginType);
-            List<Userapi> apiList = userapiService.selectList(isApi);
-            //大于0则走向登陆，小于0则进行注册
-            if (apiList.size() > 0) {
-
-                Userapi apiInfo = apiList.get(0);
-                Users user = service.selectByKey(apiInfo.getUid().toString());
-                //判断用户是否被封禁
-                Integer bantime = user.getBantime();
-                if (bantime.equals(1)) {
-                    return Result.getResultJson(0, "你的账号已被永久封禁，如有疑问请联系管理员", null);
-                } else {
-                    Long date = System.currentTimeMillis();
-                    Integer curtime = Integer.parseInt(String.valueOf(date).substring(0, 10));
-                    if (bantime > curtime) {
-                        return Result.getResultJson(0, "你的账号被暂时封禁，请耐心等待解封。", null);
-                    }
-                }
-                Long date = System.currentTimeMillis();
-                String Token = date + user.getName();
-                jsonToMap.put("uid", user.getUid());
-
-                //生成唯一性token用于验证
-                jsonToMap.put("name", user.getName());
-                jsonToMap.put("token", user.getName() + DigestUtils.md5DigestAsHex(Token.getBytes()));
-                jsonToMap.put("time", date);
-                jsonToMap.put("group", user.getGroup());
-                jsonToMap.put("mail", user.getMail());
-                jsonToMap.put("url", user.getUrl());
-                jsonToMap.put("screenName", user.getScreenName());
-                jsonToMap.put("customize", user.getCustomize());
-                jsonToMap.put("introduce", user.getIntroduce());
-                jsonToMap.put("experience", user.getExperience());
-                //判断是否为VIP
-                jsonToMap.put("vip", user.getVip());
-                jsonToMap.put("isvip", 0);
-                String curTime = String.valueOf(date).substring(0, 10);
-                Integer viptime = user.getVip();
-                if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
-                    jsonToMap.put("isvip", 1);
-                }
-                if (user.getAvatar() != null) {
-                    jsonToMap.put("avatar", user.getAvatar());
-                } else {
-                    if (user.getMail() != null) {
-                        if (user.getMail().indexOf("@qq.com") != -1) {
-                            String qq = user.getMail().replace("@qq.com", "");
-                            jsonToMap.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640");
-                        } else {
-                            jsonToMap.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), user.getMail()));
+                            }
+                        } finally {
+                            userResponse.close();
                         }
                     } else {
-                        jsonToMap.put("avatar", apiconfig.getWebinfoAvatar() + "null");
+                        return Result.getResultJson(201, info.get("errmsg").toString(), null);
+                    }
+                } finally {
+                    response.close();
+                }
+            }
+
+            // 生成Token
+            Map token = new HashMap<>();
+            token.put("sub ", "login");
+            token.put("aud", user.getUid().toString());
+            data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
+
+            List level = baseFull.getLevel(user.getExperience(), dataprefix, apiconfigService, redisTemplate);
+            data.put("level", level.get(0));
+            data.put("nextExp", level.get(1));
+            data.put("token", JWT.getToken(token));
+            data.remove("password");
+            if (user.getAddress() != null && !user.getAddress().isEmpty()) {
+                data.put("address", JSONObject.parseObject(user.getAddress()));
+            }
+            return Result.getResultJson(200, "登录成功", data);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+
+        }
+    }
+
+    private Map<String, Object> getOauthResult(String access_token, String openid, String code, String provider, Apiconfig apiconfig) {
+        Map<String, Object> data = new HashMap<>();
+        try {
+            if (provider.equals("qq")) {
+                String url = String.format("https://graph.qq.com/user/get_user_info?access_token=%s&oauth_consumer_key=%s&openid=%s", access_token, apiconfig.getQqAppletsAppid(), openid);
+                CloseableHttpClient httpClient = HttpClients.createDefault();
+                HttpGet httpGet = new HttpGet(url);
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                Map<String, Object> info = new HashMap<>();
+                try {
+                    HttpEntity entity = response.getEntity();
+                    String result = EntityUtils.toString(entity);
+                    EntityUtils.consume(entity);
+                    info = JSONObject.parseObject(result, Map.class);
+                    //  如果获取到ret状态不为0则返回错误信息
+                    if (!info.get("ret").equals(0)) {
+                        data.put("status", 0);
+                        data.put("info", info);
+                        return data;
+                    }
+                } finally {
+                    response.close();
+                }
+
+                // 再获取用户openid
+                url = String.format("https://graph.qq.com/oauth2.0/me?access_token=%s&fmt=json", access_token);
+                httpGet = new HttpGet(url);
+                CloseableHttpResponse openidRes = httpClient.execute(httpGet);
+
+                try {
+                    HttpEntity openidEntity = openidRes.getEntity();
+                    String openidResult = EntityUtils.toString(openidEntity);
+                    EntityUtils.consume(openidEntity);
+                    Map<String, Object> openidInfo = JSONObject.parseObject(openidResult, Map.class);
+                    if (!openidInfo.get("openid").equals(openid)) {
+                        data.put("status", 0);
+                        return data;
+                    }
+                    data.put("status", 1);
+                    data.put("info", info);
+                    data.put("openid", openidInfo.get("openid"));
+                } finally {
+                    if (openidRes != null) {
+                        openidRes.close();
                     }
                 }
-
-                //获取用户等级
-                Integer uid = user.getUid();
-                Comments comments = new Comments();
-                comments.setUid(uid);
-                Integer lv = commentsService.total(comments, null);
-                jsonToMap.put("lv", baseFull.getLv(lv));
-                //更新用户登录时间和第一次登陆时间（满足typecho要求）
-                String userTime = String.valueOf(date).substring(0, 10);
-                Users updateuser = new Users();
-                updateuser.setUid(user.getUid());
-                updateuser.setLogged(Integer.parseInt(userTime));
-                if (user.getLogged() == 0) {
-                    updateuser.setActivated(Integer.parseInt(userTime));
-                }
-
-                Integer rows = service.update(updateuser);
-
-                //删除之前的token后，存入redis(防止积累导致内存溢出，超时时间默认是24小时)
-                String oldToken = redisHelp.getRedis(this.dataprefix + "_" + "userkey" + jsonToMap.get("name").toString(), redisTemplate);
-                if (oldToken != null) {
-                    redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
-                }
-                redisHelp.setRedis(this.dataprefix + "_" + "userkey" + jsonToMap.get("name").toString(), jsonToMap.get("token").toString(), this.usertime, redisTemplate);
-                redisHelp.setKey(this.dataprefix + "_" + "userInfo" + jsonToMap.get("name").toString() + DigestUtils.md5DigestAsHex(Token.getBytes()), jsonToMap, this.usertime, redisTemplate);
-
-                return Result.getResultJson(rows > 0 ? 1 : 0, rows > 0 ? "登录成功" : "登陆失败", jsonToMap);
-
-            } else {
-                //注册
-                if (isInvite.equals(1)) {
-                    return Result.getResultJson(0, "当前注册需要邀请码，请采用普通方式注册！", null);
-                }
-
-//                if (jsonToMap.get("headImgUrl") != null) {
-//
-//                }
-                Users regUser = new Users();
-                String name = baseFull.createRandomStr(5) + baseFull.createRandomStr(4);
-                String p = baseFull.createRandomStr(9);
-                String passwd = phpass.HashPassword(p);
-                Long date = System.currentTimeMillis();
-                String userTime = String.valueOf(date).substring(0, 10);
-                regUser.setName(name);
-                regUser.setCreated(Integer.parseInt(userTime));
-                regUser.setGroup("subscriber");
-                regUser.setScreenName(userapi.getNickName());
-                regUser.setPassword(passwd.replaceAll("(\\\r\\\n|\\\r|\\\n|\\\n\\\r)", ""));
-                if (jsonToMap.get("headImgUrl") != null) {
-                    String headImgUrl = jsonToMap.get("headImgUrl").toString();
-                    //QQ的接口头像要处理(垃圾腾讯突然修改了返回格式)
-                    if (jsonToMap.get("appLoginType").toString().equals("qq")) {
-                        headImgUrl = headImgUrl.replace("http://", "https://");
-                        headImgUrl = headImgUrl.replace("&amp;", "&");
-                    }
-                    regUser.setAvatar(headImgUrl);
-                }
-                Integer to = service.insert(regUser);
-                //注册完成后，增加绑定
-                Integer uid = regUser.getUid();
-                userapi.setUid(uid);
-                int rows = userapiService.insert(userapi);
-                //返回token
-                Long regdate = System.currentTimeMillis();
-                String Token = regdate + name;
-                jsonToMap.put("uid", uid);
-                //生成唯一性token用于验证
-                jsonToMap.put("name", name);
-                jsonToMap.put("token", name + DigestUtils.md5DigestAsHex(Token.getBytes()));
-                jsonToMap.put("time", regdate);
-                jsonToMap.put("group", "contributor");
-                jsonToMap.put("groupKey", "contributor");
-                jsonToMap.put("mail", "");
-                jsonToMap.put("url", "");
-                jsonToMap.put("screenName", userapi.getNickName());
-                jsonToMap.put("avatar", apiconfig.getWebinfoAvatar() + "null");
-                jsonToMap.put("lv", 0);
-                jsonToMap.put("customize", "");
-                jsonToMap.put("experience", 0);
-                //VIP
-                jsonToMap.put("vip", 0);
-                jsonToMap.put("isvip", 0);
-
-                //删除之前的token后，存入redis(防止积累导致内存溢出，超时时间默认是24小时)
-                String oldToken = redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate);
-                if (oldToken != null) {
-                    redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
-                }
-                redisHelp.setRedis(this.dataprefix + "_" + "userkey" + jsonToMap.get("name").toString(), jsonToMap.get("token").toString(), this.usertime, redisTemplate);
-                redisHelp.setKey(this.dataprefix + "_" + "userInfo" + jsonToMap.get("name").toString() + DigestUtils.md5DigestAsHex(Token.getBytes()), jsonToMap, this.usertime, redisTemplate);
-
-                return Result.getResultJson(rows > 0 ? 1 : 0, rows > 0 ? "登录成功" : "登陆失败", jsonToMap);
-
             }
         } catch (Exception e) {
             e.printStackTrace();
-            JSONObject response = new JSONObject();
-
-            response.put("code", 0);
-            response.put("msg", "登陆失败，请联系管理员");
-            response.put("data", null);
-
-            return response.toString();
         }
-
+        return data;
     }
 
     /***
@@ -1007,11 +907,11 @@ public class UsersController {
             try {
                 MailService.send("你本次的验证码为" + verificationCode, "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title><meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head><body><div class=\"main\"><h1>用户验证码</h1><div class=\"text\"><p>你本次的验证码为<span>" + verificationCode + "</span>。</p><p>出于安全原因，该验证码将于10分钟后失效。请勿将验证码透露给他人。</p></div></div></body></html>",
                         new String[]{mail}, new String[]{});
-                return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.getResultJson(201, "邮件发送错误", null);
             }
+            return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
         } catch (Exception e) {
             return Result.getResultJson(400, "不正确的邮箱发信配置", null);
         }
@@ -1019,8 +919,11 @@ public class UsersController {
     }
 
     /***
-     * 找回密码
-     * @param account Bean对象JSON字符串
+     * 重置密码
+     * @param account
+     * @param password
+     * @param code
+     * @return
      */
     @RequestMapping(value = "/resetPassword")
     @ResponseBody
@@ -1100,14 +1003,35 @@ public class UsersController {
                             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.getUid().equals(0)) return Result.getResultJson(201, "用户不存在", null);
             user.setClientId(id);
             service.update(user);
             return Result.getResultJson(200, "设置成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    @RequestMapping(value = "/changePassword")
+    @ResponseBody
+    public String changePassword(@RequestParam(value = "newPassword") String newPassword,
+                                 @RequestParam(value = "oldPassword") String oldPassword,
+                                 HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
+
+            if (!phpass.CheckPassword(oldPassword, user.getPassword()))
+                return Result.getResultJson(201, "密码不正确", null);
+            // 验证通过写入新hash
+            user.setPassword(phpass.HashPassword(newPassword));
+            service.update(user);
+            return Result.getResultJson(200, "修改成功", null);
+
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
@@ -1123,28 +1047,23 @@ public class UsersController {
                          @RequestParam(value = "sex", required = false) String sex,
                          @RequestParam(value = "introduce", required = false) String introduce,
                          @RequestParam(value = "avatar", required = false) String avatar,
+                         @RequestParam(value = "address", required = false) String address,
                          @RequestParam(value = "background", required = false) String background,
                          @RequestParam(value = "mail", required = false) String mail,
                          @RequestParam(value = "code", required = false) String code,
-                         @RequestParam(value = "password", required = false) String password,
                          HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
-            if (nickname != null && !nickname.isEmpty()) user.setScreenName(nickname);
-            if (avatar != null && !avatar.isEmpty()) user.setAvatar(avatar);
-            if (background != null && !background.isEmpty()) user.setUserBg(background);
-            if (sex != null && !sex.isEmpty()) user.setSex(sex);
-            if (introduce != null && !introduce.isEmpty()) user.setIntroduce(introduce);
-            if (password != null && !password.isEmpty()) {
-                // 加密密码
-                user.setPassword(phpass.HashPassword(password));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.getUid().equals(0)) return Result.getResultJson(201, "用户不存在", null);
+
+            user.setScreenName(nickname);
+            user.setAvatar(avatar);
+            user.setUserBg(background);
+            user.setSex(sex);
+            user.setIntroduce(introduce);
+            user.setAddress(address);
             if (mail != null && !mail.isEmpty()) {
                 if (!baseFull.isEmail(mail)) return Result.getResultJson(201, "邮箱格式错误", null);
                 Users query = new Users();
@@ -1174,19 +1093,6 @@ public class UsersController {
         }
     }
 
-    private boolean permission(String token) {
-        if (token != null && !token.isEmpty()) {
-            DecodedJWT verify = JWT.verify(token);
-            Users user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
 
     /***
      * 管理员修改用户
@@ -1202,9 +1108,11 @@ public class UsersController {
             @RequestParam(value = "mail", required = false) String mail,
             @RequestParam(value = "group", required = false) String group,
             @RequestParam(value = "opt", required = false) String opt,
+            @RequestParam(value = "vip", required = false) Integer vip,
             HttpServletRequest request) {
         try {
-            Boolean permission = permission(request.getHeader("Authorization"));
+            String token = request.getHeader("Authorization");
+            Boolean permission = permission(getUser(token));
             if (!permission) return Result.getResultJson(201, "无权限", null);
             Users user = service.selectByKey(id);
             user.setOpt(opt);
@@ -1213,6 +1121,7 @@ public class UsersController {
             user.setSex(sex);
             user.setIntroduce(introduce);
             user.setMail(mail);
+            user.setVip(vip);
             service.update(user);
             return Result.getResultJson(200, "修改成功", null);
         } catch (Exception e) {
@@ -1230,12 +1139,8 @@ public class UsersController {
                          HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
-            if (!permission(request.getHeader("Authorization"))) {
+            Users user = getUser(token);
+            if (!permission(user)) {
                 return Result.getResultJson(201, "无权限", null);
             }
             Users deleteUser = service.selectByKey(id);
@@ -1261,11 +1166,8 @@ public class UsersController {
         try {
             if (num == null || num.equals("")) return Result.getResultJson(201, "请输入提现额度", null);
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.getUid().equals(0)) return Result.getResultJson(201, "用户不存在", null);
             if (user.getPay() == null || user.getPay().isEmpty())
                 return Result.getResultJson(201, "请先设置收款方式", null);
             Userlog log = new Userlog();
@@ -1318,13 +1220,11 @@ public class UsersController {
                                @RequestParam(value = "id", required = false) Integer id,
                                HttpServletRequest request) {
         try {
-            Boolean permission = permission(request.getHeader("Authorization"));
+
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            Boolean permission = permission(user);
+
             Paylog pay = new Paylog();
             pay.setPaytype("withdraw");
             pay.setUid(user.getUid());
@@ -1370,7 +1270,8 @@ public class UsersController {
                                 HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
             Paylog pay = paylogService.selectByKey(id);
             if (pay == null || pay.toString().isEmpty()) return Result.getResultJson(201, "数据不存在", null);
             Users user = service.selectByKey(pay.getUid());
@@ -1422,7 +1323,8 @@ public class UsersController {
                          @RequestParam(value = "id") Integer id,
                          HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
             if (num == 0 || num.toString().isEmpty() || num.equals(""))
                 return Result.getResultJson(201, "余额不可为空", null);
 
@@ -1485,19 +1387,16 @@ public class UsersController {
     public String madeCode(@RequestParam(value = "num") Integer num,
                            HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
             if (num == null || num.equals("") || num.equals(0))
                 return Result.getResultJson(201, "请输入正确的数量", null);
             Invitation invite = new Invitation();
-            String token = request.getHeader("Authorization");
-            Integer uid = null;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
+            int user_id = user.getUid();
             Long timeStamp = System.currentTimeMillis() / 1000;
             invite.setCreated(Math.toIntExact(timeStamp));
-            invite.setUid(uid);
+            invite.setUid(user_id);
             for (int i = 0; i < num; i++) {
                 invite.setCode(baseFull.createRandomStr(8));
                 invite.setStatus(0);
@@ -1521,7 +1420,9 @@ public class UsersController {
                            @RequestParam(value = "type", defaultValue = "0") Integer type,
                            HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
             Invitation invite = new Invitation();
             invite.setStatus(type);
             PageList<Invitation> invitePage = invitationService.selectPage(invite, page, limit);
@@ -1546,51 +1447,63 @@ public class UsersController {
      */
     @RequestMapping(value = "/codeExcel")
     @ResponseBody
-    public void codeExcel(@RequestParam(value = "limit") Integer limit,
-                          @RequestParam(value = "type", defaultValue = "0") Integer type,
-                          HttpServletResponse response,
-                          HttpServletRequest request) throws IOException {
-        HSSFWorkbook workbook = new HSSFWorkbook();
-        HSSFSheet sheet = workbook.createSheet("邀请码列表");
-        if (!permission(request.getHeader("Authorization"))) {
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-disposition", "attachment;filename=nodata.xls");
-            response.flushBuffer();
-            workbook.write(response.getOutputStream());
+    public String codeExcel(@RequestParam(value = "type", defaultValue = "0") Integer type,
+                            HttpServletResponse response,
+                            HttpServletRequest request) throws IOException {
+        try {
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
+
+            Invitation query = new Invitation();
+            query.setStatus(type);
+            List<Invitation> invitationList = invitationService.selectList(query);
+
+            try (Workbook workbook = new XSSFWorkbook()) {
+                String[] headers = {"ID", "邀请码", "创建人"};
+                Sheet sheet = workbook.createSheet("invite Data");
+                // 写入表头
+                Row headerRow = sheet.createRow(0);
+                for (int i = 0; i < headers.length; i++) {
+                    headerRow.createCell(i).setCellValue(headers[i]);
+                }
+                for (int i = 0; i < invitationList.size(); i++) {
+                    Row row = sheet.createRow(i + 1);
+                    Invitation invitation = invitationList.get(i);
+                    row.createCell(0).setCellValue(invitation.getId());
+                    row.createCell(1).setCellValue(invitation.getCode());
+                    row.createCell(2).setCellValue(invitation.getUid());
+                    row.createCell(3).setCellValue(invitation.getStatus() > 0 ? "已使用" : "未使用");
+                    row.createCell(5).setCellValue(invitation.getCreated());
+                }
+
+                response.setContentType("application/octet-stream");
+                response.setHeader("Content-Disposition", "attachment; filename=邀请码.xlsx");
+                workbook.write(response.getOutputStream());
+                return null;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return Result.getResultJson(500, "导出Excel文件失败", null);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
-        Invitation query = new Invitation();
-        query.setStatus(type);
-        PageList<Invitation> pageList = invitationService.selectPage(query, 1, limit);
-        List<Invitation> list = pageList.getList();
+    }
 
-        String fileName = "InvitationExcel" + ".xls";//设置要导出的文件的名字
-        //新增数据行，并且设置单元格数据
-
-        int rowNum = 1;
-
-        String[] headers = {"ID", "邀请码", "创建人"};
-        //headers表示excel表中第一行的表头
-
-        HSSFRow row = sheet.createRow(0);
-        //在excel表中添加表头
-
-        for (int i = 0; i < headers.length; i++) {
-            HSSFCell cell = row.createCell(i);
-            HSSFRichTextString text = new HSSFRichTextString(headers[i]);
-            cell.setCellValue(text);
+    @RequestMapping(value = "/delCode")
+    @ResponseBody
+    public String delCode(@RequestParam(value = "id") Integer id,
+                          HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
+            invitationService.delete(id);
+            return Result.getResultJson(200, "删除成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
-        for (com.TypeApi.entity.Invitation Invitation : list) {
-            HSSFRow row1 = sheet.createRow(rowNum);
-            row1.createCell(0).setCellValue(Invitation.getId());
-            row1.createCell(1).setCellValue(Invitation.getCode());
-            row1.createCell(2).setCellValue(Invitation.getUid());
-            rowNum++;
-        }
-
-        response.setContentType("application/octet-stream");
-        response.setHeader("Content-disposition", "attachment;filename=" + fileName);
-        response.flushBuffer();
-        workbook.write(response.getOutputStream());
     }
 
     /***
@@ -1604,13 +1517,9 @@ public class UsersController {
                         HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
             Inbox query = new Inbox();
             query.setType(type);
             query.setTouid(user.getUid());
@@ -1648,7 +1557,12 @@ public class UsersController {
                     Map<String, Object> articleData = new HashMap<>();
                     if (reply != null && !reply.toString().isEmpty()) {
                         JSONArray images = new JSONArray();
-                        images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
+                        try {
+                            images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
+
+                        } catch (Exception e) {
+                            images = null;
+                        }
                         dataReply.put("images", images);
                         // 查询评论的用户
                         Users replyUser = service.selectByKey(reply.getUid());
@@ -1679,6 +1593,7 @@ public class UsersController {
                             articleData.put("title", article.getTitle());
                             articleData.put("authorId", article.getAuthorId());
                             articleData.put("id", article.getCid());
+                            articleData.put("type",article.getType());
                         } else {
                             articleData.put("title", "文章已被删除");
                             articleData.put("id", 0);
@@ -1714,24 +1629,22 @@ public class UsersController {
     public String noticeNum(HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
             Inbox inbox = new Inbox();
-            inbox.setUid(user.getUid());
+            inbox.setTouid(user.getUid());
             inbox.setIsread(0);
             inbox.setType("comment");
-            Integer comments = inboxService.total(inbox);
+            int comments = inboxService.total(inbox);
             inbox.setType("system");
-            Integer systems = inboxService.total(inbox);
+            int systems = inboxService.total(inbox);
             inbox.setType("finance");
-            Integer finances = inboxService.total(inbox);
+            int finances = inboxService.total(inbox);
 
             Map<String, Object> data = new HashMap<>();
             data.put("comments", comments);
-            data.put("system", systems);
+            data.put("systems", systems);
             data.put("finances", finances);
             data.put("total", comments + systems + finances);
             return Result.getResultJson(200, "获取成功", data);
@@ -1751,13 +1664,9 @@ public class UsersController {
                            HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
             String sql = "UPDATE " + prefix + "_inbox SET isread = 1 WHERE touid = ?";
             if (type != null) {
                 sql = "UPDATE " + prefix + "_inbox SET isread = 1 WHERE touid = ? AND type = ?";
@@ -1782,7 +1691,8 @@ public class UsersController {
                           HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            if (!permission(getUser(token))) return Result.getResultJson(201, "无权限", null);
             Users user = service.selectByKey(id);
             if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             if (text == null || text.isEmpty()) return Result.getResultJson(201, "内容不可为空", null);
@@ -1820,11 +1730,9 @@ public class UsersController {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
             // 查询用户是否存在
             Users toFanUser = service.selectByKey(id);
             if (toFanUser == null || toFanUser.toString().isEmpty())
@@ -1864,11 +1772,9 @@ public class UsersController {
                              HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不能存在", null);
             // 如果传入id的话就查询其他人的关注列表 默认查询我关注的人
             // 查询被关注人的列表
             Fan fan = new Fan();
@@ -1948,33 +1854,30 @@ public class UsersController {
                       HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            if (!permission(token)) return Result.getResultJson(201, "无权限", null);
-            Integer uid = null;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
             Long timeStamp = System.currentTimeMillis() / 1000;
             Long banTime = timeStamp + (days * 86400);
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             //查询用户是否存在
-            Users user = service.selectByKey(id);
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            if (user.getBantime() > timeStamp) return Result.getResultJson(201, "用户封禁中", null);
+            Users banUser = service.selectByKey(id);
+            if (banUser == null || banUser.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            if (banUser.getBantime() > timeStamp) return Result.getResultJson(201, "用户封禁中", null);
             if (days == null || days.equals(0) || days.equals(""))
                 return Result.getResultJson(201, "请输入封禁天数", null);
 
             // 写入封禁记录
             Violation violation = new Violation();
             violation.setCreated(Math.toIntExact(timeStamp));
-            violation.setUid(user.getUid());
+            violation.setUid(banUser.getUid());
             violation.setType("ban");
             violation.setText(text);
-            violation.setHandler(uid);
+            violation.setHandler(banUser.getUid());
             violationService.insert(violation);
             // 更新用户信息
-            user.setBantime(Math.toIntExact(banTime));
-            service.update(user);
+            banUser.setBantime(Math.toIntExact(banTime));
+            service.update(banUser);
 
             return Result.getResultJson(200, "封禁成功", null);
 
@@ -1992,21 +1895,19 @@ public class UsersController {
     public String unban(@RequestParam(value = "id") Integer id,
                         HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             String token = request.getHeader("Authorization");
-            Integer uid = null;
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在", null);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+
             Long timeStamp = System.currentTimeMillis() / 1000;
-            Users user = service.selectByKey(id);
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            if (user.getBantime() < timeStamp) return Result.getResultJson(201, "该用户状态正常", null);
+            Users banUser = service.selectByKey(id);
+            if (banUser == null || banUser.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            if (banUser.getBantime() < timeStamp) return Result.getResultJson(201, "该用户状态正常", null);
 
             // 更改用户的封禁时间
-            user.setBantime(Math.toIntExact(timeStamp));
-            service.update(user);
+            banUser.setBantime(Math.toIntExact(timeStamp));
+            service.update(banUser);
             return Result.getResultJson(200, "解除成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2025,7 +1926,10 @@ public class UsersController {
                           @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
                           HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+
             Violation violation = new Violation();
             if (params != null && !params.toString().isEmpty()) {
                 violation = JSONObject.parseObject(JSONObject.toJSONString(params), Violation.class);
@@ -2071,19 +1975,15 @@ public class UsersController {
                         @RequestParam(value = "id") Integer id,
                         HttpServletRequest request) {
         try {
-            //1是清理用户签到，2是清理用户资产日志，3是清理用户订单数据，4是清理无效卡密
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             String token = request.getHeader("Authorization");
-            Users admin = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                admin = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
-            Users user = service.selectByKey(id);
-            if (user == null) {
+            Users user = getUser(token);
+            //1是清理用户签到，2是清理用户资产日志，3是清理用户订单数据，4是清理无效卡密
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+            Users clanUser = service.selectByKey(id);
+            if (clanUser == null) {
                 return Result.getResultJson(0, "该用户不存在", null);
             }
-            if (user.getGroup().equals("administrator")) {
+            if (clanUser.getGroup().equals("administrator")) {
                 return Result.getResultJson(0, "不允许删除管理员的文章", null);
             }
             String text = null;
@@ -2112,7 +2012,7 @@ public class UsersController {
                 jdbcTemplate.execute("DELETE FROM " + this.prefix + "_userlog WHERE type='clock' and uid = " + id + ";");
                 text = "日志数据";
             }
-            securityService.safetyMessage("管理员：" + admin.getName() + "，清除了用户" + user.getName() + "所有" + text, "system");
+            securityService.safetyMessage("管理员：" + user.getName() + "，清除了用户" + user.getName() + "所有" + text, "system");
             return Result.getResultJson(200, "清除成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2132,28 +2032,30 @@ public class UsersController {
                           @RequestParam(value = "days") Integer days,
                           HttpServletRequest request) {
         try {
-            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
-            Users user = service.selectByKey(id);
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+            Users giftUser = service.selectByKey(id);
+            if (giftUser == null || giftUser.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             if (days == null || days.equals(0) || days.equals(""))
                 return Result.getResultJson(201, "请输入正确天数", null);
             Long timeStamp = System.currentTimeMillis() / 1000;
-            if (user.getVip().equals(1)) return Result.getResultJson(201, "该用户为永久VIP", null);
-            if (user.getVip() > timeStamp) {
-                user.setVip(user.getVip() + (86400 * days));
+            if (giftUser.getVip().equals(1)) return Result.getResultJson(201, "该用户为永久VIP", null);
+            if (giftUser.getVip() > timeStamp) {
+                giftUser.setVip(giftUser.getVip() + (86400 * days));
             } else {
-                user.setVip((int) (timeStamp + (86400 * days)));
+                giftUser.setVip((int) (timeStamp + (86400 * days)));
             }
             // 写入信息
             Inbox inbox = new Inbox();
             inbox.setText("管理员赠送了您" + days + "天的会员");
             inbox.setUid(0);
-            inbox.setTouid(user.getUid());
+            inbox.setTouid(giftUser.getUid());
             inbox.setType("system");
             inbox.setIsread(0);
             inbox.setValue(days);
             inboxService.insert(inbox);
-            service.update(user);
+            service.update(giftUser);
             return Result.getResultJson(200, "赠送成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2166,26 +2068,18 @@ public class UsersController {
     public String sign(HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
 
             if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
                 return Result.getResultJson(200, "今天已签到", null);
-            // 获取当前日期
-            LocalDate today = LocalDate.now();
-            // 如果用户还没签到，计算距离今天结束还有多少秒
-            LocalDateTime endOfToday = LocalDateTime.of(today, LocalTime.MAX);
-            Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
-            long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
 
+            // 获取今天结束时间
+            Integer endTime = baseFull.endTime();
             // 写入redis
-            redisHelp.setRedis("signed_" + user.getName().toString(), "1", (int) secondsUntilEndOfDay, redisTemplate);
+            redisHelp.setRedis("signed_" + user.getName().toString(), "1", endTime, redisTemplate);
 
             // 给用户添加积分和经验
             user.setAssets(user.getAssets() + apiconfig.getClock());
@@ -2225,25 +2119,37 @@ public class UsersController {
     public String tasks(HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
-            }
+            Users user = getUser(token);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在", null);
             // 初始化返回信息
-            Integer isSign = 0;
-            Integer likes = 0;
-            Integer views = 0;
-            Integer shares = 0;
+            int isSign = 0;
+            int likes = 0;
+            int views = 0;
+            int shares = 0;
+            int marks = 0;
 
             Map<String, Object> data = new HashMap<>();
             if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
                 isSign = 1;
 
+            if (redisHelp.getRedis("likes_" + user.getName(), redisTemplate) != null)
+                likes = Integer.parseInt(redisHelp.getRedis("likes_" + user.getName(), redisTemplate));
+
+            if (redisHelp.getRedis("views_" + user.getName(), redisTemplate) != null)
+                views = Integer.parseInt(redisHelp.getRedis("views_" + user.getName(), redisTemplate));
+
+            if (redisHelp.getRedis("marks_" + user.getName(), redisTemplate) != null)
+                marks = Integer.parseInt(redisHelp.getRedis("marks_" + user.getName(), redisTemplate));
+
+            if (redisHelp.getRedis("shares_" + user.getName(), redisTemplate) != null)
+                shares = Integer.parseInt(redisHelp.getRedis("shares_" + user.getName(), redisTemplate));
+
+
             data.put("isSign", isSign);
             data.put("likes", likes);
             data.put("views", views);
+            data.put("marks", marks);
             data.put("shares", shares);
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
@@ -2254,5 +2160,47 @@ public class UsersController {
 
     }
 
+    @RequestMapping(value = "/destroy")
+    @ResponseBody
+    public String destory(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            user.setStatus(0);
+            service.update(user);
+            return Result.getResultJson(200, "注销成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口错误", null);
+        }
+    }
 
+    /***
+     * 权限判断
+     * @param user
+     * @return
+     */
+    private boolean permission(Users user) {
+        if (user.getUid() == null || user.getUid().equals(0)) return false;
+        if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) return true;
+        return false;
+    }
+
+    /***
+     * 获取用户信息
+     * @param token
+     * @return
+     */
+    private Users getUser(String token) {
+        if (token == null || token.isEmpty()) return new Users();
+        // 获取用户信息
+        DecodedJWT verify = JWT.verify(token);
+        Users user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+        return user;
+    }
 }

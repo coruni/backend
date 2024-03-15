@@ -23,11 +23,6 @@ public class ChatMsg implements Serializable {
     private Integer sender_id;
 
     /**
-     * receiver_id  接收人
-     */
-    private Integer receiver_id;
-
-    /**
      * text  消息内容
      */
     private String text;
@@ -41,5 +36,10 @@ public class ChatMsg implements Serializable {
      * type  0是私聊 1是群聊
      */
     private Integer type;
+
+    /***
+     * chat_id 聊天室id
+     */
+    private Integer chat_id;
 
 }

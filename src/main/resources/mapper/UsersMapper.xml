@@ -19,7 +19,6 @@
         <result column="assets" property="assets" />
         <result column="address" property="address" />
         <result column="pay" property="pay" />
-        <result column="customize" property="customize" />
         <result column="avatar" property="avatar" />
         <result column="experience" property="experience" />
         <result column="clientId" property="clientId" />
@@ -29,6 +28,7 @@
         <result column="sex" property="sex" />
         <result column="opt" property="opt" />
         <result column="medal" property="medal" />
+        <result column="status" property="status" />
         <result column="head_picture" property="head_picture" />
     </resultMap>
 
@@ -48,7 +48,6 @@
         `assets`,
         `address`,
         `pay`,
-        `customize`,
         `vip`,
         `avatar`,
         `experience`,
@@ -57,6 +56,7 @@
         `posttime`,
         `userBg`,
         `sex`,
+        `status`,
         `opt`,
         `medal`,
         `head_picture`
@@ -108,6 +108,9 @@
             <if test ='null != clientId'>
                 `clientId`,
             </if>
+            <if test ='null != status'>
+                `status`,
+            </if>
             <if test ='null != bantime'>
                 `bantime`
             </if>
@@ -156,6 +159,9 @@
             <if test ='null != clientId'>
                 #{clientId},
             </if>
+            <if test ='null != status'>
+                #{status},
+            </if>
             <if test ='null != bantime'>
                 #{bantime}
             </if>
@@ -178,6 +184,7 @@
                 #{curr.activated},
                 #{curr.logged},
                 #{curr.group},
+                #{curr.status},
                 #{curr.userBg},
                 #{curr.authCode},
                 #{curr.bantime}
@@ -203,7 +210,6 @@
             <if test ='null != assets'>`assets` = #{assets},</if>
             <if test ='null != address'>`address` = #{address},</if>
             <if test ='null != pay'>`pay` = #{pay},</if>
-            <if test ='null != customize'>`customize` = #{customize},</if>
             <if test ='null != vip'>`vip` = #{vip},</if>
             <if test ='null != avatar'>`avatar` = #{avatar},</if>
             <if test ='null != experience'>`experience` = #{experience},</if>
@@ -214,6 +220,7 @@
             <if test ='null != sex'>`sex` = #{sex},</if>
             <if test ='null != medal'>`medal` = #{medal},</if>
             <if test ='null != opt'>`opt` = #{opt},</if>
+            <if test ='null != status'>`status` = #{status},</if>
             <if test ='null != head_picture'>`head_picture` = #{head_picture}</if>
         </set>
         WHERE `uid` = #{uid}
@@ -275,6 +282,9 @@
             <if test ='null != group'>
                 and `group` = #{group}
             </if>
+            <if test ='null != status'>
+                and `status` = #{status}
+            </if>
             <if test ='null != authCode'>
                 and `authCode` = #{authCode}
             </if>
@@ -319,6 +329,9 @@
             </if>
             <if test ='null != users.authCode'>
                 and `authCode` = #{users.authCode}
+            </if>
+            <if test ='null != users.status'>
+                and `status` = #{users.status}
             </if>
             <if test ='null != users.experience'>
                 and `experience` = #{users.experience}
@@ -373,6 +386,9 @@
             </if>
             <if test ='null != users.logged'>
                 and `logged` = #{users.logged}
+            </if>
+            <if test ='null != users.status'>
+                and `status` = #{users.status}
             </if>
             <if test ='null != users.group'>
                 and `group` = #{users.group}

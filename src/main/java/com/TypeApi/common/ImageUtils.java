@@ -17,35 +17,23 @@ public class ImageUtils {
      * @return
      */
     public static byte[] compressImage(byte[] bytes, float quality) {
-        InputStream in = null;
-        ByteArrayOutputStream bout = null;
-        try {
-            in = new ByteArrayInputStream(bytes);
-            bout = new ByteArrayOutputStream(1024);
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            // 图片尺寸不变，压缩图片文件大小outputQuality实现，参数1为最高质量
-            Thumbnails.of(in).scale(1f).outputFormat("webp").outputQuality(quality).toOutputStream(bout);
+            // 使用 Thumbnailator 压缩图片并获取 BufferedImage 对象
+            BufferedImage compressedImage = Thumbnails.of(inputStream)
+                    .scale(1f)
+                    .outputFormat("webp")
+                    .outputQuality(quality)
+                    .asBufferedImage();
 
-            byte[] compressiondata = bout.toByteArray();
-
-            return compressiondata;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException(ex);
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-                if (bout != null) {
-                    bout.close();
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            // 将 BufferedImage 写入输出流,保留透明度信息
+            ImageIO.write(compressedImage, "webp", outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("图片压缩失败", e);
         }
     }
-
     /**
      * 指定宽高压缩图片
      *

@@ -35,6 +35,11 @@ public interface PaykeyDao {
      **/
     int delete(Object key);
 
+    /***
+     * [条件删除]
+     */
+    int typeDelete(Object type);
+
     /**
      * [批量删除]
      **/
@@ -44,6 +49,11 @@ public interface PaykeyDao {
      * [主键查询]
      **/
     Paykey selectByKey(Object key);
+
+    /***
+     * [数值查询]
+     */
+    Paykey selectByCard(Object card);
 
     /**
      * [条件查询]

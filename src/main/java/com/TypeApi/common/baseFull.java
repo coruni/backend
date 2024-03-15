@@ -2,11 +2,19 @@ package com.TypeApi.common;
 
 //常用数据处理类
 
+import com.TypeApi.entity.Apiconfig;
+import com.TypeApi.service.ApiconfigService;
+import com.alibaba.fastjson.JSONArray;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.DigestUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -15,6 +23,9 @@ import java.util.regex.Pattern;
 
 
 public class baseFull {
+
+    UserStatus UStatus = new UserStatus();
+
     //数组去重
     public Object[] threeClear(Object[] arr) {
         List list = new ArrayList();
@@ -250,7 +261,7 @@ public class baseFull {
     }
     public static Boolean isVideo(String type){
         String lowerCaseType = type.toLowerCase();
-        if (lowerCaseType.equals(".mp4") || lowerCaseType.equals(".avi") || lowerCaseType.equals(".mkv")) {
+        if (lowerCaseType.equals("mp4") || lowerCaseType.equals("avi") || lowerCaseType.equals("mkv")) {
             return true; // 是视频
         } else {
             return false; // 不是视频
@@ -291,27 +302,38 @@ public class baseFull {
     }
 
     // 计算等级
-    public List<Integer> getLevel(Integer exp) {
+    public List<Integer> getLevel(Integer exp, String dataprefix, ApiconfigService apiconfigService, RedisTemplate redisTemplate) {
         List<Integer> result = new ArrayList<>();
         Integer level = 1;
         Integer nextExp = 999999; // 默认值，表示没有下一个等级
+        Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
 
-        if (exp != null && exp > 0) {
-            int[] expRequirements = {300, 700, 7000, 19000, 37000, 61000, 91000, 127000, 169000, 217000, 271000, 331000, 397000, 469000, 547000, 631000};
+        JSONArray levelExp = JSONArray.parseArray(apiconfig.getLevelExp());
 
-            for (int i = 0; i < expRequirements.length; i++) {
-                if (exp >= expRequirements[i]) {
+        if (exp != null && exp > 0 && levelExp != null) {
+            for (int i = 0; i < levelExp.size(); i++) {
+                if (exp >= levelExp.getInteger(i)) {
                     level = i + 2;
                 } else {
                     break;
                 }
             }
-            if (level-1 < expRequirements.length) {
-                nextExp = (level < expRequirements.length) ? expRequirements[level-1] : 999999;
+            if (level - 1 < levelExp.size()) {
+                nextExp = (level < levelExp.size()) ? levelExp.getInteger(level) : 999999;
             }
         }
         result.add(level);
         result.add(nextExp);
         return result;
+    }
+
+    public Integer endTime(){
+        // 获取当前日期
+        LocalDate today = LocalDate.now();
+        // 如果用户还没签到，计算距离今天结束还有多少秒
+        LocalDateTime endOfToday = LocalDateTime.of(today, LocalTime.MAX);
+        Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
+        long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
+        return (int) secondsUntilEndOfDay;
     }
 }

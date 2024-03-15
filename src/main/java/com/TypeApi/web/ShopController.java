@@ -111,10 +111,9 @@ public class ShopController {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_shop), Map.class);
                 // 格式化商品图片和 specs
                 JSONArray imgurl = new JSONArray();
-                JSONObject specs = new JSONObject();
-                imgurl = shop.getImgurl() != null && !shop.getImgurl().toString().isEmpty() ? JSONArray.parseArray(shop.getImgurl().toString()) : null;
-                specs = shop.getSpecs() != null && !shop.getSpecs().toString().isEmpty() ? JSONObject.parseObject(shop.getSpecs().toString()) : null;
-
+                JSONArray specs = new JSONArray();
+                imgurl = _shop.getImgurl() != null && !_shop.getImgurl().toString().isEmpty() ? JSONArray.parseArray(_shop.getImgurl().toString()) : null;
+                specs = _shop.getSpecs() != null && !_shop.getSpecs().toString().isEmpty() ? JSONArray.parseArray(_shop.getSpecs().toString()) : null;
                 // 加入用户信息
                 Users bossInfo = usersService.selectByKey(_shop.getUid());
                 Map<String, Object> dataBossInfo = JSONObject.parseObject(JSONObject.toJSONString(bossInfo), Map.class);
@@ -163,9 +162,9 @@ public class ShopController {
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(shop), Map.class);
             // 格式化商品图片和 specs
             JSONArray imgurl = new JSONArray();
-            JSONObject specs = new JSONObject();
+            JSONArray specs = new JSONArray();
             imgurl = shop.getImgurl() != null && !shop.getImgurl().toString().isEmpty() ? JSONArray.parseArray(shop.getImgurl().toString()) : null;
-            specs = shop.getSpecs() != null && !shop.getSpecs().toString().isEmpty() ? JSONObject.parseObject(shop.getSpecs().toString()) : null;
+            specs = shop.getSpecs() != null && !shop.getSpecs().toString().isEmpty() ? JSONArray.parseArray(shop.getSpecs().toString()) : null;
 
             // 加入用户信息
             Users bossInfo = usersService.selectByKey(shop.getUid());
@@ -207,7 +206,8 @@ public class ShopController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在，请重新登录", null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在，请重新登录", null);
             }
             Long timeStamp = System.currentTimeMillis() / 1000;
 
@@ -224,6 +224,7 @@ public class ShopController {
             shop.setPrice(price);
             shop.setNum(num);
             shop.setSpecs(specs);
+            shop.setUid(user.getUid());
             service.insert(shop);
             return Result.getResultJson(200, permission ? "添加成功" : "请等待审核", null);
         } catch (Exception e) {
@@ -446,7 +447,7 @@ public class ShopController {
             if (orderInfo.toString().isEmpty()) {
                 return Result.getResultJson(0, "订单不存在", null);
             }
-            if (!user.getUid().equals(orderInfo.getUser_id())) {
+            if (!user.getUid().equals(orderInfo.getUser_id()) &&!user.getUid().equals(orderInfo.getBoss_id())) {
                 return Result.getResultJson(0, "你没有权限查看该订单", null);
             }
 
@@ -539,11 +540,19 @@ public class ShopController {
                 bossInfo.remove("opt");
                 bossInfo.remove("password");
                 bossInfo.remove("head_picture");
+                // 如果是商家订单就查询购买者信息
+                Users buyUser = usersService.selectByKey(_order.getUser_id());
+                Map<String, Object> buyerInfo = JSONObject.parseObject(JSONObject.toJSONString(buyUser));
+                buyerInfo.remove("address");
+                buyerInfo.remove("opt");
+                buyerInfo.remove("password");
+                buyerInfo.remove("head_picture");
+
+                info.put("buyerInfo",buyerInfo);
                 info.put("bossInfo", bossInfo);
                 info.put("address", address);
                 info.put("specs", specs);
                 info.put("product_image", product_image);
-
                 arrayList.add(info);
             }
 
@@ -634,7 +643,7 @@ public class ShopController {
             return response.toString();
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口请求异常，请联系管理员", null);
         }
 
     }
@@ -667,16 +676,16 @@ public class ShopController {
 
             // 判断库存
             if (product.getNum() < 1) {
-                return Result.getResultJson(0, "商品库存不足", null);
+                return Result.getResultJson(201, "商品库存不足", null);
             }
 
             // 检测订单属于权限
             if (!userInfo.getUid().equals(orderInfo.getUser_id())) {
-                return Result.getResultJson(0, "订单错误", null);
+                return Result.getResultJson(202, "订单错误", null);
             }
 
             if (orderInfo.getPaid().equals(1)) {
-                return Result.getResultJson(0, "该订单已支付", null);
+                return Result.getResultJson(203, "该订单已支付", null);
             }
 
             // 获取OK之后判断用户余额是否足够
@@ -783,7 +792,7 @@ public class ShopController {
             // 判断订单boss_id是否为infoID
             Order orderInfo = orderService.selectByKey(id);
             if (!permission(request.getHeader("Authorization")) && !orderInfo.getBoss_id().equals(userInfo.getUid()) && !orderInfo.getUser_id().equals(userInfo.getUid())) {
-                return Result.getResultJson(0, "你没有权限修改该订单", null);
+                return Result.getResultJson(201, "你没有权限修改该订单", null);
             }
             Boolean isUser = false;
             if (orderInfo.getUser_id().equals(userInfo.getUid())) isUser = true;
@@ -794,7 +803,7 @@ public class ShopController {
             if (address != null && !address.isEmpty()) {
                 //判断用户 如果已支付则不可修改地址
                 if (isUser && orderInfo.getPaid().equals(1)) {
-                    return Result.getResultJson(0, "已支付订单，不可修改地址，请联系卖家", null);
+                    return Result.getResultJson(201, "已支付订单，不可修改地址，请联系卖家", null);
                 }
                 orderInfo.setAddress(address);
             }
@@ -919,7 +928,7 @@ public class ShopController {
                            @RequestParam(value = "name", required = false) String name,
                            @RequestParam(value = "intro", required = false) String intro,
                            @RequestParam(value = "pic", required = false) String pic,
-                           @RequestParam(value = "parent", required = false) String parent,
+                           @RequestParam(value = "parent", required = false) Integer parent,
                            HttpServletRequest request) {
         try {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
@@ -932,10 +941,8 @@ public class ShopController {
                 parentType = shoptypeService.selectByKey(parent);
                 if (parentType == null || parentType.toString().isEmpty())
                     return Result.getResultJson(201, "分类不存在", null);
+                shoptype.setParent(parentType.getParent());
             }
-
-
-            shoptype.setParent(parentType.getParent());
             shoptype.setName(name);
             shoptype.setIntro(intro);
             shoptype.setPic(pic);
@@ -980,11 +987,11 @@ public class ShopController {
     @ResponseBody
     public String typeList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                            @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
-                           @RequestParam(value = "order",required = false,defaultValue = "created desc") String order,
+                           @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
                            HttpServletRequest request) {
         try {
             Shoptype query = new Shoptype();
-            PageList<Shoptype> shoptypePageList = shoptypeService.selectPage(query, page, limit, null,order);
+            PageList<Shoptype> shoptypePageList = shoptypeService.selectPage(query, page, limit, null, order);
             List<Shoptype> shoptypeList = shoptypePageList.getList();
             Map<String, Object> data = new HashMap<>();
             data.put("page", page);

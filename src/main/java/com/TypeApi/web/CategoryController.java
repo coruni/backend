@@ -7,9 +7,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Comparator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,18 +18,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 控制层
- * TypechoMetasController
- *
- * @author buxia97
- * @date 2021/11/29
- */
+
 @Component
 @Controller
 @RequestMapping(value = "/category")
@@ -42,21 +32,7 @@ public class CategoryController {
     CategoryService service;
 
     @Autowired
-    private RelationshipsService relationshipsService;
-
-    @Autowired
-    private ArticleService contentsService;
-
-    @Autowired
-    private FieldsService fieldsService;
-
-    @Autowired
-    private FanService fanService;
-    @Autowired
     private UsersService usersService;
-
-    @Autowired
-    private ApiconfigService apiconfigService;
 
     @Autowired
     private UserlogService userlogService;
@@ -71,12 +47,7 @@ public class CategoryController {
     private String dataprefix;
 
 
-    RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
-    baseFull baseFull = new baseFull();
-    UserStatus UStatus = new UserStatus();
-    EditFile editFile = new EditFile();
-
 
     /***
      * 查询分类和标签
@@ -111,9 +82,9 @@ public class CategoryController {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
                 // 格式化信息
                 JSONObject opt = new JSONObject();
-                opt = category.getOpt() != null && !category.getOpt().toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
+                opt = category.getOpt() != null && !category.getOpt().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
                 // 查询是否关注
-                Integer isFollow = 0;
+                int isFollow = 0;
                 Userlog userlog = new Userlog();
                 userlog.setNum(category.getMid());
                 userlog.setType("category");
@@ -150,8 +121,8 @@ public class CategoryController {
     public String info(@RequestParam(value = "id") Integer id,
                        HttpServletRequest request) {
         try {
-            Users user = new Users();
             String token = request.getHeader("Authorization");
+            Users user = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
@@ -164,17 +135,16 @@ public class CategoryController {
             opt = category.getOpt() != null && !category.toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
 
             // 查询是否关注
-            Integer isFollow = 0;
-            Userlog userlog = new Userlog();
-            userlog.setNum(category.getMid());
-            userlog.setType("category");
+            int isFollow = 0;
             if (user != null && !user.toString().isEmpty()) {
+                Userlog userlog = new Userlog();
+                userlog.setType("category");
                 userlog.setUid(user.getUid());
+                userlog.setNum(category.getMid());
+                // 查询是否存在记录
                 List<Userlog> userlogList = userlogService.selectList(userlog);
                 if (userlogList.size() > 0) isFollow = 1;
             }
-            // 去除uid查询 查询所有关注数量
-            userlog.setUid(null);
             data.put("opt", opt);
             data.put("isFollow", isFollow);
 
@@ -201,7 +171,6 @@ public class CategoryController {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
-
             if (name != null && !name.isEmpty()) category.setName(name);
             if (description != null && !description.isEmpty()) category.setDescription(description);
             if (avatar != null && !avatar.isEmpty()) category.setImgurl(avatar);
@@ -239,6 +208,7 @@ public class CategoryController {
                       @RequestParam(value = "avatar") String avatar,
                       @RequestParam(value = "opt") String opt,
                       @RequestParam(value = "type") String type,
+                      @RequestParam(value = "perimission", required = false, defaultValue = "0") Integer permission,
                       HttpServletRequest request) {
         try {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
@@ -248,6 +218,7 @@ public class CategoryController {
             category.setImgurl(avatar);
             category.setType(type);
             category.setOpt(opt);
+            category.setPermission(permission);
             service.insert(category);
             return Result.getResultJson(200, "添加成功", null);
         } catch (Exception e) {
@@ -268,8 +239,22 @@ public class CategoryController {
             if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
-            if (type.equals("recommend")) category.setIsrecommend(category.getIsrecommend() > 0 ? 0 : 1);
-            if (type.equals("waterfall")) category.setIswaterfall(category.getIswaterfall() > 0 ? 0 : 1);
+            switch (type) {
+                case "recommend":
+                    category.setIsrecommend(category.getIsrecommend() > 0 ? 0 : 1);
+                    break;
+                case "waterfall":
+                    category.setIswaterfall(category.getIswaterfall() > 0 ? 0 : 1);
+                    break;
+                case "permission":
+                    category.setPermission(category.getPermission() > 0 ? 0 : 1);
+                    break;
+                case "vip":
+                    category.setIsvip(category.getIsvip() > 0 ? 0 : 1);
+                    break;
+                default:
+                    break;
+            }
             service.update(category);
             return Result.getResultJson(200, "操作成功", null);
         } catch (Exception e) {
@@ -308,18 +293,19 @@ public class CategoryController {
     public String follow(@RequestParam(value = "id") Integer id,
                          HttpServletRequest request) {
         try {
-            String token = request.getHeader("'Authorization");
+            String token = request.getHeader("Authorization");
             Users user = new Users();
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在,请重新登录", null);
+                if (user == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在,请重新登录", null);
             }
+            System.out.println(user + "草");
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
             // 使用userlog 来存储关注分类
             Userlog userlog = new Userlog();
-
             userlog.setType("category");
             userlog.setUid(user.getUid());
             userlog.setNum(category.getMid());
@@ -327,7 +313,7 @@ public class CategoryController {
             List<Userlog> userlogList = userlogService.selectList(userlog);
             category.setFollows(category.getFollows() + 1);
             // 存在就删除记录并返回取消关注成功
-            if (userlogList.size() > 0) {
+            if (!userlogList.isEmpty()) {
                 category.setFollows(category.getFollows() > 0 ? category.getFollows() - 1 : 0);
                 userlogService.delete(userlogList.get(0).getId());
                 service.update(category);

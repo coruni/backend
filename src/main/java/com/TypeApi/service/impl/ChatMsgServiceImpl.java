@@ -11,35 +11,40 @@ import java.util.List;
 
 /**
  * 业务层实现类
- * TypechoFieldsServiceImpl
+ * TypechoChatMsgServiceImpl
  * @author buxia97
- * @date 2021/11/29
+ * @date 2023/01/11
  */
 @Service
-public class FieldsServiceImpl implements FieldsService {
+public class ChatMsgServiceImpl implements ChatMsgService {
 
     @Autowired
-	FieldsDao dao;
+	ChatMsgDao dao;
 
     @Override
-    public int insert(Fields fields) {
-        return dao.insert(fields);
+    public int insert(ChatMsg chatMsg) {
+        return dao.insert(chatMsg);
     }
 
     @Override
-    public int batchInsert(List<Fields> list) {
+    public int batchInsert(List<ChatMsg> list) {
     	return dao.batchInsert(list);
     }
 
     @Override
-    public int update(Fields fields) {
-    	return dao.update(fields);
+    public int update(ChatMsg chatMsg) {
+    	return dao.update(chatMsg);
     }
 
     @Override
-    public int delete(Integer cid,String name) {
-    	return dao.delete(cid,name);
+    public int delete(Object key) {
+    	return dao.delete(key);
     }
+
+	@Override
+	public int deleteMsg(Object key) {
+		return dao.deleteMsg(key);
+	}
 
     @Override
     public int batchDelete(List<Object> keys) {
@@ -47,20 +52,20 @@ public class FieldsServiceImpl implements FieldsService {
     }
 
 	@Override
-	public List<Fields> selectByKey(Object key) {
+	public ChatMsg selectByKey(Object key) {
 		return dao.selectByKey(key);
 	}
 
 	@Override
-	public List<Fields> selectList(Fields fields) {
-		return dao.selectList(fields);
+	public List<ChatMsg> selectList(ChatMsg chatMsg) {
+		return dao.selectList(chatMsg);
 	}
 
 	@Override
-	public PageList<Fields> selectPage(Fields fields, Integer offset, Integer pageSize) {
-		PageList<Fields> pageList = new PageList<>();
+	public PageList<ChatMsg> selectPage(ChatMsg chatMsg, Integer offset, Integer pageSize) {
+		PageList<ChatMsg> pageList = new PageList<>();
 
-		int total = this.total(fields);
+		int total = this.total(chatMsg);
 
 		Integer totalPage;
 		if (total % pageSize != 0) {
@@ -71,7 +76,7 @@ public class FieldsServiceImpl implements FieldsService {
 
 		int page = (offset - 1) * pageSize;
 
-		List<Fields> list = dao.selectPage(fields, page, pageSize);
+		List<ChatMsg> list = dao.selectPage(chatMsg, page, pageSize);
 
 		pageList.setList(list);
 		pageList.setStartPageNo(offset);
@@ -82,7 +87,7 @@ public class FieldsServiceImpl implements FieldsService {
 	}
 
 	@Override
-	public int total(Fields fields) {
-		return dao.total(fields);
+	public int total(ChatMsg chatMsg) {
+		return dao.total(chatMsg);
 	}
 }

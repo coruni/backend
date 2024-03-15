@@ -18,6 +18,7 @@
         <result column="password" property="password" />
         <result column="commentsNum" property="commentsNum" />
         <result column="images" property="images" />
+        <result column="videos" property="videos" />
         <result column="allowComment" property="allowComment" />
         <result column="allowPing" property="allowPing" />
         <result column="allowFeed" property="allowFeed" />
@@ -31,6 +32,7 @@
         <result column="istop" property="istop" />
         <result column="isswiper" property="isswiper" />
         <result column="replyTime" property="replyTime" />
+        <result column="isCircleTop" property="isCircleTop" />
         <result column="opt" property="opt" />
     </resultMap>
 
@@ -50,6 +52,7 @@
         `password`,
         `commentsNum`,
         `images`,
+        `videos`,
         `allowComment`,
         `allowPing`,
         `allowFeed`,
@@ -63,6 +66,7 @@
         `istop`,
         `isswiper`,
         `replyTime`,
+        `isCircleTop`,
         `opt`
     </sql>
 
@@ -136,8 +140,14 @@
             <if test ='null != opt'>
                 `opt`,
             </if>
+            <if test ='null != isCircleTop'>
+                `isCircleTop`,
+            </if>
             <if test ='null != images'>
-                `images`
+                `images`,
+            </if>
+            <if test ='null != videos'>
+                `videos`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -207,8 +217,14 @@
             <if test ='null != opt'>
                 #{opt},
             </if>
+            <if test ='null != isCircleTop'>
+                #{isCircleTop},
+            </if>
             <if test ='null != images'>
-                #{images}
+                #{images},
+            </if>
+            <if test ='null != videos'>
+                #{videos}
             </if>
         </trim>
     </insert>
@@ -239,7 +255,9 @@
             #{curr.price},
             #{curr.discount},
             #{curr.opt},
-            #{curr.images}
+            #{curr.isCircleTop},
+            #{curr.images},
+            #{curr.videos}
             )
         </foreach>
     </insert>
@@ -275,7 +293,9 @@
             <if test ='null != isswiper'>`isswiper` = #{isswiper},</if>
             <if test ='null != replyTime'>`replyTime` = #{replyTime},</if>
             <if test ='null != opt'>`opt` = #{opt},</if>
-            <if test ='null != images'>`images` = #{images}</if>
+            <if test ='null != isCircleTop'>`isCircleTop` = #{isCircleTop},</if>
+            <if test ='null != images'>`images` = #{images},</if>
+            <if test ='null != videos'>`videos` = #{videos}</if>
         </set>
         WHERE `cid` = #{cid}
     </update>
@@ -366,6 +386,9 @@
             <if test ='null != views'>
                 and `views` = #{views}
             </if>
+            <if test ='null != isCircleTop'>
+                and `isCircleTop` = #{isCircleTop}
+            </if>
             <if test ='null != likes'>
                 and `likes` = #{likes}
             </if>
@@ -377,6 +400,10 @@
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_contents
         <where>
+            <!-- 判断是否要求存在指定标签id -->
+            <if test="null != tag">
+                AND cid IN (SELECT r.cid FROM ${prefix}_relationships r WHERE r.mid = #{tag})
+            </if>
             <if test ='null != article.mid'>
                 and `mid` = #{article.mid}
             </if>
@@ -449,6 +476,10 @@
             <if test ='null != article.isswiper'>
                 and `isswiper` = #{article.isswiper}
             </if>
+            <if test ='null != article.isCircleTop'>
+                and `isCircleTop` = #{article.isCircleTop}
+            </if>
+
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`title`, '')) LIKE CONCAT('%', #{searchKey}, '%')
             </if>

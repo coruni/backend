@@ -50,7 +50,6 @@ public class AdsController {
 
     RedisHelp redisHelp =new RedisHelp();
     ResultAll Result = new ResultAll();
-    baseFull baseFull = new baseFull();
     UserStatus UStatus = new UserStatus();
     EditFile editFile = new EditFile();
 
@@ -60,13 +59,8 @@ public class AdsController {
     private String dataprefix;
 
 
-    /**
-     * 参数请求报文:
-     *
-     * {
-     *   "key":1
-     * }
-     */
+
+
     @RequestMapping(value = "/adsInfo")
     @ResponseBody
     public String adsInfo (@RequestParam(value = "id", required = false) String  id, @RequestParam(value = "token", required = false) String  token) {

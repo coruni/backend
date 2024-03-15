@@ -1,36 +1,28 @@
 package com.TypeApi.service;
-
 import java.util.List;
 import com.TypeApi.entity.*;
 import com.TypeApi.common.PageList;
 
-/**
- * 业务层
- * TypechoFieldsService
- * @author buxia97
- * @date 2021/11/29
- */
-public interface FieldsService {
-
+public interface ExchangeService {
     /**
      * [新增]
      **/
-    int insert(Fields fields);
+    int insert(Exchange exchange);
 
     /**
      * [批量新增]
      **/
-    int batchInsert(List<Fields> list);
+    int batchInsert(List<Exchange> list);
 
     /**
      * [更新]
      **/
-    int update(Fields fields);
+    int update(Exchange exchange);
 
     /**
      * [删除]
      **/
-    int delete(Integer cid, String name);
+    int delete(Object key);
 
     /**
      * [批量删除]
@@ -40,20 +32,20 @@ public interface FieldsService {
     /**
      * [主键查询]
      **/
-    List<Fields> selectByKey(Object key);
+    Exchange selectByKey(Object key);
 
     /**
      * [条件查询]
      **/
-    List<Fields> selectList (Fields fields);
+    List<Exchange> selectList (Exchange exchange);
 
     /**
      * [分页条件查询]
      **/
-    PageList<Fields> selectPage (Fields fields, Integer page, Integer pageSize);
+    PageList<Exchange> selectPage (Exchange exchange, Integer page, Integer pageSize, String searchKey, String order);
 
     /**
      * [总量查询]
      **/
-    int total(Fields fields);
+    int total(Exchange exchange, String searchKey);
 }
