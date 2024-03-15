@@ -34,10 +34,6 @@ public class Rank implements Serializable {
      */
     private String background;
 
-    /***
-     * permission 是否需要权限
-     */
-    private Integer permission;
 
     /***
      * created 创建时间

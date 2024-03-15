@@ -10,7 +10,6 @@
         <result column="image" property="image" />
         <result column="color" property="color" />
         <result column="background" property="background" />
-        <result column="permission" property="permission"/>
         <result column="created" property="created" />
     </resultMap>
 
@@ -21,7 +20,6 @@
         `image`,
         `color`,
         `background`,
-        `permission`,
         `created`
     </sql>
 
@@ -47,9 +45,6 @@
             <if test ='null != background'>
                 `background`,
             </if>
-            <if test ='null != permission'>
-                `permission`,
-            </if>
             <if test ='null != created'>
                 `created`
             </if>
@@ -73,9 +68,6 @@
             <if test ='null != background'>
                 #{background},
             </if>
-            <if test ='null != permission'>
-                #{permission},
-            </if>
             <if test ='null != created'>
                 #{created}
             </if>
@@ -93,7 +85,6 @@
             #{curr.image},
             #{curr.color},
             #{curr.background},
-            #{curr.permission},
             #{curr.created}
             )
         </foreach>
@@ -109,7 +100,6 @@
             <if test ='null != image'>`image` = #{image},</if>
             <if test ='null != color'>`color` = #{color},</if>
             <if test ='null != background'>`background` = #{background},</if>
-            <if test ='null != permission'>`permission` = #{permission},</if>
             <if test ='null != created'>`created` = #{created}</if>
         </set>
         WHERE `id` = #{id}
@@ -159,9 +149,6 @@
             <if test ='null != background'>
                 and `background` = #{background}
             </if>
-            <if test ='null != permission'>
-                and `permission` = #{permission}
-            </if>
             <if test ='null != created'>
                 and `created` = #{created}
             </if>
@@ -190,9 +177,6 @@
             </if>
             <if test ='null != rank.background'>
                 and `background` = #{rank.background}
-            </if>
-            <if test ='null != rank.permission'>
-                and `permission` = #{rank.permission}
             </if>
             <if test ='null != rank.created'>
                 and created != #{rank.created}
@@ -229,9 +213,6 @@
             </if>
             <if test ='null != rank.background'>
                 and `background` = #{rank.background}
-            </if>
-            <if test ='null != rank.permission'>
-                and `permission` = #{rank.permission}
             </if>
             <if test ='null != rank.created'>
                 and created != #{rank.created}
