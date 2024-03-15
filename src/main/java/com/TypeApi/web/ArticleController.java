@@ -468,6 +468,7 @@ public class ArticleController {
                     relationshipsService.insert(relate);
                 }
             }
+
             // 设置文章信息
             article.setMid(category);
             article.setText(text);
