@@ -468,6 +468,7 @@ public class ArticleController {
                     relationshipsService.insert(relate);
                 }
             }
+
             // 设置文章信息
             article.setMid(category);
             article.setText(text);
@@ -480,6 +481,7 @@ public class ArticleController {
             if (apiconfig.getContentAuditlevel().equals(2)) {
                 if (!permission && article.getStatus().equals("waiting")) article.setStatus("waiting");
             }
+            service.update(article);
             return Result.getResultJson(200, "更新成功", null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -500,7 +502,7 @@ public class ArticleController {
             int user_id = 0;
             if (user.getUid() != null) user_id = user.getUid();
             Article article = service.selectByKey(id);
-            if (!permission && article.getAuthorId().equals(user_id)) return Result.getResultJson(201,"无权限",null);
+            if (!permission && !article.getAuthorId().equals(user_id)) return Result.getResultJson(201, "无权限", null);
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             Users author = usersService.selectByKey(article.getAuthorId());
             // 删除
@@ -1156,13 +1158,11 @@ public class ArticleController {
         if (token == null || token.isEmpty()) return new Users();
         // 获取用户信息
         DecodedJWT verify = JWT.verify(token);
-        Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-        return user;
+        return usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
     }
 
     private Article getArticle(int id) {
-        Article article = service.selectByKey(id);
-        return article;
+        return service.selectByKey(id);
     }
 
     private Boolean hasLike(Users user, Article article) {

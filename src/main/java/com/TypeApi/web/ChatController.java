@@ -40,9 +40,6 @@ public class ChatController {
     ChatMsgService chatMsgService;
 
     @Autowired
-    private SecurityService securityService;
-
-    @Autowired
     private ApiconfigService apiconfigService;
 
     @Autowired
@@ -51,22 +48,9 @@ public class ChatController {
     @Autowired
     private UsersService usersService;
 
-    @Value("${web.prefix}")
-    private String dataprefix;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
-    private PushService pushService;
-
     websocket websocket = new websocket();
 
-    RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
-    UserStatus UStatus = new UserStatus();
-    baseFull baseFull = new baseFull();
-    EditFile editFile = new EditFile();
 
     /***
      * 获取聊天室id
@@ -94,7 +78,7 @@ public class ChatController {
             chat.setSender_id(user.getUid());
             chat.setReceiver_id(receiveUser.getUid());
             List<Chat> chatList = service.selectList(chat);
-            if(chatList.size()>0){
+            if(!chatList.isEmpty()){
                Map<String,Object> data = JSONObject.parseObject(JSONObject.toJSONString(chatList.get(0)),Map.class);
                return Result.getResultJson(201,"获取成功",data);
             }else{
@@ -142,8 +126,8 @@ public class ChatController {
             }
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(receiverUser));
             // 格式化opt
-            JSONObject opt = new JSONObject();
-            JSONArray head_picture = new JSONArray();
+            JSONObject opt;
+            JSONArray head_picture;
             opt = receiverUser.getOpt() != null && !receiverUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(receiverUser.getOpt()) : null;
             head_picture = receiverUser.getHead_picture() != null && !receiverUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(receiverUser.getHead_picture()) : null;
             // 处理头像框
