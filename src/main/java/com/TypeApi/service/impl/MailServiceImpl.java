@@ -13,6 +13,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.TypeApi.service.MailService;
@@ -85,6 +86,7 @@ public class MailServiceImpl implements MailService{
      * @throws MessagingException
      */
     @Override
+    @Async
     public void send(String subject, String content,
                      String[] toEmails, String[] ccPeoples, String[] bccPeoples,
                      String[] attachmentFilePaths) throws MessagingException {

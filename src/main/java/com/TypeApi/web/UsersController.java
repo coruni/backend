@@ -919,8 +919,11 @@ public class UsersController {
     }
 
     /***
-     * 找回密码
-     * @param account Bean对象JSON字符串
+     * 重置密码
+     * @param account
+     * @param password
+     * @param code
+     * @return
      */
     @RequestMapping(value = "/resetPassword")
     @ResponseBody
