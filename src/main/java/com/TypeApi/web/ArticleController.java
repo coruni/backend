@@ -501,7 +501,7 @@ public class ArticleController {
             int user_id = 0;
             if (user.getUid() != null) user_id = user.getUid();
             Article article = service.selectByKey(id);
-            if (!permission && article.getAuthorId().equals(user_id)) return Result.getResultJson(201, "无权限", null);
+            if (!permission && !article.getAuthorId().equals(user_id)) return Result.getResultJson(201, "无权限", null);
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             Users author = usersService.selectByKey(article.getAuthorId());
             // 删除
