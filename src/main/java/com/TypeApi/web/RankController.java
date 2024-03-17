@@ -19,15 +19,11 @@ import java.util.*;
 @RequestMapping(value = "/rank")
 public class RankController {
 
-
     @Autowired
     private UsersService usersService;
 
     @Autowired
     private RankService rankService;
-
-
-
     ResultAll Result = new ResultAll();
 
     // 添加头衔
@@ -220,7 +216,7 @@ public class RankController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+                if (user.getUid() == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
 
             if (user.getOpt() != null && !user.getOpt().toString().isEmpty()) {

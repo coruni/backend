@@ -79,7 +79,7 @@ public class InstallController {
     @ResponseBody
     public String check() {
         try {
-            Integer i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users';", Integer.class);
+            Integer i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_reward_log';", Integer.class);
             if (i.equals(0)) {
                 return Result.getResultJson(201, "数据库未安装", null);
             }

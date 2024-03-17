@@ -1,14 +1,12 @@
 package com.TypeApi.web;
 
 import com.TypeApi.common.*;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
 import com.alibaba.fastjson.TypeReference;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import net.dreamlu.mica.core.result.R;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -16,7 +14,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -25,34 +22,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.mail.MessagingException;
-import javax.rmi.CORBA.Util;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Component;
 
-/**
- * 控制层
- * TypechoUsersController
- *
- * @author buxia97
- * @date 2021/11/29
+/***
+ * Author Coruni
  */
 @Component
 @Controller
@@ -118,13 +104,6 @@ public class UsersController {
     @Value("${mybatis.configuration.variables.prefix}")
     private String prefix;
 
-    @Value("${webinfo.usertime}")
-    private Integer usertime;
-
-    @Value("${webinfo.userCache}")
-    private Integer userCache;
-
-
     @Value("${web.prefix}")
     private String dataprefix;
 
@@ -135,7 +114,6 @@ public class UsersController {
     UserStatus UStatus = new UserStatus();
     HttpClient HttpClient = new HttpClient();
     PHPass phpass = new PHPass(8);
-    EditFile editFile = new EditFile();
 
 
     /***
@@ -172,11 +150,11 @@ public class UsersController {
                 JSONObject opt = new JSONObject();
                 JSONArray head_pircture = new JSONArray();
                 JSONObject address = new JSONObject();
-                opt = item.getOpt() != null && !item.getOpt().toString().isEmpty() ? JSONObject.parseObject(item.getOpt().toString()) : null;
-                address = item.getAddress() != null && !item.getAddress().toString().isEmpty() ? JSONObject.parseObject(item.getAddress().toString()) : null;
+                opt = item.getOpt() != null && !item.getOpt().isEmpty() ? JSONObject.parseObject(item.getOpt()) : null;
+                address = item.getAddress() != null && !item.getAddress().isEmpty() ? JSONObject.parseObject(item.getAddress()) : null;
                 // 处理头像框
                 // 加入其他数据等级等
-                List result = baseFull.getLevel(item.getExperience(), dataprefix, apiconfigService, redisTemplate);
+                List<Integer> result = baseFull.getLevel(item.getExperience(), dataprefix, apiconfigService, redisTemplate);
                 Integer level = (Integer) result.get(0);
                 Integer nextLevel = (Integer) result.get(1);
 
@@ -945,12 +923,12 @@ public class UsersController {
             if (!baseFull.isEmail(account)) {
                 user.setName(account);
                 List<Users> userList = service.selectList(user);
-                if (userList.size() < 1) return Result.getResultJson(201, "用户不存在", null);
+                if (userList.isEmpty()) return Result.getResultJson(201, "用户不存在", null);
                 user = userList.get(0);
             } else {
                 user.setMail(account);
                 List<Users> userList = service.selectList(user);
-                if (userList.size() < 1) return Result.getResultJson(201, "用户不存在", null);
+                if (userList.isEmpty()) return Result.getResultJson(201, "用户不存在", null);
                 user = userList.get(0);
             }
             // code为空发送验证码
@@ -1116,7 +1094,7 @@ public class UsersController {
             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
-            Boolean permission = permission(getUser(token));
+            boolean permission = permission(getUser(token));
             if (!permission) return Result.getResultJson(201, "无权限", null);
             Users user = service.selectByKey(id);
             if(rankadd != null){

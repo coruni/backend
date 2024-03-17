@@ -54,17 +54,11 @@ public class ArticleController {
     @Autowired
     private ArticleService articleService;
 
-//    @Autowired
-//    private HeadpictureService headpictureService;
-
     @Autowired
     private CategoryService metasService;
 
     @Autowired
     private UsersService usersService;
-
-//    @Autowired
-//    private SecurityService securityService;
 
     @Autowired
     private CommentsService commentsService;
@@ -339,17 +333,18 @@ public class ArticleController {
                 return Result.getResultJson(201, "用户封禁中", null);
             }
             // 判断
+            if (type.equals("video") && videos.isEmpty())
+                return Result.getResultJson(201, "请上传视频和封面", null);
 
             if (title == null || title.length() < 3) {
                 return Result.getResultJson(201, "标题太短", null);
             }
-            if (text == null || text.length() < 15) {
+            if (text == null || text.length() < 10) {
                 return Result.getResultJson(201, "内容太少", null);
             }
             if (category == null) {
                 return Result.getResultJson(201, "请选择分类", null);
             }
-            if (type.equals("video") && videos == null) return Result.getResultJson(201, "请上传视频", null);
 
             // 查询分类是否存在
             Category _category = metasService.selectByKey(category);
@@ -357,8 +352,8 @@ public class ArticleController {
                 return Result.getResultJson(201, "分类不存在", null);
             }
 
-            if (_category.getPermission() != null && _category.getPermission().equals(1) && !permission)
-                return Result.getResultJson(201, "该分类仅限管理员可用,请重新选择分类", null);
+            if (_category.getPermission() != null && _category.getPermission().equals(1) && !permission && _category.getIsvip().equals(1))
+                return Result.getResultJson(201, "该分类仅限管理员或会员可用,请重新选择分类", null);
 
             // 写入文章信息
             Article article = new Article();
@@ -1370,7 +1365,7 @@ public class ArticleController {
      * @param videos
      * @return
      */
-    private List<String> getPoster(List videos) {
+    private List getPoster(List videos) {
         List postersList = new ArrayList<>();
         for (int i = 0; i < videos.size(); i++) {
             JSONObject videoObject = JSONObject.parseObject(videos.get(i).toString());

@@ -787,7 +787,7 @@ public class PayController {
         try {
             String token = request.getHeader("Authorization");
             Users user = getUserFromToken(token, usersService);
-            if (user == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
+            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
 
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             String url = apiconfig.getEpayUrl();
