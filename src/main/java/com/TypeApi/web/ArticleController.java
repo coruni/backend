@@ -107,7 +107,7 @@ public class ArticleController {
         try {
             String token = request.getHeader("Authorization");
             Users user = getUser(token);
-            Boolean permission = permission(user);
+            boolean permission = permission(user);
             int user_id = 0;
             if (user.getUid() != null) user_id = user.getUid();
             // 查询文章
@@ -435,6 +435,7 @@ public class ArticleController {
                          @RequestParam(value = "category") Integer category,
                          @RequestParam(value = "tag", required = false) String tag,
                          @RequestParam(value = "opt", required = false) String opt,
+                         @RequestParam(value = "videos", required = false) String videos,
                          @RequestParam(value = "price", required = false, defaultValue = "0") Integer price,
                          @RequestParam(value = "discount", required = false, defaultValue = "1") Float discount,
                          HttpServletRequest request) {
@@ -449,6 +450,8 @@ public class ArticleController {
             Article article = service.selectByKey(id);
 
             if (!permission && !article.getAuthorId().equals(user_id)) return Result.getResultJson(201, "无权限", null);
+            if (article.getType().equals("video") && videos.isEmpty())
+                return Result.getResultJson(201, "请上传视频和封面", null);
             // 更新分类
             relationshipsService.delete(article.getCid());
             Relationships relate = new Relationships();
@@ -470,6 +473,7 @@ public class ArticleController {
             article.setTitle(title);
             article.setOpt(opt);
             article.setPrice(price);
+            article.setVideos(videos);
             article.setDiscount(discount);
             article.setModified((int) (System.currentTimeMillis() / 1000));
             if (apiconfig.getContentAuditlevel().equals(1)) article.setStatus("waiting");
