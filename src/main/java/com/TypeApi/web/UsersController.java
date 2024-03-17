@@ -1090,26 +1090,12 @@ public class UsersController {
             @RequestParam(value = "group", required = false) String group,
             @RequestParam(value = "opt", required = false) String opt,
             @RequestParam(value = "vip", required = false) Integer vip,
-            @RequestParam(value = "rankadd", required = false) Integer rankadd,
             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             boolean permission = permission(getUser(token));
             if (!permission) return Result.getResultJson(201, "无权限", null);
             Users user = service.selectByKey(id);
-            if(rankadd != null){
-                List ranklist = user.getRank() != null ? JSONArray.parseArray(user.getRank()) : new ArrayList<>();  //将用户头衔转为list
-                //如果用户头衔为空或没有该头衔
-                if(ranklist.isEmpty() || !ranklist.contains(rankadd)){
-                    //判断该头衔是否存在
-                    Rank rank = new Rank();
-                    rank.setId(rankadd);
-                    if(rankService.selectByKey(rank) != null){
-                        ranklist.add(rankadd);
-                        user.setRank(ranklist.toString());
-                    }
-                }
-            }
             user.setOpt(opt);
             user.setGroup(group);
             user.setScreenName(nickname);
