@@ -802,7 +802,7 @@ public class PayController {
             String param = generateRequestParams(sign);
             String data = HttpClient.doPost(url + "mapi.php", param);
             if (data == null) {
-                return Result.getResultJson(0, "易支付接口请求失败，请检查配置", null);
+                return Result.getResultJson(201, "易支付接口请求失败，请检查配置", null);
             }
 
             HashMap jsonMap = JSON.parseObject(data, HashMap.class);
@@ -845,10 +845,17 @@ public class PayController {
         try {
             if (params.get("trade_status").equals("TRADE_SUCCESS")) {
                 Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-                //支付完成后，写入充值日志
+                String type = params.get("type");
                 String trade_no = params.get("trade_no");
                 String out_trade_no = params.get("out_trade_no");
                 String total_amount = params.get("money");
+                String clientip = baseFull.getIpAddr(request);
+                float money = Float.parseFloat(params.get("money"));
+                // 校验MD5
+                Map<String, String> sign = generateSignParams(apiconfig, type, out_trade_no, clientip, money);
+                String signStr = generateSignString(sign, apiconfig.getEpayKey());
+                if(!params.get("sign").equals(signStr)) return Result.getResultJson(201,"签名不匹配",null);
+                //支付完成后，写入充值日志
                 int scale = apiconfig.getScale();
                 int integral = Double.valueOf(total_amount).intValue() * scale;
 
@@ -859,7 +866,10 @@ public class PayController {
                 paylog.setOutTradeNo(out_trade_no);
                 paylog.setStatus(0);
                 List<Paylog> logList = paylogService.selectList(paylog);
-                if (logList.size() > 0) {
+                System.out.println(logList);
+                System.out.println(out_trade_no);
+
+                if (!logList.isEmpty()) {
                     int pid = logList.get(0).getPid();
                     int uid = logList.get(0).getUid();
                     paylog.setStatus(1);
@@ -869,6 +879,8 @@ public class PayController {
                     paylogService.update(paylog);
                     //订单修改后，插入用户表
                     Users users = usersService.selectByKey(uid);
+                    System.out.println(users);
+                    System.out.println(integral);
                     int oldAssets = users.getAssets();
                     int assets = oldAssets + integral;
                     users.setAssets(assets);
