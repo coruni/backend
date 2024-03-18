@@ -63,7 +63,7 @@ public class UsersServiceImpl implements UsersService {
 
 		int total = this.total(users,searchKey);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

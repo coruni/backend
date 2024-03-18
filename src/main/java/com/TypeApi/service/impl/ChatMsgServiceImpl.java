@@ -67,7 +67,7 @@ public class ChatMsgServiceImpl implements ChatMsgService {
 
 		int total = this.total(chatMsg);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

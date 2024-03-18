@@ -53,7 +53,7 @@ public class HomepageServiceImpl implements HomepageService {
 
         int total = this.total(homepage);
 
-        Integer totalPage;
+        int totalPage;
         if (total % pageSize != 0) {
             totalPage = (total / pageSize) + 1;
         } else {

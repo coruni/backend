@@ -62,7 +62,7 @@ public class UserlogServiceImpl implements UserlogService {
 
 		int total = this.total(userlog);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

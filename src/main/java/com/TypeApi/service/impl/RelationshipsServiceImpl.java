@@ -62,7 +62,7 @@ public class RelationshipsServiceImpl implements RelationshipsService {
 
 		int total = this.total(relationships);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

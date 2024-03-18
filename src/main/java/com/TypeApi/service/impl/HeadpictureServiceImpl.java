@@ -60,7 +60,7 @@ public class HeadpictureServiceImpl implements HeadpictureService {
 
         int total = this.total(Headpicture);
 
-        Integer totalPage;
+        int totalPage;
         if (total % pageSize != 0) {
             totalPage = (total / pageSize) + 1;
         } else {

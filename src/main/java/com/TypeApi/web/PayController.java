@@ -201,8 +201,8 @@ public class PayController {
                 paylog.setStatus(0);
                 List<Paylog> logList = paylogService.selectList(paylog);
                 if (logList.size() > 0) {
-                    Integer pid = logList.get(0).getPid();
-                    Integer uid = logList.get(0).getUid();
+                    int pid = logList.get(0).getPid();
+                    int uid = logList.get(0).getUid();
                     paylog.setStatus(1);
                     paylog.setTradeNo(trade_no);
                     paylog.setPid(pid);
@@ -210,8 +210,8 @@ public class PayController {
                     paylogService.update(paylog);
                     //订单修改后，插入用户表
                     Users users = usersService.selectByKey(uid);
-                    Integer oldAssets = users.getAssets();
-                    Integer assets = oldAssets + integral;
+                    int oldAssets = users.getAssets();
+                    int assets = oldAssets + integral;
                     users.setAssets(assets);
                     usersService.update(users);
                 } else {
@@ -781,7 +781,7 @@ public class PayController {
     @RequestMapping(value = "/EPay")
     @ResponseBody
     public String EPay(@RequestParam(value = "type") String type,
-                       @RequestParam(value = "money") Integer money,
+                       @RequestParam(value = "money") float money,
                        @RequestParam(value = "device", required = false) String device,
                        HttpServletRequest request) {
         try {
@@ -849,8 +849,8 @@ public class PayController {
                 String trade_no = params.get("trade_no");
                 String out_trade_no = params.get("out_trade_no");
                 String total_amount = params.get("money");
-                Integer scale = apiconfig.getScale();
-                Integer integral = Double.valueOf(total_amount).intValue() * scale;
+                int scale = apiconfig.getScale();
+                int integral = Double.valueOf(total_amount).intValue() * scale;
 
                 Long date = System.currentTimeMillis();
                 String created = String.valueOf(date).substring(0, 10);
@@ -860,8 +860,8 @@ public class PayController {
                 paylog.setStatus(0);
                 List<Paylog> logList = paylogService.selectList(paylog);
                 if (logList.size() > 0) {
-                    Integer pid = logList.get(0).getPid();
-                    Integer uid = logList.get(0).getUid();
+                    int pid = logList.get(0).getPid();
+                    int uid = logList.get(0).getUid();
                     paylog.setStatus(1);
                     paylog.setTradeNo(trade_no);
                     paylog.setPid(pid);
@@ -869,8 +869,8 @@ public class PayController {
                     paylogService.update(paylog);
                     //订单修改后，插入用户表
                     Users users = usersService.selectByKey(uid);
-                    Integer oldAssets = users.getAssets();
-                    Integer assets = oldAssets + integral;
+                    int oldAssets = users.getAssets();
+                    int assets = oldAssets + integral;
                     users.setAssets(assets);
                     usersService.update(users);
                     return "success";
@@ -903,7 +903,7 @@ public class PayController {
         return timeID + "Epay_" + type;
     }
 
-    private Map<String, String> generateSignParams(Apiconfig apiconfig, String type, String outTradeNo, String clientip, Integer money) {
+    private Map<String, String> generateSignParams(Apiconfig apiconfig, String type, String outTradeNo, String clientip, float money) {
         Map<String, String> sign = new HashMap<>();
         sign.put("pid", apiconfig.getEpayPid().toString());
         sign.put("type", type);
@@ -911,7 +911,7 @@ public class PayController {
         sign.put("notify_url", apiconfig.getEpayNotifyUrl());
         sign.put("clientip", clientip);
         sign.put("name", "积分充值");
-        sign.put("money", money.toString());
+        sign.put("money", String.valueOf(money));
         return sortByKey(sign);
     }
 
@@ -945,16 +945,16 @@ public class PayController {
         return param.deleteCharAt(param.length() - 1).toString();
     }
 
-    private void savePaylog(Users user, Apiconfig apiconfig, String outTradeNo, Integer money, String type) {
+    private void savePaylog(Users user, Apiconfig apiconfig, String outTradeNo, float money, String type) {
         Long date = System.currentTimeMillis();
         String created = String.valueOf(date).substring(0, 10);
         Paylog paylog = new Paylog();
-        Integer TotalAmount = money * apiconfig.getScale();
+        float TotalAmount = money * apiconfig.getScale();
         paylog.setStatus(0);
         paylog.setCreated(Integer.parseInt(created));
         paylog.setUid(user.getUid());
         paylog.setOutTradeNo(outTradeNo);
-        paylog.setTotalAmount(TotalAmount.toString());
+        paylog.setTotalAmount(String.valueOf(TotalAmount));
         paylog.setPaytype("ePay_" + type);
         paylog.setSubject("三方支付");
         paylogService.insert(paylog);

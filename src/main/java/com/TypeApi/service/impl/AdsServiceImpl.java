@@ -54,7 +54,7 @@ public class AdsServiceImpl implements AdsService {
 
 		int total = this.total(ads);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

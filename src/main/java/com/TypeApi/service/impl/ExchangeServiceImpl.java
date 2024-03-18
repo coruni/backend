@@ -55,7 +55,7 @@ public class ExchangeServiceImpl implements ExchangeService {
 
         int total = this.total(exchange, searchKey);
 
-        Integer totalPage;
+        int totalPage;
         if (total % pageSize != 0) {
             totalPage = (total / pageSize) + 1;
         } else {

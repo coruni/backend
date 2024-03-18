@@ -62,7 +62,7 @@ public class UserapiServiceImpl implements UserapiService {
 
 		int total = this.total(userapi);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

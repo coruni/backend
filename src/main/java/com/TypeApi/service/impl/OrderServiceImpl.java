@@ -60,7 +60,7 @@ public class OrderServiceImpl implements OrderService {
 
         int total = this.total(order);
 
-        Integer totalPage;
+        int totalPage;
         if (total % pageSize != 0) {
             totalPage = (total /pageSize) + 1;
         } else {

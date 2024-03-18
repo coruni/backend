@@ -54,7 +54,7 @@ public class Reward_logServiceImpl implements Reward_logService {
 
 		int total = this.total(reward_log);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

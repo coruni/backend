@@ -67,7 +67,7 @@ public class CategoryServiceImpl implements CategoryService {
 
 		int total = this.total(category);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

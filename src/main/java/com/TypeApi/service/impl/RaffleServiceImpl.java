@@ -54,7 +54,7 @@ public class RaffleServiceImpl implements RaffleService {
 
 		int total = this.total(raffle);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

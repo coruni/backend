@@ -52,7 +52,7 @@ public class InboxServiceImpl implements InboxService {
 
 		int total = this.total(inbox);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

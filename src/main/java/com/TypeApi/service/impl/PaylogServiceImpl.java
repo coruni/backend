@@ -62,7 +62,7 @@ public class PaylogServiceImpl implements PaylogService {
 
 		int total = this.total(paylog);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

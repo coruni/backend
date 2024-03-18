@@ -62,7 +62,7 @@ public class ArticleServiceImpl implements ArticleService {
 
 		int total = this.total(article,searchKey);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

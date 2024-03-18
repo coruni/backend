@@ -54,7 +54,7 @@ public class CommentlikeServiceImpl implements CommentlikeService {
 
         int total = this.total(commentLike);
 
-        Integer totalPage;
+        int totalPage;
         if (total % pageSize != 0) {
             totalPage = (total /pageSize) + 1;
         } else {

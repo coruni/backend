@@ -62,7 +62,7 @@ public class ShopServiceImpl implements ShopService {
 
 		int total = this.total(shop,searchKey);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {

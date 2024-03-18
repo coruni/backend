@@ -62,7 +62,7 @@ public class ShoptypeServiceImpl implements ShoptypeService {
 
 		int total = this.total(shoptype);
 
-		Integer totalPage;
+		int totalPage;
 		if (total % pageSize != 0) {
 			totalPage = (total /pageSize) + 1;
 		} else {
