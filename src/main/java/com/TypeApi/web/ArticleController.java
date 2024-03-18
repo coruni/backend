@@ -130,7 +130,8 @@ public class ArticleController {
             Map<String, Object> category = getCategory(article.getMid());
             // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
             Boolean showText = showText(user, article, category);
-            if (!showText && !permission) text = "";
+            if (!showText && !permission && !article.getType().equals("video")) text = "";
+            if (!showText && !permission) videos = new ArrayList<>();
             // 标签
             Relationships tagQuery = new Relationships();
             tagQuery.setCid(article.getCid());
@@ -143,8 +144,9 @@ public class ArticleController {
                 List<Category> tagInfo = metasService.selectList(tagsQuery);
                 if (!tagInfo.isEmpty()) {
                     Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
-                    // 移除信息
-                    tagData.remove("opt");
+                    //格式化opt
+                    JSONObject tagOpt = JSONObject.parseObject(JSONObject.toJSONString(tagData.get("opt")));
+                    tagData.put("opt", tagOpt);
                     tagDataList.add(tagData);
                 }
             }
@@ -239,7 +241,8 @@ public class ArticleController {
                 Map<String, Object> category = getCategory(article.getMid());
                 // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
                 Boolean showText = showText(user, article, category);
-                if (!showText && !permission) text = "";
+                if (!showText && !permission && !article.getType().equals("video")) text = "";
+                if (!showText && !permission) videos = new ArrayList<>();
                 // 标签
                 Relationships tagQuery = new Relationships();
                 tagQuery.setCid(article.getCid());
@@ -252,8 +255,9 @@ public class ArticleController {
                     List<Category> tagInfo = metasService.selectList(tagsQuery);
                     if (!tagInfo.isEmpty()) {
                         Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
-                        // 移除信息
-                        tagData.remove("opt");
+                        //格式化opt
+                        JSONObject tagOpt = JSONObject.parseObject(JSONObject.toJSONString(tagData.get("opt")));
+                        tagData.put("opt", tagOpt);
                         tagDataList.add(tagData);
                     }
                 }
