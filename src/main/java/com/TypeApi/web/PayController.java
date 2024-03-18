@@ -788,7 +788,7 @@ public class PayController {
             String token = request.getHeader("Authorization");
             Users user = getUserFromToken(token, usersService);
             if (user.getUid() == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            if (money<0.01) return Result.getResultJson(201,"最低充值0.01",null);
+            if (money < 0) return Result.getResultJson(201, "最低充值0.01", null);
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
             String url = apiconfig.getEpayUrl();
             String outTradeNo = generateOutTradeNo(type);
