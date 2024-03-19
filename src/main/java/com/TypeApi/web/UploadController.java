@@ -10,11 +10,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -59,50 +56,45 @@ public class UploadController {
 
 
     /***
-     * 重构上传接口
-     * @param file
+     * 上传接口
+     * @param files
      * @param request
      * @return
      * @throws IOException
      */
-    @RequestMapping(value = "/full", method = RequestMethod.POST)
+
+    @PostMapping(value = "/full")
     @ResponseBody
-    public Object full(@RequestParam(value = "file", required = false) MultipartFile[] file,
+    public Object full(@RequestParam Map<String, MultipartFile> files,
                        HttpServletRequest request) throws IOException {
         String token = request.getHeader("Authorization");
         Users user = getUserFromToken(token);
         if (user == null || user.getUid() == null) {
             return Result.getResultJson(201, "用户不存在，请重新登录", null);
         }
-        List<Object> imageList = new ArrayList<>();
+
+        Map<String, Object> data = new HashMap<>();
         String image = null;
-        // 处理单个文件
-        if (file != null && file.length == 1) {
-            MultipartFile _file = file[0];
-            if (_file != null && !_file.isEmpty()) {
-                Object result = handleSingleFile(_file, user, this.dataprefix, apiconfigService, redisTemplate);
+        List<Object> imageList = new ArrayList<>();
+
+        // 遍历Map中的所有文件
+        for (MultipartFile file : files.values()) {
+            if (file != null && !file.isEmpty()) {
+                Object result = handleSingleFile(file, user, this.dataprefix, apiconfigService, redisTemplate);
                 if (result != null) {
-                    image = (String) result;
-                }
-            }
-        }
-        // 处理多个文件
-        else if (file != null && file.length > 1) {
-            for (MultipartFile _file : file) {
-                if (_file != null && !_file.isEmpty()) {
-                    Object result = handleSingleFile(_file, user, this.dataprefix, apiconfigService, redisTemplate);
-                    if (result != null) {
+                    if (image == null) {
+                        image = (String) result;
+                    } else {
                         imageList.add(result);
                     }
                 }
             }
         }
 
-        if ((imageList.isEmpty() && image == null) || (imageList.isEmpty() && image.isEmpty())) {
+        if (image == null && imageList.isEmpty()) {
             return Result.getResultJson(201, "请上传文件", null);
         }
 
-        Map<String, Object> data = new HashMap<>();
         if (image != null) {
             data.put("url", image);
         }
@@ -112,7 +104,6 @@ public class UploadController {
 
         return Result.getResultJson(200, "上传成功", data);
     }
-
     private Object handleSingleFile(MultipartFile file, Users user, String dataprefix, ApiconfigService apiconfigService, RedisTemplate<String, String> redisTemplate) throws IOException {
         Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
         Integer fileUploadLevel = apiconfig.getUploadLevel();
