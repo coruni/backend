@@ -39,13 +39,13 @@ public class baseFull {
 
     //获取字符串内图片地址
     public List<String> getImageSrc(String htmlCode) {
-        List<String> urls = extractUrls(htmlCode);
         List<String> imageUrls = new ArrayList<>();
+        Pattern pattern = Pattern.compile("src\\s*=\\s*\"(.*?\\.(jpg|png|gif|jpeg|bmp|webp))\"", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(htmlCode);
 
-        for (String url : urls) {
-            if (url.matches(".+\\.(ico|jpe?g|png|bmp|gif|webp|ICO|JPE?G|PNG|BMP|GIF|WEBP)$")) {
-                imageUrls.add(url.replaceAll("\\)", ""));
-            }
+        while (matcher.find()) {
+            String url = matcher.group(1);
+            imageUrls.add(url);
         }
 
         return imageUrls;
