@@ -254,6 +254,7 @@ public class PayController {
     @ResponseBody
     public String list(@RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
                        @RequestParam(value = "limit", defaultValue = "15", required = false) Integer limit,
+                       @RequestParam(value = "status",required = false,defaultValue = "1") Integer status,
                        HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -266,6 +267,7 @@ public class PayController {
             // 查询列表
             Paylog paylog = new Paylog();
             paylog.setUid(user.getUid());
+            paylog.setStatus(status);
             PageList<Paylog> paylogPageList = paylogService.selectPage(paylog, page, limit);
             List<Paylog> paylogList = paylogPageList.getList();
 
@@ -559,7 +561,7 @@ public class PayController {
     public String cardList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                            @RequestParam(value = "limit", required = false, defaultValue = "50") Integer limit,
                            @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
-                           @RequestParam(value = "status", required = false, defaultValue = "0") Integer status,
+                           @RequestParam(value = "status", required = false) Integer status,
                            HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -575,6 +577,7 @@ public class PayController {
 
             // 验证通过开始查询列表
             Paykey paykey = new Paykey();
+            paykey.setStatus(status);
             PageList<Paykey> paykeyPageList = paykeyService.selectPage(paykey, page, limit, null);
             List<Paykey> paykeyList = paykeyPageList.getList();
 
@@ -845,19 +848,12 @@ public class PayController {
         try {
             if (params.get("trade_status").equals("TRADE_SUCCESS")) {
                 Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-                String type = params.get("type");
                 String trade_no = params.get("trade_no");
                 String out_trade_no = params.get("out_trade_no");
                 String total_amount = params.get("money");
-                String clientip = baseFull.getIpAddr(request);
-                float money = Float.parseFloat(params.get("money"));
-                // 校验MD5
-                Map<String, String> sign = generateSignParams(apiconfig, type, out_trade_no, clientip, money);
-                String signStr = generateSignString(sign, apiconfig.getEpayKey());
-                if(!params.get("sign").equals(signStr)) return Result.getResultJson(201,"签名不匹配",null);
                 //支付完成后，写入充值日志
                 int scale = apiconfig.getScale();
-                int integral = Double.valueOf(total_amount).intValue() * scale;
+                int integral = (int) (scale * Float.parseFloat(total_amount));
 
                 Long date = System.currentTimeMillis();
                 String created = String.valueOf(date).substring(0, 10);
@@ -866,9 +862,6 @@ public class PayController {
                 paylog.setOutTradeNo(out_trade_no);
                 paylog.setStatus(0);
                 List<Paylog> logList = paylogService.selectList(paylog);
-                System.out.println(logList);
-                System.out.println(out_trade_no);
-
                 if (!logList.isEmpty()) {
                     int pid = logList.get(0).getPid();
                     int uid = logList.get(0).getUid();
@@ -881,9 +874,7 @@ public class PayController {
                     Users users = usersService.selectByKey(uid);
                     System.out.println(users);
                     System.out.println(integral);
-                    int oldAssets = users.getAssets();
-                    int assets = oldAssets + integral;
-                    users.setAssets(assets);
+                    users.setAssets(users.getAssets() + integral);
                     usersService.update(users);
                     return "success";
                 } else {
@@ -966,7 +957,7 @@ public class PayController {
         paylog.setCreated(Integer.parseInt(created));
         paylog.setUid(user.getUid());
         paylog.setOutTradeNo(outTradeNo);
-        paylog.setTotalAmount(String.valueOf(TotalAmount));
+        paylog.setTotalAmount(String.valueOf(((int)TotalAmount)));
         paylog.setPaytype("ePay_" + type);
         paylog.setSubject("三方支付");
         paylogService.insert(paylog);
