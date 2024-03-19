@@ -2074,6 +2074,7 @@ public class UsersController {
             paylog.setCreated((int) timestamp);
             paylog.setPaytype("sign");
             paylog.setSubject("签到奖励");
+            paylog.setStatus(1);
             paylog.setTotalAmount(String.valueOf(apiconfig.getClock()));
 
             // 写入log

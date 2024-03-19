@@ -150,14 +150,14 @@ public class CommentsController {
                 if (commentUser != null && !commentUser.toString().isEmpty()) {
 
                     // 用户是否注销
-                    if(commentUser.getStatus().equals(0)) dataUser.put("screenName","用户已注销");
+                    if (commentUser.getStatus().equals(0)) dataUser.put("screenName", "用户已注销");
                     //移除信息
                     dataUser.remove("password");
                     dataUser.remove("address");
                     // 格式化信息
                     opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
                     // 处理头像框 查询是否存在替换
-                    if (opt != null && !opt.isEmpty() && opt.containsKey("head_picture") && opt.get("head_picture")!=null) {
+                    if (opt != null && !opt.isEmpty() && opt.containsKey("head_picture") && opt.get("head_picture") != null) {
                         Headpicture headPicture = headpictureService.selectByKey(opt.get("head_picture"));
                         if (headPicture != null) {
                             opt.put("head_picture", headPicture.getLink());
@@ -166,7 +166,7 @@ public class CommentsController {
                     // 加入信息
                     dataUser.put("opt", opt);
                     // 获取等级
-                    dataUser.put("level", baseFull.getLevel(commentUser.getExperience(),dataprefix,apiconfigService,redisTemplate).get(0));
+                    dataUser.put("level", baseFull.getLevel(commentUser.getExperience(), dataprefix, apiconfigService, redisTemplate).get(0));
                 }
 
                 // 是否点赞
@@ -312,8 +312,11 @@ public class CommentsController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在,请重新登录", null);
+            }
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在,请重新登录", null);
+            if (user.getBantime() != null && user.getBantime() > System.currentTimeMillis() / 1000) {
+                return Result.getResultJson(201, "用户封禁中", null);
             }
 
             // 定义一个变量来获取替换掉的内容
@@ -327,7 +330,7 @@ public class CommentsController {
             Article article = contentsService.selectByKey(id);
             Integer commentsNum = article.getCommentsNum() + 1;
             article.setCommentsNum(commentsNum);
-            article.setReplyTime((int)System.currentTimeMillis()/1000);
+            article.setReplyTime((int) System.currentTimeMillis() / 1000);
             contentsService.update(article);
             Users articleUser = usersService.selectByKey(article.getAuthorId());
 
@@ -507,8 +510,8 @@ public class CommentsController {
             commentLike.setUid(user.getUid());
             List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
             commentLike.setCreated((int) (System.currentTimeMillis() / 1000));
-            // 获取评论
 
+            // 获取评论
             Integer likes = comments.getLikes() == null ? 0 : comments.getLikes();
             if (commentLikeList != null && commentLikeList.size() > 0) {
                 // 存在就删除
@@ -518,18 +521,13 @@ public class CommentsController {
                 comments.setLikes(likes + 1);
                 commentlikeService.insert(commentLike);
             }
-
             service.update(comments);
-
             return Result.getResultJson(200, commentLikeList.size() > 0 ? "已取消点赞" : "点赞成功", null);
-
-
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
         }
     }
-
 
     private boolean permission(String token) {
         if (token != null && !token.isEmpty()) {

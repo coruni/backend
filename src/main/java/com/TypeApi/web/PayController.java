@@ -254,7 +254,7 @@ public class PayController {
     @ResponseBody
     public String list(@RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
                        @RequestParam(value = "limit", defaultValue = "15", required = false) Integer limit,
-                       @RequestParam(value = "status",required = false,defaultValue = "1") Integer status,
+                       @RequestParam(value = "status", defaultValue = "1", required = false) Integer status,
                        HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -262,7 +262,7 @@ public class PayController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+                if (user.getUid() == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
             // 查询列表
             Paylog paylog = new Paylog();
@@ -956,7 +956,7 @@ public class PayController {
         paylog.setCreated(Integer.parseInt(created));
         paylog.setUid(user.getUid());
         paylog.setOutTradeNo(outTradeNo);
-        paylog.setTotalAmount(String.valueOf(((int)TotalAmount)));
+        paylog.setTotalAmount(String.valueOf(((int) TotalAmount)));
         paylog.setPaytype("ePay_" + type);
         paylog.setSubject("三方支付");
         paylogService.insert(paylog);
