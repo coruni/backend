@@ -120,6 +120,9 @@ public class ArticleController {
             JSONObject opt = article.getOpt() != null && !article.getOpt().isEmpty() ? JSONObject.parseObject(article.getOpt()) : null;
             // 取出内容中的图片
             List<String> images = baseFull.getImageSrc(article.getText());
+            if (article.getImages() != null && !article.getImages().isEmpty())
+                images = JSONArray.parseArray(article.getImages(), String.class);
+
             // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
             Boolean isReply = hasComment(user, article);
             Boolean isPaid = hasPay(user, article);
@@ -130,8 +133,15 @@ public class ArticleController {
             Map<String, Object> category = getCategory(article.getMid());
             // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
             Boolean showText = showText(user, article, category);
-            if (!showText && !permission && !article.getType().equals("video")) text = "";
-            if (!showText && !permission) videos = new ArrayList<>();
+            if (!showText && !permission) {
+                if (article.getType().equals("photo")) {
+                    images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
+                } else if (!article.getType().equals("video")) {
+                    text = "";
+                } else {
+                    videos = new ArrayList<>();
+                }
+            }
             // 标签
             Relationships tagQuery = new Relationships();
             tagQuery.setCid(article.getCid());
@@ -166,9 +176,7 @@ public class ArticleController {
             // 返回信息
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
             // 加入信息
-            if (article.getImages() != null && !article.getImages().isEmpty())
-                data.put("images", JSONArray.parseArray(article.getImages()));
-            else data.put("images", images);
+            data.put("images", images);
             data.put("videos", videos);
             data.put("opt", opt);
             data.put("text", text);
@@ -191,9 +199,9 @@ public class ArticleController {
             // 判断是是否是隐藏内容
             if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object != null && object.containsKey("link") && !permission) {
                 data.put("opt", null);
-                data.put("isHide", 1);
+                data.put("isHide", true);
             } else {
-                data.put("isHide", 0);
+                data.put("isHide", false);
             }
             // 添加访问经验
             addView(user);
@@ -240,6 +248,8 @@ public class ArticleController {
                 JSONObject opt = article.getOpt() != null && !article.getOpt().isEmpty() ? JSONObject.parseObject(article.getOpt()) : null;
                 // 取出内容中的图片
                 List<String> images = baseFull.getImageSrc(article.getText());
+                if (article.getImages() != null && !article.getImages().isEmpty())
+                    images = JSONArray.parseArray(article.getImages(), String.class);
                 // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
                 Boolean isReply = hasComment(user, article);
                 Boolean isPaid = hasPay(user, article);
@@ -252,8 +262,15 @@ public class ArticleController {
                 Map<String, Object> category = getCategory(article.getMid());
                 // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
                 Boolean showText = showText(user, article, category);
-                if (!showText && !permission && !article.getType().equals("video")) text = "";
-                if (!showText && !permission) videos = new ArrayList<>();
+                if (!showText && !permission) {
+                    if (article.getType().equals("photo")) {
+                        images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
+                    } else if (!article.getType().equals("video")) {
+                        text = "";
+                    } else {
+                        videos = new ArrayList<>();
+                    }
+                }
                 // 标签
                 Relationships tagQuery = new Relationships();
                 tagQuery.setCid(article.getCid());
@@ -286,9 +303,7 @@ public class ArticleController {
                 // 获取作者信息
                 Map<String, Object> authorInfo = getAuthorInfo(user_id, article);
                 // 加入信息
-                if (article.getImages() != null && !article.getImages().isEmpty())
-                    data.put("images", JSONArray.parseArray(article.getImages()));
-                else data.put("images", images);
+                data.put("images", images);
                 data.put("videos", videos);
                 data.put("opt", opt);
                 data.put("text", text);
@@ -492,7 +507,6 @@ public class ArticleController {
                     relationshipsService.insert(relate);
                 }
             }
-
             // 设置文章信息
             article.setMid(category);
             article.setText(text);
