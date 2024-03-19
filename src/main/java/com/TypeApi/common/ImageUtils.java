@@ -26,7 +26,6 @@ public class ImageUtils {
                     .outputFormat("webp")
                     .outputQuality(quality)
                     .asBufferedImage();
-
             // 将 BufferedImage 写入输出流,保留透明度信息
             ImageIO.write(compressedImage, "webp", outputStream);
             return outputStream.toByteArray();

@@ -21,6 +21,9 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,492 +52,152 @@ public class UploadController {
     @Autowired
     private RedisTemplate redisTemplate;
 
-    RedisHelp redisHelp = new RedisHelp();
+
     ResultAll Result = new ResultAll();
-    baseFull baseFull = new baseFull();
+
     UserStatus UStatus = new UserStatus();
 
-    /**
-     * 通用上传接口
-     * 除这个接口外，其它接口都是为了兼容旧版
+
+    /***
+     * 重构上传接口
+     * @param file
+     * @param request
+     * @return
+     * @throws IOException
      */
     @RequestMapping(value = "/full", method = RequestMethod.POST)
     @ResponseBody
-    public Object full(@RequestParam(value = "file") MultipartFile file,
+    public Object full(@RequestParam(value = "file", required = false) MultipartFile[] file,
                        HttpServletRequest request) throws IOException {
         String token = request.getHeader("Authorization");
-        Users user = new Users();
-        Integer uid = null;
+        Users user = getUserFromToken(token);
+        if (user == null || user.getUid() == null) {
+            return Result.getResultJson(201, "用户不存在，请重新登录", null);
+        }
+        List<Object> imageList = new ArrayList<>();
+        String image = null;
+        // 处理单个文件
+        if (file != null && file.length == 1) {
+            MultipartFile _file = file[0];
+            if (_file != null && !_file.isEmpty()) {
+                Object result = handleSingleFile(_file, user, this.dataprefix, apiconfigService, redisTemplate);
+                if (result != null) {
+                    image = (String) result;
+                }
+            }
+        }
+        // 处理多个文件
+        else if (file != null && file.length > 1) {
+            for (MultipartFile _file : file) {
+                if (_file != null && !_file.isEmpty()) {
+                    Object result = handleSingleFile(_file, user, this.dataprefix, apiconfigService, redisTemplate);
+                    if (result != null) {
+                        imageList.add(result);
+                    }
+                }
+            }
+        }
+
+        if ((imageList.isEmpty() && image == null) || (imageList.isEmpty() && image.isEmpty())) {
+            return Result.getResultJson(201, "请上传文件", null);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        if (image != null) {
+            data.put("url", image);
+        }
+        if (!imageList.isEmpty()) {
+            data.put("urls", imageList);
+        }
+
+        return Result.getResultJson(200, "上传成功", data);
+    }
+
+    private Object handleSingleFile(MultipartFile file, Users user, String dataprefix, ApiconfigService apiconfigService, RedisTemplate<String, String> redisTemplate) throws IOException {
+        Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
+        Integer fileUploadLevel = apiconfig.getUploadLevel();
+        String filename = file.getOriginalFilename();
+        String extension = getExtensionWithoutDot(filename);
+
+        if (!isAllowedFileType(extension, fileUploadLevel))
+            return Result.getResultJson(201, fileUploadLevel.equals(0) ? "已关闭上传" : "文件类型不被允许", null);
+
+        long maxSize = getMaxSizeForFileType(extension, apiconfig);
+        if (file.getSize() > maxSize) {
+            return Result.getResultJson(201, "文件大小超过限制", null);
+        }
+
+        String uploadType = apiconfig.getUploadType();
+        if ("cos".equals(uploadType)) {
+            return uploadService.cosUpload(file, dataprefix, apiconfig, user.getUid());
+        } else if ("local".equals(uploadType)) {
+            return uploadService.localUpload(file, dataprefix, apiconfig, user.getUid());
+        } else if ("oss".equals(uploadType)) {
+            return uploadService.ossUpload(file, dataprefix, apiconfig, user.getUid());
+        } else if ("ftp".equals(uploadType)) {
+            return uploadService.ftpUpload(file, dataprefix, apiconfig, user.getUid());
+        } else if ("qiniu".equals(uploadType)) {
+            return uploadService.qiniuUpload(file, dataprefix, apiconfig, user.getUid());
+        } else {
+            return Result.getResultJson(201, "未开启任何上传通道，请检查配置", null);
+        }
+    }
+
+    private Users getUserFromToken(String token) {
         if (token != null && !token.isEmpty()) {
-            DecodedJWT verify = JWT.verify(token);
-            user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在，请重新登录", null);
-            uid = user.getUid();
-        }
-        if (file == null || file.isEmpty()) return Result.getResultJson(201, "请上传文件", null);
-
-        String result = Result.getResultJson(201, "未开启任何上传通道，请检查配置", null);
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        //验证上传大小
-
-        Integer flieUploadType = 0;  //0为普通文件，1为图片，2为媒体
-        String oldFileName = file.getOriginalFilename();
-        String eName = "";
-        try {
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        } catch (Exception e) {
-            oldFileName = oldFileName + ".png";
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        }
-        BufferedImage bi = null;
-        try {
-            bi = ImageIO.read(file.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (bi != null || eName.equals(".WEBP") || eName.equals(".webp")) {
-            flieUploadType = 1;
-        }
-
-        Integer isMedia = baseFull.isMedia(eName);
-        if (isMedia.equals(1)) {
-            flieUploadType = 2;
-        }
-        Integer uploadPicMax = apiconfig.getUploadPicMax();
-        Integer uploadMediaMax = apiconfig.getUploadMediaMax();
-        Integer uploadFilesMax = apiconfig.getUploadFilesMax();
-        if (flieUploadType.equals(0)) {
-            long filesMax = uploadFilesMax * 1024 * 1024;
-            if (file.getSize() > filesMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(201, "文件大小不能超过" + uploadFilesMax + "M", null);
+            try {
+                DecodedJWT verify = JWT.verify(token);
+                int userId = Integer.parseInt(verify.getClaim("aud").asString());
+                return usersService.selectByKey(userId);
+            } catch (Exception e) {
+                // 处理异常
             }
         }
-        if (flieUploadType.equals(1)) {
-            long picMax = uploadPicMax * 1024 * 1024;
-            if (file.getSize() > picMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(201, "图片大小不能超过" + uploadPicMax + "M", null);
-            }
-        }
-
-        if (flieUploadType.equals(2)) {
-            long mediaMax = uploadMediaMax * 1024 * 1024;
-            if (file.getSize() > mediaMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(201, "媒体大小不能超过" + uploadMediaMax + "M", null);
-            }
-        }
-
-        //验证上传大小结束
-
-        if (apiconfig.getUploadType().equals("cos")) {
-            result = uploadService.cosUpload(file, this.dataprefix, apiconfig, uid);
-        }
-        if (apiconfig.getUploadType().equals("local")) {
-            result = uploadService.localUpload(file, this.dataprefix, apiconfig, uid);
-        }
-        if (apiconfig.getUploadType().equals("oss")) {
-            result = uploadService.ossUpload(file, this.dataprefix, apiconfig, uid);
-        }
-        if (apiconfig.getUploadType().equals("ftp")) {
-            result = uploadService.ftpUpload(file, this.dataprefix, apiconfig, uid);
-        }
-        if (apiconfig.getUploadType().equals("qiniu")) {
-            result = uploadService.qiniuUpload(file, this.dataprefix, apiconfig, uid);
-        }
-        return result;
+        return null;
     }
 
-    /**
-     * 上传cos
-     *
-     * @return
-     */
-    @RequestMapping(value = "/cosUpload", method = RequestMethod.POST)
-    @ResponseBody
-    public Object cosUpload(@RequestParam(value = "file") MultipartFile file, @RequestParam(value = "token", required = false) String token) throws IOException {
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+    private String getExtensionWithoutDot(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf(".");
+        if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
+            return "png";
         }
-
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid = Integer.parseInt(map.get("uid").toString());
-        if (file == null) {
-            return new UploadMsg(0, "文件为空", null);
-        }
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        //验证上传大小
-
-        Integer flieUploadType = 0;  //0为普通文件，1为图片，2为媒体
-        String oldFileName = file.getOriginalFilename();
-        String eName = "";
-        try {
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        } catch (Exception e) {
-            oldFileName = oldFileName + ".png";
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        }
-        BufferedImage bi = null;
-        try {
-            bi = ImageIO.read(file.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (bi != null || eName.equals(".WEBP") || eName.equals(".webp")) {
-            flieUploadType = 1;
-        }
-
-        Integer isMedia = baseFull.isMedia(eName);
-        if (isMedia.equals(1)) {
-            flieUploadType = 2;
-        }
-        Integer uploadPicMax = apiconfig.getUploadPicMax();
-        Integer uploadMediaMax = apiconfig.getUploadMediaMax();
-        Integer uploadFilesMax = apiconfig.getUploadFilesMax();
-        if (flieUploadType.equals(0)) {
-            long filesMax = uploadFilesMax * 1024 * 1024;
-            if (file.getSize() > filesMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "文件大小不能超过" + filesMax + "M", null);
-            }
-        }
-        if (flieUploadType.equals(1)) {
-            long picMax = uploadPicMax * 1024 * 1024;
-            if (file.getSize() > picMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "图片大小不能超过" + picMax + "M", null);
-            }
-        }
-
-        if (flieUploadType.equals(2)) {
-            long mediaMax = uploadMediaMax * 1024 * 1024;
-            if (file.getSize() > mediaMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "媒体大小不能超过" + mediaMax + "M", null);
-            }
-        }
-
-        //验证上传大小结束
-        if (!apiconfig.getUploadType().equals("cos")) {
-            return Result.getResultJson(0, "该上传通道已关闭", null);
-        }
-        String result = uploadService.cosUpload(file, this.dataprefix, apiconfig, uid);
-        return result;
+        return fileName.substring(lastDotIndex + 1);
     }
 
-    private class UploadMsg {
-        public int status;
-        public String msg;
-        public String path;
-
-        public UploadMsg() {
-            super();
-        }
-
-        public UploadMsg(int status, String msg, String path) {
-            this.status = status;
-            this.msg = msg;
-            this.path = path;
+    private boolean isAllowedFileType(String extension, Integer fileUploadLevel) {
+        if (fileUploadLevel == 0) {
+            // 关闭上传功能
+            return false;
+        } else if (fileUploadLevel == 1) {
+            // 只允许上传图片
+            return isImageFile(extension);
+        } else if (fileUploadLevel == 2) {
+            // 允许上传图片和媒体文件
+            return isImageFile(extension) || isMediaFile(extension);
+        } else {
+            // 允许上传所有类型文件
+            return true;
         }
     }
 
-    /**
-     * 上传到本地
-     */
-    @RequestMapping(value = "/localUpload", method = RequestMethod.POST)
-    @ResponseBody
-    public String localUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "token", required = false) String token) throws IOException {
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-        }
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid = Integer.parseInt(map.get("uid").toString());
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        //验证上传大小
-
-        Integer flieUploadType = 0;  //0为普通文件，1为图片，2为媒体
-        String oldFileName = file.getOriginalFilename();
-        String eName = "";
-        try {
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        } catch (Exception e) {
-            oldFileName = oldFileName + ".png";
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        }
-        BufferedImage bi = null;
-        try {
-            bi = ImageIO.read(file.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (bi != null || eName.equals(".WEBP") || eName.equals(".webp")) {
-            flieUploadType = 1;
-        }
-
-        Integer isMedia = baseFull.isMedia(eName);
-        if (isMedia.equals(1)) {
-            flieUploadType = 2;
-        }
+    private long getMaxSizeForFileType(String extension, Apiconfig apiconfig) {
         Integer uploadPicMax = apiconfig.getUploadPicMax();
         Integer uploadMediaMax = apiconfig.getUploadMediaMax();
         Integer uploadFilesMax = apiconfig.getUploadFilesMax();
-        if (flieUploadType.equals(0)) {
-            long filesMax = uploadFilesMax * 1024 * 1024;
-            if (file.getSize() > filesMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "文件大小不能超过" + filesMax + "M", null);
-            }
+        if (isImageFile(extension)) {
+            return uploadPicMax * 1024L * 1024L;
+        } else if (isMediaFile(extension)) {
+            return uploadMediaMax * 1024L * 1024L;
+        } else {
+            return uploadFilesMax * 1024L * 1024L;
         }
-        if (flieUploadType.equals(1)) {
-            long picMax = uploadPicMax * 1024 * 1024;
-            if (file.getSize() > picMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "图片大小不能超过" + picMax + "M", null);
-            }
-        }
-
-        if (flieUploadType.equals(2)) {
-            long mediaMax = uploadMediaMax * 1024 * 1024;
-            if (file.getSize() > mediaMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "媒体大小不能超过" + mediaMax + "M", null);
-            }
-        }
-
-        //验证上传大小结束
-        if (!apiconfig.getUploadType().equals("local")) {
-            return Result.getResultJson(0, "该上传通道已关闭", null);
-        }
-        String result = uploadService.localUpload(file, this.dataprefix, apiconfig, uid);
-        return result;
-
     }
 
-    /**
-     * 上传到oss
-     */
-    @RequestMapping(value = "/ossUpload", method = RequestMethod.POST)
-    @ResponseBody
-    public String ossUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "token", required = false) String token) throws IOException {
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-        }
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid = Integer.parseInt(map.get("uid").toString());
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        //验证上传大小
-
-        Integer flieUploadType = 0;  //0为普通文件，1为图片，2为媒体
-        String oldFileName = file.getOriginalFilename();
-        String eName = "";
-        try {
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        } catch (Exception e) {
-            oldFileName = oldFileName + ".png";
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        }
-        BufferedImage bi = null;
-        try {
-            bi = ImageIO.read(file.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (bi != null || eName.equals(".WEBP") || eName.equals(".webp")) {
-            flieUploadType = 1;
-        }
-
-        Integer isMedia = baseFull.isMedia(eName);
-        if (isMedia.equals(1)) {
-            flieUploadType = 2;
-        }
-        Integer uploadPicMax = apiconfig.getUploadPicMax();
-        Integer uploadMediaMax = apiconfig.getUploadMediaMax();
-        Integer uploadFilesMax = apiconfig.getUploadFilesMax();
-        if (flieUploadType.equals(0)) {
-            long filesMax = uploadFilesMax * 1024 * 1024;
-            if (file.getSize() > filesMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "文件大小不能超过" + filesMax + "M", null);
-            }
-        }
-        if (flieUploadType.equals(1)) {
-            long picMax = uploadPicMax * 1024 * 1024;
-            if (file.getSize() > picMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "图片大小不能超过" + picMax + "M", null);
-            }
-        }
-
-        if (flieUploadType.equals(2)) {
-            long mediaMax = uploadMediaMax * 1024 * 1024;
-            if (file.getSize() > mediaMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "媒体大小不能超过" + mediaMax + "M", null);
-            }
-        }
-
-        //验证上传大小结束
-        if (!apiconfig.getUploadType().equals("oss")) {
-            return Result.getResultJson(0, "该上传通道已关闭", null);
-        }
-        String result = uploadService.ossUpload(file, this.dataprefix, apiconfig, uid);
-        return result;
-
+    private boolean isImageFile(String extension) {
+        return extension.equalsIgnoreCase("jpg") || extension.equalsIgnoreCase("png") || extension.equalsIgnoreCase("gif") || extension.equalsIgnoreCase("bmp") || extension.equalsIgnoreCase("webp");
     }
 
-    /**
-     * 上传到七牛云
-     */
-    @RequestMapping(value = "/qiniuUpload", method = RequestMethod.POST)
-    @ResponseBody
-    public String qiniuUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "token", required = false) String token) throws IOException {
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-        }
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid = Integer.parseInt(map.get("uid").toString());
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        //验证上传大小
-
-        Integer flieUploadType = 0;  //0为普通文件，1为图片，2为媒体
-        String oldFileName = file.getOriginalFilename();
-        String eName = "";
-        try {
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        } catch (Exception e) {
-            oldFileName = oldFileName + ".png";
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        }
-        BufferedImage bi = null;
-        try {
-            bi = ImageIO.read(file.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (bi != null || eName.equals(".WEBP") || eName.equals(".webp")) {
-            flieUploadType = 1;
-        }
-
-        Integer isMedia = baseFull.isMedia(eName);
-        if (isMedia.equals(1)) {
-            flieUploadType = 2;
-        }
-        Integer uploadPicMax = apiconfig.getUploadPicMax();
-        Integer uploadMediaMax = apiconfig.getUploadMediaMax();
-        Integer uploadFilesMax = apiconfig.getUploadFilesMax();
-        if (flieUploadType.equals(0)) {
-            long filesMax = uploadFilesMax * 1024 * 1024;
-            if (file.getSize() > filesMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "文件大小不能超过" + filesMax + "M", null);
-            }
-        }
-        if (flieUploadType.equals(1)) {
-            long picMax = uploadPicMax * 1024 * 1024;
-            if (file.getSize() > picMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "图片大小不能超过" + picMax + "M", null);
-            }
-        }
-
-        if (flieUploadType.equals(2)) {
-            long mediaMax = uploadMediaMax * 1024 * 1024;
-            if (file.getSize() > mediaMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "媒体大小不能超过" + mediaMax + "M", null);
-            }
-        }
-
-        //验证上传大小结束
-        if (!apiconfig.getUploadType().equals("qiniu")) {
-            return Result.getResultJson(0, "该上传通道已关闭", null);
-        }
-        String result = uploadService.qiniuUpload(file, this.dataprefix, apiconfig, uid);
-        return result;
-    }
-
-    /**
-     * 上传到远程ftp
-     */
-    @RequestMapping(value = "ftpUpload", method = RequestMethod.POST)
-    @ResponseBody
-    public String ftpUpload(@RequestParam(value = "file") MultipartFile file, @RequestParam(value = "token", required = false) String token) {
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-        }
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid = Integer.parseInt(map.get("uid").toString());
-        String oldFileName = file.getOriginalFilename();
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        //验证上传大小
-
-        Integer flieUploadType = 0;  //0为普通文件，1为图片，2为媒体
-        String eName = "";
-        try {
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        } catch (Exception e) {
-            oldFileName = oldFileName + ".png";
-            eName = oldFileName.substring(oldFileName.lastIndexOf("."));
-        }
-        BufferedImage bi = null;
-        try {
-            bi = ImageIO.read(file.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (bi != null || eName.equals(".WEBP") || eName.equals(".webp")) {
-            flieUploadType = 1;
-        }
-
-        Integer isMedia = baseFull.isMedia(eName);
-        if (isMedia.equals(1)) {
-            flieUploadType = 2;
-        }
-        Integer uploadPicMax = apiconfig.getUploadPicMax();
-        Integer uploadMediaMax = apiconfig.getUploadMediaMax();
-        Integer uploadFilesMax = apiconfig.getUploadFilesMax();
-        if (flieUploadType.equals(0)) {
-            long filesMax = uploadFilesMax * 1024 * 1024;
-            if (file.getSize() > filesMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "文件大小不能超过" + filesMax + "M", null);
-            }
-        }
-        if (flieUploadType.equals(1)) {
-            long picMax = uploadPicMax * 1024 * 1024;
-            if (file.getSize() > picMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "图片大小不能超过" + picMax + "M", null);
-            }
-        }
-
-        if (flieUploadType.equals(2)) {
-            long mediaMax = uploadMediaMax * 1024 * 1024;
-            if (file.getSize() > mediaMax) {
-                // 文件大小超过限制，返回错误消息或进行其他处理
-                return Result.getResultJson(0, "媒体大小不能超过" + mediaMax + "M", null);
-            }
-        }
-
-        //验证上传大小结束
-        if (!apiconfig.getUploadType().equals("ftp")) {
-            return Result.getResultJson(0, "该上传通道已关闭", null);
-        }
-        String result = uploadService.ftpUpload(file, this.dataprefix, apiconfig, uid);
-        return result;
-
-
+    private boolean isMediaFile(String extension) {
+        return extension.equalsIgnoreCase("mp4") || extension.equalsIgnoreCase("mov") || extension.equalsIgnoreCase("avi") || extension.equalsIgnoreCase("mp3");
     }
 }

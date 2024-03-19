@@ -61,10 +61,10 @@ public class UploadServiceImpl implements UploadService {
 
         //根据权限等级检查是否为图片
         Integer uploadLevel = apiconfig.getUploadLevel();
-        if (uploadLevel.equals(1)) {
+        if (uploadLevel.equals(0)) {
             return Result.getResultJson(201, "管理员已关闭上传功能", null);
         }
-        if (uploadLevel.equals(0)) {
+        if (uploadLevel.equals(1)) {
             //检查是否是图片
             BufferedImage bi = null;
             try {
@@ -115,10 +115,8 @@ public class UploadServiceImpl implements UploadService {
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, key, localFile);
             PutObjectResult putObjectResult = cosclient.putObject(putObjectRequest);
             //return new UploadMsg(1,"上传成功",this.path + putObjectRequest.getKey());
-            Map<String, String> info = new HashMap<String, String>();
-            info.put("url", apiconfig.getCosPath() + putObjectRequest.getKey());
             editFile.setLog("用户" + uid + "通过cosUpload成功上传了图片");
-            return Result.getResultJson(200, "上传成功", info);
+            return apiconfig.getCosPath() + putObjectRequest.getKey();
 
         } catch (IOException e) {
             editFile.setLog("用户" + uid + "通过cosUpload上传图片失败");
@@ -130,19 +128,12 @@ public class UploadServiceImpl implements UploadService {
     }
 
     public String localUpload(MultipartFile file, String dataprefix, Apiconfig apiconfig, Integer uid) throws IOException {
-        if (apiconfig.getUploadLevel().equals(1)) return Result.getResultJson(201, "已关闭上传功能", null);
-
         // 获取文件名和扩展名
         String filename = file.getOriginalFilename();
         String fileExtension = getFileExtension(filename);
 
         // 判断是否为视频文件
-        boolean isVideo = baseFull.isVideo(fileExtension);
-
-        // 如果上传级别为0且为视频文件,则返回错误信息
-        if (apiconfig.getUploadLevel().equals(0) && isVideo) {
-            return Result.getResultJson(201, "当前只允许上传图片文件", null);
-        }
+        boolean isImage = isImageFile(fileExtension);
 
         String filepath = UUID.randomUUID() + "." + StringUtils.defaultIfBlank(fileExtension, "png");
         String compressedFilepath = filepath + "_compress.webp";
@@ -163,12 +154,10 @@ public class UploadServiceImpl implements UploadService {
         try (InputStream inputStream = file.getInputStream()) {
             Path originalFilePath = localPath.resolve(filepath);
             Path compressedFilePath = localPath.resolve(compressedFilepath);
-
             // 保存原始文件
             Files.copy(inputStream, originalFilePath, StandardCopyOption.REPLACE_EXISTING);
-
             // 如果开启了本地压缩且不是视频文件,则进行压缩
-            if (apiconfig.getCompress().equals(1) && !isVideo) {
+            if (apiconfig.getCompress().equals(1) && isImage && !fileExtension.equalsIgnoreCase("webp") && !fileExtension.equalsIgnoreCase("gif")) {
                 // 读取文件字节数组
                 byte[] fileBytes = file.getBytes();
                 // 进行图片压缩
@@ -179,9 +168,8 @@ public class UploadServiceImpl implements UploadService {
         }
 
         Map<String, Object> data = new HashMap<>();
-        String fileUrl = String.format("%supload/%s/%s/%s/%s/%s", apiconfig.getWebinfoUploadUrl(), year, month, day, uid, apiconfig.getCompress().equals(1) && !isVideo ? compressedFilepath : filepath);
-        data.put("url", fileUrl);
-        return Result.getResultJson(200, "上传成功", data);
+        String fileUrl = String.format("%supload/%s/%s/%s/%s/%s", apiconfig.getWebinfoUploadUrl(), year, month, day, uid, apiconfig.getCompress().equals(1) && isImage && !fileExtension.equalsIgnoreCase("webp") && !fileExtension.equalsIgnoreCase("gif") ? compressedFilepath : filepath);
+        return fileUrl;
     }
 
     public String ossUpload(MultipartFile file, String dataprefix, Apiconfig apiconfig, Integer uid) {
@@ -213,10 +201,10 @@ public class UploadServiceImpl implements UploadService {
         }
         //根据权限等级检查是否为图片
         Integer uploadLevel = apiconfig.getUploadLevel();
-        if (uploadLevel.equals(1)) {
+        if (uploadLevel.equals(0)) {
             return Result.getResultJson(200, "管理员已关闭上传功能", null);
         }
-        if (uploadLevel.equals(0)) {
+        if (uploadLevel.equals(1)) {
             //检查是否是图片或视频
             BufferedImage bi = null;
             try {
@@ -252,10 +240,8 @@ public class UploadServiceImpl implements UploadService {
         ossClient.putObject(apiconfig.getAliyunAucketName(), key, inputStream);
         ossClient.shutdown();
         String url = apiconfig.getAliyunUrlPrefix() + key;
-        Map<String, String> info = new HashMap<String, String>();
-        info.put("url", url);
         editFile.setLog("用户" + uid + "通过ossUpload成功上传了图片");
-        return Result.getResultJson(200, "上传成功", info);
+        return url;
     }
 
     public String qiniuUpload(MultipartFile file, String dataprefix, Apiconfig apiconfig, Integer uid) {
@@ -286,10 +272,10 @@ public class UploadServiceImpl implements UploadService {
         }
         //根据权限等级检查是否为图片
         Integer uploadLevel = apiconfig.getUploadLevel();
-        if (uploadLevel.equals(1)) {
+        if (uploadLevel.equals(0)) {
             return Result.getResultJson(201, "管理员已关闭上传功能", null);
         }
-        if (uploadLevel.equals(0)) {
+        if (uploadLevel.equals(1)) {
             //检查是否是图片或视频
             BufferedImage bi = null;
             try {
@@ -339,11 +325,9 @@ public class UploadServiceImpl implements UploadService {
                 DefaultPutRet putRet = new Gson().fromJson(response.bodyString(), DefaultPutRet.class);
 
                 String returnPath = apiconfig.getQiniuDomain() + putRet.key;
-                // 这个returnPath是获得到的外链地址,通过这个地址可以直接打开图片
-                Map<String, String> info = new HashMap<String, String>();
-                info.put("url", returnPath);
+
                 editFile.setLog("用户" + uid + "通过qiniuUpload成功上传了图片");
-                return Result.getResultJson(200, "上传成功", info);
+                return returnPath;
             } catch (QiniuException ex) {
                 Response r = ex.response;
                 System.err.println(r.toString());
@@ -393,7 +377,7 @@ public class UploadServiceImpl implements UploadService {
             }
             //根据权限等级检查是否为图片
             Integer uploadLevel = apiconfig.getUploadLevel();
-            if (uploadLevel.equals(0)) {
+            if (uploadLevel.equals(1)) {
                 //检查是否是图片
                 BufferedImage bi = ImageIO.read(file.getInputStream());
                 if (bi == null && !suffix.equals(".WEBP") && !suffix.equals(".webp")) {
@@ -449,10 +433,9 @@ public class UploadServiceImpl implements UploadService {
             ftpClient.storeFile(key, new FileInputStream(file1));
 
             ftpClient.disconnect();
-            Map<String, String> info = new HashMap<String, String>();
-            info.put("url", apiconfig.getWebinfoUploadUrl() + key);
+
             editFile.setLog("用户" + uid + "通过ftpUpload成功上传了图片");
-            return Result.getResultJson(200, "上传成功", info);
+            return apiconfig.getWebinfoUploadUrl() + key;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -470,5 +453,9 @@ public class UploadServiceImpl implements UploadService {
     private String getFileExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
         return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+    }
+
+    private boolean isImageFile(String extension) {
+        return extension.equalsIgnoreCase("jpg") || extension.equalsIgnoreCase("png") || extension.equalsIgnoreCase("gif") || extension.equalsIgnoreCase("bmp") || extension.equalsIgnoreCase("webp");
     }
 }
