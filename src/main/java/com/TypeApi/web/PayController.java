@@ -574,7 +574,6 @@ public class PayController {
                 permission = permission(user);
                 if (!permission) return Result.getResultJson(201, "无权限", null);
             }
-
             // 验证通过开始查询列表
             Paykey paykey = new Paykey();
             paykey.setStatus(status);
