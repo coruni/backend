@@ -10,7 +10,10 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.internal.util.AlipaySignature;
+import com.alipay.api.request.AlipayTradeAppPayRequest;
+import com.alipay.api.request.AlipayTradePagePayRequest;
 import com.alipay.api.request.AlipayTradePrecreateRequest;
+import com.alipay.api.response.AlipayTradeAppPayResponse;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -83,106 +86,88 @@ public class PayController {
      *
      * @return 支付宝生成的订单信息
      */
-    @RequestMapping(value = "/scancodePay")
+    @RequestMapping(value = "/alipay")
     @ResponseBody
-    public String scancodepay(@RequestParam(value = "num", required = false) String num,
-                              HttpServletRequest request) throws AlipayApiException {
-
+    public String alipay(@RequestParam(value = "money", required = false) String money,
+                         HttpServletRequest request) throws AlipayApiException {
         try {
             //攻击拦截结束
             String token = request.getHeader("Authorization");
-            Users user = new Users();
-            if (token != null && !token.isEmpty()) {
-                DecodedJWT verify = JWT.verify(token);
-                usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-            }
-            if (user.getUid() == null) return Result.getResultJson(201, "用户不存在，请重新登录", null);
+            Users user = getUserFromToken(token, usersService);
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在，请重新登录", null);
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-
+            Integer scale = apiconfig.getScale();
             final String APPID = apiconfig.getAlipayAppId();
-            String RSA2_PRIVATE = apiconfig.getAlipayPrivateKey();
+            String ALIPAY_PRIVATE_KEY = apiconfig.getAlipayPrivateKey();
             String ALIPAY_PUBLIC_KEY = apiconfig.getAlipayPublicKey();
 
             Date now = new Date();
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");//可以方便地修改日期格式
-            String timeID = dateFormat.format(now);
-            String order_no = timeID + "scancodealipay";
-            String body = "";
+            String time = dateFormat.format(now);
+            String out_trade_no = time + user.getUid();
+            int integral = (int) (scale * Float.parseFloat(money));
 
+            // 创建一个订单
+            Paylog paylog = new Paylog();
+            paylog.setStatus(0);
+            paylog.setPaytype("alipay");
+            paylog.setSubject("积分充值");
+            paylog.setUid(user.getUid());
+            paylog.setTotalAmount(String.valueOf(integral));
+            paylog.setOutTradeNo(out_trade_no);
+            paylog.setCreated((int) (System.currentTimeMillis() / 1000));
+            paylogService.insert(paylog);
 
-            String total_fee = num;  //真实金钱
-
-            AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", APPID, RSA2_PRIVATE, "json",
-                    "UTF-8", ALIPAY_PUBLIC_KEY, "RSA2"); //获得初始化的AlipayClient
+            // 请求
+            AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", APPID, ALIPAY_PRIVATE_KEY, "json", "UTF-8", ALIPAY_PUBLIC_KEY, "RSA2");
             AlipayTradePrecreateRequest httpRequest = new AlipayTradePrecreateRequest();//创建API对应的request类
-            httpRequest.setBizContent("{" +
-                    "    \"out_trade_no\":\"" + order_no + "\"," +
-                    "    \"total_amount\":\"" + total_fee + "\"," +
-                    "    \"body\":\"" + body + "\"," +
-                    "    \"subject\":\"商品购买\"," +
-                    "    \"timeout_express\":\"90m\"}");//设置业务参数
-            httpRequest.setNotifyUrl(apiconfig.getAlipayNotifyUrl());
-            AlipayTradePrecreateResponse response = alipayClient.execute(httpRequest);//通过alipayClient调用API，获得对应的response类
-            System.out.print(response.getBody());
 
-            //根据response中的结果继续业务逻辑处理
-            if (response.getMsg().equals("Success")) {
-                //先生成订单
-                Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0, 10);
-                Paylog paylog = new Paylog();
-                Integer TotalAmount = Integer.parseInt(total_fee) * apiconfig.getScale();
-                paylog.setStatus(0);
-                paylog.setCreated(Integer.parseInt(created));
-                paylog.setUid(user.getUid());
-                paylog.setOutTradeNo(order_no);
-                paylog.setTotalAmount(TotalAmount.toString());
-                paylog.setPaytype("scancodePay");
-                paylog.setSubject("扫码支付");
-                paylogService.insert(paylog);
-                //再返回二维码
-                String qrcode = response.getQrCode();
-                JSONObject toResponse = new JSONObject();
-                toResponse.put("code", 1);
-                toResponse.put("data", qrcode);
-                toResponse.put("msg", "获取成功");
-                return toResponse.toString();
+            JSONObject bizContent = new JSONObject();
+            bizContent.put("out_trade_no", out_trade_no);
+            bizContent.put("total_amount", money);
+            bizContent.put("subject", "积分充值");
+            bizContent.put("product_code", "FACE_TO_FACE_PAYMENT");
+            bizContent.put("timeout_express", "90m");
+            httpRequest.setBizContent(bizContent.toString());
+            httpRequest.setNotifyUrl(apiconfig.getNotifyUrl() + "/pay/alipayNotify");
+            AlipayTradePrecreateResponse response = alipayClient.execute(httpRequest);
+            String qrcode = response.getQrCode();
+            JSONObject data = new JSONObject();
+            if (response.isSuccess()) {
+                data.put("code", 200);
+                data.put("msg", "获取成功");
+                data.put("order", qrcode);
             } else {
-                JSONObject toResponse = new JSONObject();
-                toResponse.put("code", 0);
-                toResponse.put("data", "");
-                toResponse.put("msg", "请求失败");
-                return toResponse.toString();
+                data.put("code", 201);
+                data.put("msg", "获取失败");
             }
+            return data.toString();
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
         }
     }
 
-    @RequestMapping(value = "/notify", method = RequestMethod.POST)
+    @RequestMapping(value = "/alipayNotify", method = RequestMethod.POST)
     @ResponseBody
-    public String notify(HttpServletRequest request,
-                         HttpServletResponse response) throws AlipayApiException {
-        Map<String, String> params = new HashMap<String, String>();
-        Map requestParams = request.getParameterMap();
-        for (Iterator iter = requestParams.keySet().iterator(); iter.hasNext(); ) {
-            String name = (String) iter.next();
-            String[] values = (String[]) requestParams.get(name);
-            String valueStr = "";
-            for (int i = 0; i < values.length; i++) {
-                valueStr = (i == values.length - 1) ? valueStr + values[i] : valueStr + values[i] + ",";
-            }
-            params.put(name, valueStr);
+    public String alipayNotify(HttpServletRequest request,
+                               HttpServletResponse response) throws AlipayApiException {
+        Map<String, String> params = new HashMap<>();
+        Enumeration<String> parameterNames = request.getParameterNames();
+        while (parameterNames.hasMoreElements()) {
+            String paramName = parameterNames.nextElement();
+            String paramValue = request.getParameter(paramName);
+            params.put(paramName, paramValue);
         }
         System.err.println(params);
         Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        String CHARSET = "UTF-8";
+        Integer scale = apiconfig.getScale();
         //支付宝公钥
         String ALIPAY_PUBLIC_KEY = apiconfig.getAlipayPublicKey();
 
         String tradeStatus = request.getParameter("trade_status");
-        boolean flag = AlipaySignature.rsaCheckV1(params, ALIPAY_PUBLIC_KEY, CHARSET, "RSA2");
+        boolean flag = AlipaySignature.rsaCheckV1(params, ALIPAY_PUBLIC_KEY, "UTF-8", "RSA2");
 
         if (flag) {//验证成功
             if (tradeStatus.equals("TRADE_FINISHED") || tradeStatus.equals("TRADE_SUCCESS")) {
@@ -190,29 +175,23 @@ public class PayController {
                 String trade_no = params.get("trade_no");
                 String out_trade_no = params.get("out_trade_no");
                 String total_amount = params.get("total_amount");
-                Integer scale = apiconfig.getScale();
-                Integer integral = Double.valueOf(total_amount).intValue() * scale;
 
-                Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0, 10);
+                int integral = (int) (scale * Float.parseFloat(total_amount));
                 Paylog paylog = new Paylog();
                 //根据订单和发起人，是否有数据库对应，来是否充值成功
                 paylog.setOutTradeNo(out_trade_no);
                 paylog.setStatus(0);
                 List<Paylog> logList = paylogService.selectList(paylog);
-                if (logList.size() > 0) {
+                if (!logList.isEmpty()) {
                     int pid = logList.get(0).getPid();
                     int uid = logList.get(0).getUid();
                     paylog.setStatus(1);
                     paylog.setTradeNo(trade_no);
                     paylog.setPid(pid);
-                    paylog.setCreated(Integer.parseInt(created));
                     paylogService.update(paylog);
-                    //订单修改后，插入用户表
+                    //订单修改后，根更新用户信息
                     Users users = usersService.selectByKey(uid);
-                    int oldAssets = users.getAssets();
-                    int assets = oldAssets + integral;
-                    users.setAssets(assets);
+                    users.setAssets(users.getAssets() + integral);
                     usersService.update(users);
                 } else {
                     System.err.println("数据库不存在订单");
@@ -262,7 +241,8 @@ public class PayController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user.getUid() == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+                if (user.getUid() == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在", null);
             }
             // 查询列表
             Paylog paylog = new Paylog();
@@ -363,7 +343,7 @@ public class PayController {
     /**
      * 微信支付
      */
-    @RequestMapping(value = "/WxPay")
+    @RequestMapping(value = "/wxpay")
     @ResponseBody
     public String wxAdd(HttpServletRequest request, @RequestParam(value = "price", required = false) Integer price, @RequestParam(value = "token", required = false) String token) throws Exception {
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -437,9 +417,9 @@ public class PayController {
     /**
      * 微信回调
      */
-    @RequestMapping(value = "/wxPayNotify")
+    @RequestMapping(value = "/wxpayNotify")
     @ResponseBody
-    public String wxPayNotify(
+    public String wxpayNotify(
             HttpServletRequest request,
             HttpServletResponse response) throws Exception {
         Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
@@ -780,7 +760,7 @@ public class PayController {
     /**
      * 彩虹易支付相关
      **/
-    @RequestMapping(value = "/EPay")
+    @RequestMapping(value = "/epay")
     @ResponseBody
     public String EPay(@RequestParam(value = "type") String type,
                        @RequestParam(value = "money") float money,
@@ -827,22 +807,18 @@ public class PayController {
         return result;
     }
 
-    @RequestMapping(value = "/EPayNotify")
+    @RequestMapping(value = "/epayNotify")
     @ResponseBody
-    public String EPayNotify(HttpServletRequest request,
-                             HttpServletResponse response) throws AlipayApiException {
-        Map<String, String> params = new HashMap<String, String>();
-        Map requestParams = request.getParameterMap();
-        for (Iterator iter = requestParams.keySet().iterator(); iter.hasNext(); ) {
-            String name = (String) iter.next();
-            String[] values = (String[]) requestParams.get(name);
-            String valueStr = "";
-            for (int i = 0; i < values.length; i++) {
-                valueStr = (i == values.length - 1) ? valueStr + values[i] : valueStr + values[i] + ",";
-            }
-            params.put(name, valueStr);
-        }
+    public String epayNotify(HttpServletRequest request,
+                             HttpServletResponse response) {
+        Map<String, String> params = new HashMap<>();
+        Enumeration<String> parameterNames = request.getParameterNames();
 
+        while (parameterNames.hasMoreElements()) {
+            String paramName = parameterNames.nextElement();
+            String paramValue = request.getParameter(paramName);
+            params.put(paramName, paramValue);
+        }
         System.err.println(params);
         try {
             if (params.get("trade_status").equals("TRADE_SUCCESS")) {
@@ -910,7 +886,7 @@ public class PayController {
         sign.put("pid", apiconfig.getEpayPid().toString());
         sign.put("type", type);
         sign.put("out_trade_no", outTradeNo);
-        sign.put("notify_url", apiconfig.getEpayNotifyUrl());
+        sign.put("notify_url", apiconfig.getNotifyUrl() + "/pay/epayNotify");
         sign.put("clientip", clientip);
         sign.put("name", "积分充值");
         sign.put("money", String.valueOf(money));

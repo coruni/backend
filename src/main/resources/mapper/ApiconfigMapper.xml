@@ -3,109 +3,107 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.TypeApi.dao.ApiconfigDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Apiconfig" >
-        <result column="id" property="id" />
-        <result column="webinfoTitle" property="webinfoTitle" />
-        <result column="webinfoUrl" property="webinfoUrl" />
-        <result column="webinfoUploadUrl" property="webinfoUploadUrl" />
-        <result column="webinfoAvatar" property="webinfoAvatar" />
-        <result column="pexelsKey" property="pexelsKey" />
-        <result column="scale" property="scale" />
-        <result column="clock" property="clock" />
-        <result column="vipPrice" property="vipPrice" />
-        <result column="vipDay" property="vipDay" />
-        <result column="vipDiscount" property="vipDiscount" />
-        <result column="isEmail" property="isEmail" />
-        <result column="isInvite" property="isInvite" />
-        <result column="cosAccessKey" property="cosAccessKey" />
-        <result column="cosSecretKey" property="cosSecretKey" />
-        <result column="cosBucket" property="cosBucket" />
-        <result column="cosBucketName" property="cosBucketName" />
-        <result column="cosPath" property="cosPath" />
-        <result column="cosPrefix" property="cosPrefix" />
-        <result column="aliyunEndpoint" property="aliyunEndpoint" />
-        <result column="aliyunAccessKeyId" property="aliyunAccessKeyId" />
-        <result column="aliyunAccessKeySecret" property="aliyunAccessKeySecret" />
-        <result column="aliyunAucketName" property="aliyunAucketName" />
-        <result column="aliyunUrlPrefix" property="aliyunUrlPrefix" />
-        <result column="aliyunFilePrefix" property="aliyunFilePrefix" />
-        <result column="ftpHost" property="ftpHost" />
-        <result column="ftpPort" property="ftpPort" />
-        <result column="ftpUsername" property="ftpUsername" />
-        <result column="ftpPassword" property="ftpPassword" />
-        <result column="ftpBasePath" property="ftpBasePath" />
-        <result column="alipayAppId" property="alipayAppId" />
-        <result column="alipayPrivateKey" property="alipayPrivateKey" />
-        <result column="alipayPublicKey" property="alipayPublicKey" />
-        <result column="alipayNotifyUrl" property="alipayNotifyUrl" />
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Apiconfig">
+        <result column="id" property="id"/>
+        <result column="webinfoTitle" property="webinfoTitle"/>
+        <result column="webinfoUrl" property="webinfoUrl"/>
+        <result column="webinfoUploadUrl" property="webinfoUploadUrl"/>
+        <result column="webinfoAvatar" property="webinfoAvatar"/>
+        <result column="pexelsKey" property="pexelsKey"/>
+        <result column="scale" property="scale"/>
+        <result column="clock" property="clock"/>
+        <result column="vipPrice" property="vipPrice"/>
+        <result column="vipDay" property="vipDay"/>
+        <result column="vipDiscount" property="vipDiscount"/>
+        <result column="isEmail" property="isEmail"/>
+        <result column="isInvite" property="isInvite"/>
+        <result column="cosAccessKey" property="cosAccessKey"/>
+        <result column="cosSecretKey" property="cosSecretKey"/>
+        <result column="cosBucket" property="cosBucket"/>
+        <result column="cosBucketName" property="cosBucketName"/>
+        <result column="cosPath" property="cosPath"/>
+        <result column="cosPrefix" property="cosPrefix"/>
+        <result column="aliyunEndpoint" property="aliyunEndpoint"/>
+        <result column="aliyunAccessKeyId" property="aliyunAccessKeyId"/>
+        <result column="aliyunAccessKeySecret" property="aliyunAccessKeySecret"/>
+        <result column="aliyunAucketName" property="aliyunAucketName"/>
+        <result column="aliyunUrlPrefix" property="aliyunUrlPrefix"/>
+        <result column="aliyunFilePrefix" property="aliyunFilePrefix"/>
+        <result column="ftpHost" property="ftpHost"/>
+        <result column="ftpPort" property="ftpPort"/>
+        <result column="ftpUsername" property="ftpUsername"/>
+        <result column="ftpPassword" property="ftpPassword"/>
+        <result column="ftpBasePath" property="ftpBasePath"/>
+        <result column="alipayAppId" property="alipayAppId"/>
+        <result column="alipayPrivateKey" property="alipayPrivateKey"/>
+        <result column="alipayPublicKey" property="alipayPublicKey"/>
 
-        <result column="wxAppId" property="wxAppId" />
-        <result column="wxAppSecret" property="wxAppSecret" />
-        <result column="appletsAppid" property="appletsAppid" />
-        <result column="appletsSecret" property="appletsSecret" />
-        <result column="qqAppletsAppid" property="qqAppletsAppid" />
-        <result column="qqAppletsSecret" property="qqAppletsSecret" />
-        <result column="wxpayAppId" property="wxpayAppId" />
-        <result column="wxpayMchId" property="wxpayMchId" />
-        <result column="wxpayKey" property="wxpayKey" />
-        <result column="wxpayNotifyUrl" property="wxpayNotifyUrl" />
-        <result column="auditlevel" property="auditlevel" />
-        <result column="forbidden" property="forbidden" />
-        <result column="pushAdsPrice" property="pushAdsPrice" />
-        <result column="pushAdsNum" property="pushAdsNum" />
-        <result column="bannerAdsPrice" property="bannerAdsPrice" />
-        <result column="bannerAdsNum" property="bannerAdsNum" />
-        <result column="startAdsPrice" property="startAdsPrice" />
-        <result column="startAdsNum" property="startAdsNum" />
+        <result column="wxAppId" property="wxAppId"/>
+        <result column="wxAppSecret" property="wxAppSecret"/>
+        <result column="appletsAppid" property="appletsAppid"/>
+        <result column="appletsSecret" property="appletsSecret"/>
+        <result column="qqAppletsAppid" property="qqAppletsAppid"/>
+        <result column="qqAppletsSecret" property="qqAppletsSecret"/>
+        <result column="wxpayAppId" property="wxpayAppId"/>
+        <result column="wxpayMchId" property="wxpayMchId"/>
+        <result column="wxpayKey" property="wxpayKey"/>
+        <result column="auditlevel" property="auditlevel"/>
+        <result column="forbidden" property="forbidden"/>
+        <result column="pushAdsPrice" property="pushAdsPrice"/>
+        <result column="pushAdsNum" property="pushAdsNum"/>
+        <result column="bannerAdsPrice" property="bannerAdsPrice"/>
+        <result column="bannerAdsNum" property="bannerAdsNum"/>
+        <result column="startAdsPrice" property="startAdsPrice"/>
+        <result column="startAdsNum" property="startAdsNum"/>
 
-        <result column="epayUrl" property="epayUrl" />
-        <result column="epayPid" property="epayPid" />
-        <result column="epayKey" property="epayKey" />
-        <result column="epayNotifyUrl" property="epayNotifyUrl" />
-        <result column="mchSerialNo" property="mchSerialNo" />
-        <result column="mchApiV3Key" property="mchApiV3Key" />
-        <result column="cloudUid" property="cloudUid" />
-        <result column="cloudUrl" property="cloudUrl" />
-        <result column="pushAppId" property="pushAppId" />
-        <result column="pushAppKey" property="pushAppKey" />
-        <result column="pushMasterSecret" property="pushMasterSecret" />
-        <result column="disableCode" property="disableCode" />
-        <result column="allowDelete" property="allowDelete" />
-        <result column="contentAuditlevel" property="contentAuditlevel" />
-        <result column="isPush" property="isPush" />
+        <result column="epayUrl" property="epayUrl"/>
+        <result column="epayPid" property="epayPid"/>
+        <result column="epayKey" property="epayKey"/>
+        <result column="mchSerialNo" property="mchSerialNo"/>
+        <result column="mchApiV3Key" property="mchApiV3Key"/>
+        <result column="cloudUid" property="cloudUid"/>
+        <result column="cloudUrl" property="cloudUrl"/>
+        <result column="pushAppId" property="pushAppId"/>
+        <result column="pushAppKey" property="pushAppKey"/>
+        <result column="pushMasterSecret" property="pushMasterSecret"/>
+        <result column="disableCode" property="disableCode"/>
+        <result column="allowDelete" property="allowDelete"/>
+        <result column="contentAuditlevel" property="contentAuditlevel"/>
+        <result column="isPush" property="isPush"/>
 
-        <result column="uploadLevel" property="uploadLevel" />
-        <result column="clockExp" property="clockExp" />
-        <result column="reviewExp" property="reviewExp" />
-        <result column="postExp" property="postExp" />
-        <result column="violationExp" property="violationExp" />
-        <result column="deleteExp" property="deleteExp" />
-        <result column="spaceMinExp" property="spaceMinExp" />
-        <result column="chatMinExp" property="chatMinExp" />
-        <result column="qiniuDomain" property="qiniuDomain" />
-        <result column="qiniuAccessKey" property="qiniuAccessKey" />
-        <result column="qiniuSecretKey" property="qiniuSecretKey" />
-        <result column="qiniuBucketName" property="qiniuBucketName" />
-        <result column="silenceTime" property="silenceTime" />
-        <result column="interceptTime" property="interceptTime" />
-        <result column="isLogin" property="isLogin" />
+        <result column="uploadLevel" property="uploadLevel"/>
+        <result column="clockExp" property="clockExp"/>
+        <result column="reviewExp" property="reviewExp"/>
+        <result column="postExp" property="postExp"/>
+        <result column="violationExp" property="violationExp"/>
+        <result column="deleteExp" property="deleteExp"/>
+        <result column="spaceMinExp" property="spaceMinExp"/>
+        <result column="chatMinExp" property="chatMinExp"/>
+        <result column="qiniuDomain" property="qiniuDomain"/>
+        <result column="qiniuAccessKey" property="qiniuAccessKey"/>
+        <result column="qiniuSecretKey" property="qiniuSecretKey"/>
+        <result column="qiniuBucketName" property="qiniuBucketName"/>
+        <result column="silenceTime" property="silenceTime"/>
+        <result column="interceptTime" property="interceptTime"/>
+        <result column="isLogin" property="isLogin"/>
 
-        <result column="postMax" property="postMax" />
-        <result column="forumAudit" property="forumAudit" />
-        <result column="spaceAudit" property="spaceAudit" />
-        <result column="uploadType" property="uploadType" />
-        <result column="banRobots" property="banRobots" />
-        <result column="adsGiftNum" property="adsGiftNum" />
-        <result column="adsGiftAward" property="adsGiftAward" />
+        <result column="postMax" property="postMax"/>
+        <result column="forumAudit" property="forumAudit"/>
+        <result column="spaceAudit" property="spaceAudit"/>
+        <result column="uploadType" property="uploadType"/>
+        <result column="banRobots" property="banRobots"/>
+        <result column="adsGiftNum" property="adsGiftNum"/>
+        <result column="adsGiftAward" property="adsGiftAward"/>
 
-        <result column="uploadPicMax" property="uploadPicMax" />
-        <result column="uploadMediaMax" property="uploadMediaMax" />
-        <result column="uploadFilesMax" property="uploadFilesMax" />
-        <result column="compress" property="compress" />
-        <result column="quality" property="quality" />
-        <result column="levelExp" property="levelExp" />
-        <result column="raffleCoin" property="raffleCoin" />
-        <result column="raffleNum" property="raffleNum" />
+        <result column="uploadPicMax" property="uploadPicMax"/>
+        <result column="uploadMediaMax" property="uploadMediaMax"/>
+        <result column="uploadFilesMax" property="uploadFilesMax"/>
+        <result column="compress" property="compress"/>
+        <result column="quality" property="quality"/>
+        <result column="levelExp" property="levelExp"/>
+        <result column="raffleCoin" property="raffleCoin"/>
+        <result column="raffleNum" property="raffleNum"/>
+        <result column="notifyUrl" property="notifyUrl"/>
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -143,7 +141,6 @@
         `alipayAppId`,
         `alipayPrivateKey`,
         `alipayPublicKey`,
-        `alipayNotifyUrl`,
 
         `wxAppId`,
         `wxAppSecret`,
@@ -154,7 +151,6 @@
         `wxpayAppId`,
         `wxpayMchId`,
         `wxpayKey`,
-        `wxpayNotifyUrl`,
         `mchSerialNo`,
         `mchApiV3Key`,
 
@@ -171,7 +167,6 @@
         `epayUrl`,
         `epayPid`,
         `epayKey`,
-        `epayNotifyUrl`,
         `cloudUid`,
         `cloudUrl`,
 
@@ -214,6 +209,7 @@
         `levelExp`,
         `raffleCoin`,
         `raffleNum`,
+        `notifyUrl`,
         `compress`
 
     </sql>
@@ -222,585 +218,574 @@
     <insert id="insert" parameterType="com.TypeApi.entity.Apiconfig">
         INSERT INTO ${prefix}_apiconfig
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test ='null != id'>
+            <if test='null != id'>
                 `id`,
             </if>
-            <if test ='null != webinfoTitle'>
+            <if test='null != webinfoTitle'>
                 `webinfoTitle`,
             </if>
-            <if test ='null != webinfoUrl'>
+            <if test='null != webinfoUrl'>
                 `webinfoUrl`,
             </if>
-            <if test ='null != webinfoUploadUrl'>
+            <if test='null != webinfoUploadUrl'>
                 `webinfoUploadUrl`,
             </if>
-            <if test ='null != webinfoAvatar'>
+            <if test='null != webinfoAvatar'>
                 `webinfoAvatar`,
             </if>
-            <if test ='null != pexelsKey'>
+            <if test='null != pexelsKey'>
                 `pexelsKey`,
             </if>
-            <if test ='null != scale'>
+            <if test='null != scale'>
                 `scale`,
             </if>
-            <if test ='null != clock'>
+            <if test='null != clock'>
                 `clock`,
             </if>
-            <if test ='null != vipPrice'>
+            <if test='null != vipPrice'>
                 `vipPrice`,
             </if>
-            <if test ='null != vipDay'>
+            <if test='null != vipDay'>
                 `vipDay`,
             </if>
-            <if test ='null != vipDiscount'>
+            <if test='null != vipDiscount'>
                 `vipDiscount`,
             </if>
-            <if test ='null != isEmail'>
+            <if test='null != isEmail'>
                 `isEmail`,
             </if>
-            <if test ='null != isInvite'>
+            <if test='null != isInvite'>
                 `isInvite`,
             </if>
-            <if test ='null != cosAccessKey'>
+            <if test='null != cosAccessKey'>
                 `cosAccessKey`,
             </if>
-            <if test ='null != cosSecretKey'>
+            <if test='null != cosSecretKey'>
                 `cosSecretKey`,
             </if>
-            <if test ='null != cosBucket'>
+            <if test='null != cosBucket'>
                 `cosBucket`,
             </if>
-            <if test ='null != cosBucketName'>
+            <if test='null != cosBucketName'>
                 `cosBucketName`,
             </if>
-            <if test ='null != cosPath'>
+            <if test='null != cosPath'>
                 `cosPath`,
             </if>
-            <if test ='null != cosPrefix'>
+            <if test='null != cosPrefix'>
                 `cosPrefix`,
             </if>
-            <if test ='null != aliyunEndpoint'>
+            <if test='null != aliyunEndpoint'>
                 `aliyunEndpoint`,
             </if>
-            <if test ='null != aliyunAccessKeyId'>
+            <if test='null != aliyunAccessKeyId'>
                 `aliyunAccessKeyId`,
             </if>
-            <if test ='null != aliyunAccessKeySecret'>
+            <if test='null != aliyunAccessKeySecret'>
                 `aliyunAccessKeySecret`,
             </if>
-            <if test ='null != aliyunAucketName'>
+            <if test='null != aliyunAucketName'>
                 `aliyunAucketName`,
             </if>
-            <if test ='null != aliyunUrlPrefix'>
+            <if test='null != aliyunUrlPrefix'>
                 `aliyunUrlPrefix`,
             </if>
-            <if test ='null != aliyunFilePrefix'>
+            <if test='null != aliyunFilePrefix'>
                 `aliyunFilePrefix`,
             </if>
-            <if test ='null != ftpHost'>
+            <if test='null != ftpHost'>
                 `ftpHost`,
             </if>
-            <if test ='null != ftpPort'>
+            <if test='null != ftpPort'>
                 `ftpPort`,
             </if>
-            <if test ='null != ftpUsername'>
+            <if test='null != ftpUsername'>
                 `ftpUsername`,
             </if>
-            <if test ='null != ftpPassword'>
+            <if test='null != ftpPassword'>
                 `ftpPassword`,
             </if>
-            <if test ='null != ftpBasePath'>
+            <if test='null != ftpBasePath'>
                 `ftpBasePath`,
             </if>
-            <if test ='null != alipayAppId'>
+            <if test='null != alipayAppId'>
                 `alipayAppId`,
             </if>
-            <if test ='null != alipayPrivateKey'>
+            <if test='null != alipayPrivateKey'>
                 `alipayPrivateKey`,
             </if>
-            <if test ='null != alipayPublicKey'>
+            <if test='null != alipayPublicKey'>
                 `alipayPublicKey`,
             </if>
-            <if test ='null != alipayNotifyUrl'>
-                `alipayNotifyUrl`,
-            </if>
-            <if test ='null != wxAppId'>
+            <if test='null != wxAppId'>
                 `wxAppId`,
             </if>
-            <if test ='null != wxAppSecret'>
+            <if test='null != wxAppSecret'>
                 `wxAppSecret`,
             </if>
-            <if test ='null != appletsAppid'>
+            <if test='null != appletsAppid'>
                 `appletsAppid`,
             </if>
-            <if test ='null != appletsSecret'>
+            <if test='null != appletsSecret'>
                 `appletsSecret`,
             </if>
-            <if test ='null != qqAppletsAppid'>
+            <if test='null != qqAppletsAppid'>
                 `qqAppletsAppid`,
             </if>
-            <if test ='null != qqAppletsSecret'>
+            <if test='null != qqAppletsSecret'>
                 `qqAppletsSecret`,
             </if>
-            <if test ='null != wxpayAppId'>
+            <if test='null != wxpayAppId'>
                 `wxpayAppId`,
             </if>
-            <if test ='null != wxpayMchId'>
+            <if test='null != wxpayMchId'>
                 `wxpayMchId`,
             </if>
-            <if test ='null != wxpayKey'>
+            <if test='null != wxpayKey'>
                 `wxpayKey`,
             </if>
-            <if test ='null != wxpayNotifyUrl'>
-                `wxpayNotifyUrl`,
-            </if>
-            <if test ='null != mchSerialNo'>
+            <if test='null != mchSerialNo'>
                 `mchSerialNo`,
             </if>
-            <if test ='null != mchApiV3Key'>
+            <if test='null != mchApiV3Key'>
                 `mchApiV3Key`,
             </if>
-            <if test ='null != auditlevel'>
+            <if test='null != auditlevel'>
                 `auditlevel`,
             </if>
-            <if test ='null != forbidden'>
+            <if test='null != forbidden'>
                 `forbidden`,
             </if>
 
-            <if test ='null != pushAdsPrice'>
+            <if test='null != pushAdsPrice'>
                 `pushAdsPrice`,
             </if>
-            <if test ='null != pushAdsNum'>
+            <if test='null != pushAdsNum'>
                 `pushAdsNum`,
             </if>
-            <if test ='null != bannerAdsPrice'>
+            <if test='null != bannerAdsPrice'>
                 `bannerAdsPrice`,
             </if>
-            <if test ='null != bannerAdsNum'>
+            <if test='null != bannerAdsNum'>
                 `bannerAdsNum`,
             </if>
-            <if test ='null != startAdsPrice'>
+            <if test='null != startAdsPrice'>
                 `startAdsPrice`,
             </if>
-            <if test ='null != startAdsNum'>
+            <if test='null != startAdsNum'>
                 `startAdsNum`,
             </if>
-            <if test ='null != epayUrl'>
+            <if test='null != epayUrl'>
                 `epayUrl`,
             </if>
-            <if test ='null != epayPid'>
+            <if test='null != epayPid'>
                 `epayPid`,
             </if>
-            <if test ='null != epayKey'>
+            <if test='null != epayKey'>
                 `epayKey`,
             </if>
-            <if test ='null != epayNotifyUrl'>
-                `epayNotifyUrl`,
-            </if>
-            <if test ='null != cloudUid'>
+
+            <if test='null != cloudUid'>
                 `cloudUid`,
             </if>
-            <if test ='null != cloudUrl'>
+            <if test='null != cloudUrl'>
                 `cloudUrl`,
             </if>
-            <if test ='null != pushAppId'>
+            <if test='null != pushAppId'>
                 `pushAppId`,
             </if>
-            <if test ='null != pushAppKey'>
+            <if test='null != pushAppKey'>
                 `pushAppKey`,
             </if>
-            <if test ='null != pushMasterSecret'>
+            <if test='null != pushMasterSecret'>
                 `pushMasterSecret`,
             </if>
-            <if test ='null != disableCode'>
+            <if test='null != disableCode'>
                 `disableCode`,
             </if>
-            <if test ='null != allowDelete'>
+            <if test='null != allowDelete'>
                 `allowDelete`,
             </if>
-            <if test ='null != contentAuditlevel'>
+            <if test='null != contentAuditlevel'>
                 `contentAuditlevel`,
             </if>
-            <if test ='null != isPush'>
+            <if test='null != isPush'>
                 `isPush`,
             </if>
-            <if test ='null != uploadLevel'>
+            <if test='null != uploadLevel'>
                 `uploadLevel`,
             </if>
-            <if test ='null != clockExp'>
+            <if test='null != clockExp'>
                 `clockExp`,
             </if>
-            <if test ='null != reviewExp'>
+            <if test='null != reviewExp'>
                 `reviewExp`,
             </if>
-            <if test ='null != postExp'>
+            <if test='null != postExp'>
                 `postExp`,
             </if>
-            <if test ='null != violationExp'>
+            <if test='null != violationExp'>
                 `violationExp`,
             </if>
-            <if test ='null != deleteExp'>
+            <if test='null != deleteExp'>
                 `deleteExp`,
             </if>
-            <if test ='null != spaceMinExp'>
+            <if test='null != spaceMinExp'>
                 `spaceMinExp`,
             </if>
-            <if test ='null != chatMinExp'>
+            <if test='null != chatMinExp'>
                 `chatMinExp`,
             </if>
-            <if test ='null != qiniuDomain'>
+            <if test='null != qiniuDomain'>
                 `qiniuDomain`,
             </if>
-            <if test ='null != qiniuAccessKey'>
+            <if test='null != qiniuAccessKey'>
                 `qiniuAccessKey`,
             </if>
-            <if test ='null != qiniuSecretKey'>
+            <if test='null != qiniuSecretKey'>
                 `qiniuSecretKey`,
             </if>
-            <if test ='null != qiniuBucketName'>
+            <if test='null != qiniuBucketName'>
                 `qiniuBucketName`,
             </if>
-            <if test ='null != silenceTime'>
+            <if test='null != silenceTime'>
                 `silenceTime`,
             </if>
-            <if test ='null != interceptTime'>
+            <if test='null != interceptTime'>
                 `interceptTime`,
             </if>
-            <if test ='null != isLogin'>
+            <if test='null != isLogin'>
                 `isLogin`,
             </if>
-            <if test ='null != postMax'>
+            <if test='null != postMax'>
                 `postMax`,
             </if>
-            <if test ='null != forumAudit'>
+            <if test='null != forumAudit'>
                 `forumAudit`,
             </if>
-            <if test ='null != spaceAudit'>
+            <if test='null != spaceAudit'>
                 `spaceAudit`,
             </if>
-            <if test ='null != uploadType'>
+            <if test='null != uploadType'>
                 `uploadType`,
             </if>
-            <if test ='null != banRobots'>
+            <if test='null != banRobots'>
                 `banRobots`,
             </if>
-            <if test ='null != adsGiftNum'>
+            <if test='null != adsGiftNum'>
                 `adsGiftNum`,
             </if>
-            <if test ='null != adsGiftAward'>
+            <if test='null != adsGiftAward'>
                 `adsGiftAward`,
             </if>
-            <if test ='null != uploadPicMax'>
+            <if test='null != uploadPicMax'>
                 `uploadPicMax`,
             </if>
-            <if test ='null != uploadMediaMax'>
+            <if test='null != uploadMediaMax'>
                 `uploadMediaMax`,
             </if>
-            <if test ='null != uploadFilesMax'>
+            <if test='null != uploadFilesMax'>
                 `uploadFilesMax`,
             </if>
-            <if test ='null != compress'>
+            <if test='null != compress'>
                 `compress`,
             </if>
-            <if test ='null != levelExp'>
+            <if test='null != levelExp'>
                 `levelExp`,
             </if>
-            <if test ='null != quality'>
+            <if test='null != notifyUrl'>
+                `notifyUrl`,
+            </if>
+            <if test='null != quality'>
                 `quality`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test ='null != id'>
+            <if test='null != id'>
                 #{id},
             </if>
-            <if test ='null != webinfoTitle'>
+            <if test='null != webinfoTitle'>
                 #{webinfoTitle},
             </if>
-            <if test ='null != webinfoUrl'>
+            <if test='null != webinfoUrl'>
                 #{webinfoUrl},
             </if>
-            <if test ='null != webinfoUploadUrl'>
+            <if test='null != webinfoUploadUrl'>
                 #{webinfoUploadUrl},
             </if>
-            <if test ='null != webinfoAvatar'>
+            <if test='null != webinfoAvatar'>
                 #{webinfoAvatar},
             </if>
-            <if test ='null != pexelsKey'>
+            <if test='null != pexelsKey'>
                 #{pexelsKey},
             </if>
-            <if test ='null != scale'>
+            <if test='null != scale'>
                 #{scale},
             </if>
-            <if test ='null != clock'>
+            <if test='null != clock'>
                 #{clock},
             </if>
-            <if test ='null != vipPrice'>
+            <if test='null != vipPrice'>
                 #{vipPrice},
             </if>
-            <if test ='null != vipDay'>
+            <if test='null != vipDay'>
                 #{vipDay},
             </if>
-            <if test ='null != vipDiscount'>
+            <if test='null != vipDiscount'>
                 #{vipDiscount},
             </if>
-            <if test ='null != isEmail'>
+            <if test='null != isEmail'>
                 #{isEmail},
             </if>
-            <if test ='null != isInvite'>
+            <if test='null != isInvite'>
                 #{isInvite},
             </if>
-            <if test ='null != cosAccessKey'>
+            <if test='null != cosAccessKey'>
                 #{cosAccessKey},
             </if>
-            <if test ='null != cosSecretKey'>
+            <if test='null != cosSecretKey'>
                 #{cosSecretKey},
             </if>
-            <if test ='null != cosBucket'>
+            <if test='null != cosBucket'>
                 #{cosBucket},
             </if>
-            <if test ='null != cosBucketName'>
+            <if test='null != cosBucketName'>
                 #{cosBucketName},
             </if>
-            <if test ='null != cosPath'>
+            <if test='null != cosPath'>
                 #{cosPath},
             </if>
-            <if test ='null != cosPrefix'>
+            <if test='null != cosPrefix'>
                 #{cosPrefix},
             </if>
-            <if test ='null != aliyunEndpoint'>
+            <if test='null != aliyunEndpoint'>
                 #{aliyunEndpoint},
             </if>
-            <if test ='null != aliyunAccessKeyId'>
+            <if test='null != aliyunAccessKeyId'>
                 #{aliyunAccessKeyId},
             </if>
-            <if test ='null != aliyunAccessKeySecret'>
+            <if test='null != aliyunAccessKeySecret'>
                 #{aliyunAccessKeySecret},
             </if>
-            <if test ='null != aliyunAucketName'>
+            <if test='null != aliyunAucketName'>
                 #{aliyunAucketName},
             </if>
-            <if test ='null != aliyunUrlPrefix'>
+            <if test='null != aliyunUrlPrefix'>
                 #{aliyunUrlPrefix},
             </if>
-            <if test ='null != aliyunFilePrefix'>
+            <if test='null != aliyunFilePrefix'>
                 #{aliyunFilePrefix},
             </if>
-            <if test ='null != ftpHost'>
+            <if test='null != ftpHost'>
                 #{ftpHost},
             </if>
-            <if test ='null != ftpPort'>
+            <if test='null != ftpPort'>
                 #{ftpPort},
             </if>
-            <if test ='null != ftpUsername'>
+            <if test='null != ftpUsername'>
                 #{ftpUsername},
             </if>
-            <if test ='null != ftpPassword'>
+            <if test='null != ftpPassword'>
                 #{ftpPassword},
             </if>
-            <if test ='null != ftpBasePath'>
+            <if test='null != ftpBasePath'>
                 #{ftpBasePath},
             </if>
-            <if test ='null != alipayAppId'>
+            <if test='null != alipayAppId'>
                 #{alipayAppId},
             </if>
-            <if test ='null != alipayPrivateKey'>
+            <if test='null != alipayPrivateKey'>
                 #{alipayPrivateKey},
             </if>
-            <if test ='null != alipayPublicKey'>
+            <if test='null != alipayPublicKey'>
                 #{alipayPublicKey},
             </if>
-            <if test ='null != alipayNotifyUrl'>
-                #{alipayNotifyUrl},
-            </if>
 
-            <if test ='null != wxAppId'>
+            <if test='null != wxAppId'>
                 #{wxAppId},
             </if>
-            <if test ='null != wxAppSecret'>
+            <if test='null != wxAppSecret'>
                 #{wxAppSecret},
             </if>
-            <if test ='null != appletsAppid'>
+            <if test='null != appletsAppid'>
                 #{appletsAppid},
             </if>
-            <if test ='null != appletsSecret'>
+            <if test='null != appletsSecret'>
                 #{appletsSecret},
             </if>
-            <if test ='null != qqAppletsAppid'>
+            <if test='null != qqAppletsAppid'>
                 #{qqAppletsAppid},
             </if>
-            <if test ='null != qqAppletsSecret'>
+            <if test='null != qqAppletsSecret'>
                 #{qqAppletsSecret},
             </if>
-            <if test ='null != wxpayAppId'>
+            <if test='null != wxpayAppId'>
                 #{wxpayAppId},
             </if>
-            <if test ='null != wxpayMchId'>
+            <if test='null != wxpayMchId'>
                 #{wxpayMchId},
             </if>
-            <if test ='null != wxpayKey'>
+            <if test='null != wxpayKey'>
                 #{wxpayKey},
             </if>
-            <if test ='null != wxpayNotifyUrl'>
-                #{wxpayNotifyUrl},
-            </if>
-            <if test ='null != mchSerialNo'>
+            <if test='null != mchSerialNo'>
                 #{mchSerialNo},
             </if>
-            <if test ='null != mchApiV3Key'>
+            <if test='null != mchApiV3Key'>
                 #{mchApiV3Key},
             </if>
-            <if test ='null != auditlevel'>
+            <if test='null != auditlevel'>
                 #{auditlevel},
             </if>
-            <if test ='null != forbidden'>
+            <if test='null != forbidden'>
                 #{forbidden},
             </if>
 
-            <if test ='null != pushAdsPrice'>
+            <if test='null != pushAdsPrice'>
                 #{pushAdsPrice},
             </if>
-            <if test ='null != pushAdsNum'>
+            <if test='null != pushAdsNum'>
                 #{pushAdsNum},
             </if>
-            <if test ='null != bannerAdsPrice'>
+            <if test='null != bannerAdsPrice'>
                 #{bannerAdsPrice},
             </if>
-            <if test ='null != bannerAdsNum'>
+            <if test='null != bannerAdsNum'>
                 #{bannerAdsNum},
             </if>
-            <if test ='null != startAdsPrice'>
+            <if test='null != startAdsPrice'>
                 #{startAdsPrice},
             </if>
-            <if test ='null != startAdsNum'>
+            <if test='null != startAdsNum'>
                 #{startAdsNum},
             </if>
-            <if test ='null != epayUrl'>
+            <if test='null != epayUrl'>
                 #{epayUrl},
             </if>
-            <if test ='null != epayPid'>
+            <if test='null != epayPid'>
                 #{epayPid},
             </if>
-            <if test ='null != epayKey'>
+            <if test='null != epayKey'>
                 #{epayKey},
             </if>
-            <if test ='null != epayNotifyUrl'>
-                #{epayNotifyUrl},
-            </if>
-            <if test ='null != cloudUid'>
+            <if test='null != cloudUid'>
                 #{cloudUid},
             </if>
-            <if test ='null != cloudUrl'>
+            <if test='null != cloudUrl'>
                 #{cloudUrl},
             </if>
-            <if test ='null != pushAppId'>
+            <if test='null != pushAppId'>
                 #{pushAppId},
             </if>
-            <if test ='null != pushAppKey'>
+            <if test='null != pushAppKey'>
                 #{pushAppKey},
             </if>
-            <if test ='null != pushMasterSecret'>
+            <if test='null != pushMasterSecret'>
                 #{pushMasterSecret},
             </if>
-            <if test ='null != disableCode'>
+            <if test='null != disableCode'>
                 #{disableCode},
             </if>
-            <if test ='null != allowDelete'>
+            <if test='null != allowDelete'>
                 #{allowDelete},
             </if>
-            <if test ='null != contentAuditlevel'>
+            <if test='null != contentAuditlevel'>
                 #{contentAuditlevel},
             </if>
-            <if test ='null != isPush'>
+            <if test='null != isPush'>
                 #{isPush},
             </if>
-            <if test ='null != uploadLevel'>
+            <if test='null != uploadLevel'>
                 #{uploadLevel},
             </if>
-            <if test ='null != clockExp'>
+            <if test='null != clockExp'>
                 #{clockExp},
             </if>
-            <if test ='null != reviewExp'>
+            <if test='null != reviewExp'>
                 #{reviewExp},
             </if>
-            <if test ='null != postExp'>
+            <if test='null != postExp'>
                 #{postExp},
             </if>
-            <if test ='null != violationExp'>
+            <if test='null != violationExp'>
                 #{violationExp},
             </if>
-            <if test ='null != deleteExp'>
+            <if test='null != deleteExp'>
                 #{deleteExp},
             </if>
-            <if test ='null != spaceMinExp'>
+            <if test='null != spaceMinExp'>
                 #{spaceMinExp},
             </if>
-            <if test ='null != chatMinExp'>
+            <if test='null != chatMinExp'>
                 #{chatMinExp},
             </if>
-            <if test ='null != qiniuDomain'>
+            <if test='null != qiniuDomain'>
                 #{qiniuDomain},
             </if>
-            <if test ='null != qiniuAccessKey'>
+            <if test='null != qiniuAccessKey'>
                 #{qiniuAccessKey},
             </if>
-            <if test ='null != qiniuSecretKey'>
+            <if test='null != qiniuSecretKey'>
                 #{qiniuSecretKey},
             </if>
-            <if test ='null != qiniuBucketName'>
+            <if test='null != qiniuBucketName'>
                 #{qiniuBucketName},
             </if>
-            <if test ='null != silenceTime'>
+            <if test='null != silenceTime'>
                 #{silenceTime},
             </if>
-            <if test ='null != interceptTime'>
+            <if test='null != interceptTime'>
                 #{interceptTime},
             </if>
-            <if test ='null != isLogin'>
+            <if test='null != isLogin'>
                 #{isLogin},
             </if>
-            <if test ='null != postMax'>
+            <if test='null != postMax'>
                 #{postMax},
             </if>
-            <if test ='null != forumAudit'>
+            <if test='null != forumAudit'>
                 #{forumAudit},
             </if>
-            <if test ='null != spaceAudit'>
+            <if test='null != spaceAudit'>
                 #{spaceAudit},
             </if>
-            <if test ='null != uploadType'>
+            <if test='null != uploadType'>
                 #{uploadType},
             </if>
-            <if test ='null != banRobots'>
+            <if test='null != banRobots'>
                 #{banRobots},
             </if>
-            <if test ='null != adsGiftNum'>
+            <if test='null != adsGiftNum'>
                 #{adsGiftNum},
             </if>
-            <if test ='null != adsGiftAward'>
+            <if test='null != adsGiftAward'>
                 #{adsGiftAward},
             </if>
-            <if test ='null != uploadPicMax'>
+            <if test='null != uploadPicMax'>
                 #{uploadPicMax},
             </if>
-            <if test ='null != uploadMediaMax'>
+            <if test='null != uploadMediaMax'>
                 #{uploadMediaMax},
             </if>
-            <if test ='null != uploadFilesMax'>
+            <if test='null != uploadFilesMax'>
                 #{uploadFilesMax},
             </if>
-            <if test ='null != quality'>
+            <if test='null != quality'>
                 #{quality},
             </if>
-            <if test ='null != levelExp'>
+            <if test='null != levelExp'>
                 #{levelExp},
             </if>
-            <if test ='null != raffleCoin'>
+            <if test='null != raffleCoin'>
                 #{raffleCoin},
             </if>
-            <if test ='null != raffleNum'>
+            <if test='null != raffleNum'>
                 #{raffleNum},
             </if>
-            <if test ='null != compress'>
+            <if test='null != notifyUrl'>
+                #{notifyUrl},
+            </if>
+            <if test='null != compress'>
                 #{compress}
             </if>
         </trim>
@@ -811,106 +796,104 @@
     <update id="update" parameterType="com.TypeApi.entity.Apiconfig">
         UPDATE ${prefix}_apiconfig
         <set>
-            <if test ='null != webinfoTitle'>`webinfoTitle` = #{webinfoTitle},</if>
-            <if test ='null != webinfoUrl'>`webinfoUrl` = #{webinfoUrl},</if>
-            <if test ='null != webinfoUploadUrl'>`webinfoUploadUrl` = #{webinfoUploadUrl},</if>
-            <if test ='null != webinfoAvatar'>`webinfoAvatar` = #{webinfoAvatar},</if>
-            <if test ='null != pexelsKey'>`pexelsKey` = #{pexelsKey},</if>
-            <if test ='null != scale'>`scale` = #{scale},</if>
-            <if test ='null != clock'>`clock` = #{clock},</if>
-            <if test ='null != vipPrice'>`vipPrice` = #{vipPrice},</if>
-            <if test ='null != vipDay'>`vipDay` = #{vipDay},</if>
-            <if test ='null != vipDiscount'>`vipDiscount` = #{vipDiscount},</if>
-            <if test ='null != isEmail'>`isEmail` = #{isEmail},</if>
-            <if test ='null != isInvite'>`isInvite` = #{isInvite},</if>
-            <if test ='null != cosAccessKey'>`cosAccessKey` = #{cosAccessKey},</if>
-            <if test ='null != cosSecretKey'>`cosSecretKey` = #{cosSecretKey},</if>
-            <if test ='null != cosBucket'>`cosBucket` = #{cosBucket},</if>
-            <if test ='null != cosBucketName'>`cosBucketName` = #{cosBucketName},</if>
-            <if test ='null != cosPath'>`cosPath` = #{cosPath},</if>
-            <if test ='null != cosPrefix'>`cosPrefix` = #{cosPrefix},</if>
-            <if test ='null != aliyunEndpoint'>`aliyunEndpoint` = #{aliyunEndpoint},</if>
-            <if test ='null != aliyunAccessKeyId'>`aliyunAccessKeyId` = #{aliyunAccessKeyId},</if>
-            <if test ='null != aliyunAccessKeySecret'>`aliyunAccessKeySecret` = #{aliyunAccessKeySecret},</if>
-            <if test ='null != aliyunAucketName'>`aliyunAucketName` = #{aliyunAucketName},</if>
-            <if test ='null != aliyunUrlPrefix'>`aliyunUrlPrefix` = #{aliyunUrlPrefix},</if>
-            <if test ='null != aliyunFilePrefix'>`aliyunFilePrefix` = #{aliyunFilePrefix},</if>
-            <if test ='null != ftpHost'>`ftpHost` = #{ftpHost},</if>
-            <if test ='null != ftpPort'>`ftpPort` = #{ftpPort},</if>
-            <if test ='null != ftpUsername'>`ftpUsername` = #{ftpUsername},</if>
-            <if test ='null != ftpPassword'>`ftpPassword` = #{ftpPassword},</if>
-            <if test ='null != ftpBasePath'>`ftpBasePath` = #{ftpBasePath},</if>
-            <if test ='null != alipayAppId'>`alipayAppId` = #{alipayAppId},</if>
-            <if test ='null != alipayPrivateKey'>`alipayPrivateKey` = #{alipayPrivateKey},</if>
-            <if test ='null != alipayPublicKey'>`alipayPublicKey` = #{alipayPublicKey},</if>
-            <if test ='null != alipayNotifyUrl'>`alipayNotifyUrl` = #{alipayNotifyUrl},</if>
+            <if test='null != webinfoTitle'>`webinfoTitle` = #{webinfoTitle},</if>
+            <if test='null != webinfoUrl'>`webinfoUrl` = #{webinfoUrl},</if>
+            <if test='null != webinfoUploadUrl'>`webinfoUploadUrl` = #{webinfoUploadUrl},</if>
+            <if test='null != webinfoAvatar'>`webinfoAvatar` = #{webinfoAvatar},</if>
+            <if test='null != pexelsKey'>`pexelsKey` = #{pexelsKey},</if>
+            <if test='null != scale'>`scale` = #{scale},</if>
+            <if test='null != clock'>`clock` = #{clock},</if>
+            <if test='null != vipPrice'>`vipPrice` = #{vipPrice},</if>
+            <if test='null != vipDay'>`vipDay` = #{vipDay},</if>
+            <if test='null != vipDiscount'>`vipDiscount` = #{vipDiscount},</if>
+            <if test='null != isEmail'>`isEmail` = #{isEmail},</if>
+            <if test='null != isInvite'>`isInvite` = #{isInvite},</if>
+            <if test='null != cosAccessKey'>`cosAccessKey` = #{cosAccessKey},</if>
+            <if test='null != cosSecretKey'>`cosSecretKey` = #{cosSecretKey},</if>
+            <if test='null != cosBucket'>`cosBucket` = #{cosBucket},</if>
+            <if test='null != cosBucketName'>`cosBucketName` = #{cosBucketName},</if>
+            <if test='null != cosPath'>`cosPath` = #{cosPath},</if>
+            <if test='null != cosPrefix'>`cosPrefix` = #{cosPrefix},</if>
+            <if test='null != aliyunEndpoint'>`aliyunEndpoint` = #{aliyunEndpoint},</if>
+            <if test='null != aliyunAccessKeyId'>`aliyunAccessKeyId` = #{aliyunAccessKeyId},</if>
+            <if test='null != aliyunAccessKeySecret'>`aliyunAccessKeySecret` = #{aliyunAccessKeySecret},</if>
+            <if test='null != aliyunAucketName'>`aliyunAucketName` = #{aliyunAucketName},</if>
+            <if test='null != aliyunUrlPrefix'>`aliyunUrlPrefix` = #{aliyunUrlPrefix},</if>
+            <if test='null != aliyunFilePrefix'>`aliyunFilePrefix` = #{aliyunFilePrefix},</if>
+            <if test='null != ftpHost'>`ftpHost` = #{ftpHost},</if>
+            <if test='null != ftpPort'>`ftpPort` = #{ftpPort},</if>
+            <if test='null != ftpUsername'>`ftpUsername` = #{ftpUsername},</if>
+            <if test='null != ftpPassword'>`ftpPassword` = #{ftpPassword},</if>
+            <if test='null != ftpBasePath'>`ftpBasePath` = #{ftpBasePath},</if>
+            <if test='null != alipayAppId'>`alipayAppId` = #{alipayAppId},</if>
+            <if test='null != alipayPrivateKey'>`alipayPrivateKey` = #{alipayPrivateKey},</if>
+            <if test='null != alipayPublicKey'>`alipayPublicKey` = #{alipayPublicKey},</if>
 
-            <if test ='null != wxAppId'>`wxAppId` = #{wxAppId},</if>
-            <if test ='null != wxAppSecret'>`wxAppSecret` = #{wxAppSecret},</if>
-            <if test ='null != appletsAppid'>`appletsAppid` = #{appletsAppid},</if>
-            <if test ='null != appletsSecret'>`appletsSecret` = #{appletsSecret},</if>
-            <if test ='null != qqAppletsAppid'>`qqAppletsAppid` = #{qqAppletsAppid},</if>
-            <if test ='null != qqAppletsSecret'>`qqAppletsSecret` = #{qqAppletsSecret},</if>
-            <if test ='null != wxpayAppId'>`wxpayAppId` = #{wxpayAppId},</if>
-            <if test ='null != wxpayMchId'>`wxpayMchId` = #{wxpayMchId},</if>
-            <if test ='null != wxpayKey'>`wxpayKey` = #{wxpayKey},</if>
-            <if test ='null != wxpayNotifyUrl'>`wxpayNotifyUrl` = #{wxpayNotifyUrl},</if>
-            <if test ='null != mchSerialNo'>`mchSerialNo` = #{mchSerialNo},</if>
-            <if test ='null != mchApiV3Key'>`mchApiV3Key` = #{mchApiV3Key},</if>
-            <if test ='null != auditlevel'>`auditlevel` = #{auditlevel},</if>
-            <if test ='null != forbidden'>`forbidden` = #{forbidden},</if>
-            <if test ='null != pushAdsPrice'>`pushAdsPrice` = #{pushAdsPrice},</if>
-            <if test ='null != pushAdsNum'>`pushAdsNum` = #{pushAdsNum},</if>
-            <if test ='null != bannerAdsPrice'>`bannerAdsPrice` = #{bannerAdsPrice},</if>
-            <if test ='null != bannerAdsNum'>`bannerAdsNum` = #{bannerAdsNum},</if>
-            <if test ='null != startAdsPrice'>`startAdsPrice` = #{startAdsPrice},</if>
-            <if test ='null != startAdsNum'>`startAdsNum` = #{startAdsNum},</if>
+            <if test='null != wxAppId'>`wxAppId` = #{wxAppId},</if>
+            <if test='null != wxAppSecret'>`wxAppSecret` = #{wxAppSecret},</if>
+            <if test='null != appletsAppid'>`appletsAppid` = #{appletsAppid},</if>
+            <if test='null != appletsSecret'>`appletsSecret` = #{appletsSecret},</if>
+            <if test='null != qqAppletsAppid'>`qqAppletsAppid` = #{qqAppletsAppid},</if>
+            <if test='null != qqAppletsSecret'>`qqAppletsSecret` = #{qqAppletsSecret},</if>
+            <if test='null != wxpayAppId'>`wxpayAppId` = #{wxpayAppId},</if>
+            <if test='null != wxpayMchId'>`wxpayMchId` = #{wxpayMchId},</if>
+            <if test='null != wxpayKey'>`wxpayKey` = #{wxpayKey},</if>
+            <if test='null != mchSerialNo'>`mchSerialNo` = #{mchSerialNo},</if>
+            <if test='null != mchApiV3Key'>`mchApiV3Key` = #{mchApiV3Key},</if>
+            <if test='null != auditlevel'>`auditlevel` = #{auditlevel},</if>
+            <if test='null != forbidden'>`forbidden` = #{forbidden},</if>
+            <if test='null != pushAdsPrice'>`pushAdsPrice` = #{pushAdsPrice},</if>
+            <if test='null != pushAdsNum'>`pushAdsNum` = #{pushAdsNum},</if>
+            <if test='null != bannerAdsPrice'>`bannerAdsPrice` = #{bannerAdsPrice},</if>
+            <if test='null != bannerAdsNum'>`bannerAdsNum` = #{bannerAdsNum},</if>
+            <if test='null != startAdsPrice'>`startAdsPrice` = #{startAdsPrice},</if>
+            <if test='null != startAdsNum'>`startAdsNum` = #{startAdsNum},</if>
 
-            <if test ='null != epayUrl'>`epayUrl` = #{epayUrl},</if>
-            <if test ='null != epayPid'>`epayPid` = #{epayPid},</if>
-            <if test ='null != epayKey'>`epayKey` = #{epayKey},</if>
-            <if test ='null != epayNotifyUrl'>`epayNotifyUrl` = #{epayNotifyUrl},</if>
-            <if test ='null != cloudUid'>`cloudUid` = #{cloudUid},</if>
-            <if test ='null != cloudUrl'>`cloudUrl` = #{cloudUrl},</if>
+            <if test='null != epayUrl'>`epayUrl` = #{epayUrl},</if>
+            <if test='null != epayPid'>`epayPid` = #{epayPid},</if>
+            <if test='null != epayKey'>`epayKey` = #{epayKey},</if>
+            <if test='null != cloudUid'>`cloudUid` = #{cloudUid},</if>
+            <if test='null != cloudUrl'>`cloudUrl` = #{cloudUrl},</if>
 
-            <if test ='null != pushAppId'>`pushAppId` = #{pushAppId},</if>
-            <if test ='null != pushAppKey'>`pushAppKey` = #{pushAppKey},</if>
-            <if test ='null != pushMasterSecret'>`pushMasterSecret` = #{pushMasterSecret},</if>
-            <if test ='null != disableCode'>`disableCode` = #{disableCode},</if>
-            <if test ='null != allowDelete'>`allowDelete` = #{allowDelete},</if>
-            <if test ='null != contentAuditlevel'>`contentAuditlevel` = #{contentAuditlevel},</if>
-            <if test ='null != isPush'>`isPush` = #{isPush},</if>
-            <if test ='null != uploadLevel'>`uploadLevel` = #{uploadLevel},</if>
+            <if test='null != pushAppId'>`pushAppId` = #{pushAppId},</if>
+            <if test='null != pushAppKey'>`pushAppKey` = #{pushAppKey},</if>
+            <if test='null != pushMasterSecret'>`pushMasterSecret` = #{pushMasterSecret},</if>
+            <if test='null != disableCode'>`disableCode` = #{disableCode},</if>
+            <if test='null != allowDelete'>`allowDelete` = #{allowDelete},</if>
+            <if test='null != contentAuditlevel'>`contentAuditlevel` = #{contentAuditlevel},</if>
+            <if test='null != isPush'>`isPush` = #{isPush},</if>
+            <if test='null != uploadLevel'>`uploadLevel` = #{uploadLevel},</if>
 
-            <if test ='null != clockExp'>`clockExp` = #{clockExp},</if>
-            <if test ='null != reviewExp'>`reviewExp` = #{reviewExp},</if>
-            <if test ='null != postExp'>`postExp` = #{postExp},</if>
-            <if test ='null != violationExp'>`violationExp` = #{violationExp},</if>
-            <if test ='null != deleteExp'>`deleteExp` = #{deleteExp},</if>
-            <if test ='null != spaceMinExp'>`spaceMinExp` = #{spaceMinExp},</if>
-            <if test ='null != chatMinExp'>`chatMinExp` = #{chatMinExp},</if>
-            <if test ='null != qiniuDomain'>`qiniuDomain` = #{qiniuDomain},</if>
-            <if test ='null != qiniuAccessKey'>`qiniuAccessKey` = #{qiniuAccessKey},</if>
-            <if test ='null != qiniuSecretKey'>`qiniuSecretKey` = #{qiniuSecretKey},</if>
-            <if test ='null != qiniuBucketName'>`qiniuBucketName` = #{qiniuBucketName},</if>
-            <if test ='null != silenceTime'>`silenceTime` = #{silenceTime},</if>
-            <if test ='null != interceptTime'>`interceptTime` = #{interceptTime},</if>
-            <if test ='null != isLogin'>`isLogin` = #{isLogin},</if>
-            <if test ='null != postMax'>`postMax` = #{postMax},</if>
-            <if test ='null != forumAudit'>`forumAudit` = #{forumAudit},</if>
-            <if test ='null != spaceAudit'>`spaceAudit` = #{spaceAudit},</if>
-            <if test ='null != uploadType'>`uploadType` = #{uploadType},</if>
-            <if test ='null != banRobots'>`banRobots` = #{banRobots},</if>
-            <if test ='null != adsGiftNum'>`adsGiftNum` = #{adsGiftNum},</if>
-            <if test ='null != adsGiftAward'>`adsGiftAward` = #{adsGiftAward},</if>
-            <if test ='null != uploadPicMax'>`uploadPicMax` = #{uploadPicMax},</if>
-            <if test ='null != uploadMediaMax'>`uploadMediaMax` = #{uploadMediaMax},</if>
-            <if test ='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax},</if>
-            <if test ='null != quality'>`quality` = #{quality},</if>
-            <if test ='null != levelExp'>`levelExp` = #{levelExp},</if>
-            <if test ='null != raffleCoin'>`raffleCoin` = #{raffleCoin},</if>
-            <if test ='null != raffleNum'>`raffleNum` = #{raffleNum},</if>
-            <if test ='null != compress'>`compress` = #{compress}</if>
+            <if test='null != clockExp'>`clockExp` = #{clockExp},</if>
+            <if test='null != reviewExp'>`reviewExp` = #{reviewExp},</if>
+            <if test='null != postExp'>`postExp` = #{postExp},</if>
+            <if test='null != violationExp'>`violationExp` = #{violationExp},</if>
+            <if test='null != deleteExp'>`deleteExp` = #{deleteExp},</if>
+            <if test='null != spaceMinExp'>`spaceMinExp` = #{spaceMinExp},</if>
+            <if test='null != chatMinExp'>`chatMinExp` = #{chatMinExp},</if>
+            <if test='null != qiniuDomain'>`qiniuDomain` = #{qiniuDomain},</if>
+            <if test='null != qiniuAccessKey'>`qiniuAccessKey` = #{qiniuAccessKey},</if>
+            <if test='null != qiniuSecretKey'>`qiniuSecretKey` = #{qiniuSecretKey},</if>
+            <if test='null != qiniuBucketName'>`qiniuBucketName` = #{qiniuBucketName},</if>
+            <if test='null != silenceTime'>`silenceTime` = #{silenceTime},</if>
+            <if test='null != interceptTime'>`interceptTime` = #{interceptTime},</if>
+            <if test='null != isLogin'>`isLogin` = #{isLogin},</if>
+            <if test='null != postMax'>`postMax` = #{postMax},</if>
+            <if test='null != forumAudit'>`forumAudit` = #{forumAudit},</if>
+            <if test='null != spaceAudit'>`spaceAudit` = #{spaceAudit},</if>
+            <if test='null != uploadType'>`uploadType` = #{uploadType},</if>
+            <if test='null != banRobots'>`banRobots` = #{banRobots},</if>
+            <if test='null != adsGiftNum'>`adsGiftNum` = #{adsGiftNum},</if>
+            <if test='null != adsGiftAward'>`adsGiftAward` = #{adsGiftAward},</if>
+            <if test='null != uploadPicMax'>`uploadPicMax` = #{uploadPicMax},</if>
+            <if test='null != uploadMediaMax'>`uploadMediaMax` = #{uploadMediaMax},</if>
+            <if test='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax},</if>
+            <if test='null != quality'>`quality` = #{quality},</if>
+            <if test='null != levelExp'>`levelExp` = #{levelExp},</if>
+            <if test='null != raffleCoin'>`raffleCoin` = #{raffleCoin},</if>
+            <if test='null != raffleNum'>`raffleNum` = #{raffleNum},</if>
+            <if test='null != notifyUrl'>`notifyUrl` = #{notifyUrl},</if>
+            <if test='null != compress'>`compress` = #{compress}</if>
 
         </set>
         WHERE `id` = #{id}
@@ -918,7 +901,8 @@
 
     <!-- 主键查询 -->
     <select id="selectByKey" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List" />
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM ${prefix}_apiconfig
         WHERE `id` = #{key}
     </select>

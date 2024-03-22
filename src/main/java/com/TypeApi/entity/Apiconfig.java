@@ -178,11 +178,6 @@ public class Apiconfig implements Serializable {
     private String alipayPublicKey;
 
     /**
-     * alipayNotifyUrl  
-     */
-    private String alipayNotifyUrl;
-
-    /**
      * wxAppId
      */
     private String wxAppId;
@@ -226,11 +221,6 @@ public class Apiconfig implements Serializable {
      * wxpayKey  
      */
     private String wxpayKey;
-
-    /**
-     * wxpayNotifyUrl  
-     */
-    private String wxpayNotifyUrl;
 
     /**
      * auditlevel
@@ -291,11 +281,6 @@ public class Apiconfig implements Serializable {
      * epayKey
      */
     private String epayKey;
-
-    /**
-     * epayNotifyUrl
-     */
-    private String epayNotifyUrl;
 
     /**
      * MchSerialNo
@@ -501,6 +486,11 @@ public class Apiconfig implements Serializable {
     /***
      * 每天抽奖次数
      */
-    private  Integer raffleNum;
+    private Integer raffleNum;
+
+    /**
+     * 通知地址
+     */
+    private  String notifyUrl;
 
 }

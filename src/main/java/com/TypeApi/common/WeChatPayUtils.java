@@ -105,7 +105,7 @@ public class WeChatPayUtils {
         try {
             CloseableHttpClient httpClient = initHttpClient(apiconfig);
             String MCH_ID = apiconfig.getWxpayMchId();
-            String NOTIFY_URL = apiconfig.getWxpayNotifyUrl();
+            String NOTIFY_URL = apiconfig.getNotifyUrl()+"/pay/wxpayNotify";
             HttpPost httpPost = new HttpPost(NATIVE_PAY_API);
             // 请求body参数
             String reqdata = "{"
