@@ -9,11 +9,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>com.TypeApi</groupId>
-    <artifactId>TypeAPi</artifactId>
+    <groupId>com.Fanbbs</groupId>
+    <artifactId>Fanbbs</artifactId>
     <version>1.0.0</version>
-    <name>TypeAPi</name>
-    <description>TypeAPi</description>
+    <name>Fanbbs</name>
+    <description>Fanbbs</description>
     <packaging>jar</packaging>
 
     <properties>

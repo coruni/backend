@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.HomepageDao">
+<mapper namespace="com.Fanbbs.dao.HomepageDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Homepage" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Homepage" >
         <result column="id" property="id" />
         <result column="page" property="page" />
         <result column="name" property="name" />
@@ -24,7 +24,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Homepage" keyProperty="id" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Homepage" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO ${prefix}_appHomepage
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -91,7 +91,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Homepage">
+    <update id="update" parameterType="com.Fanbbs.entity.Homepage">
         UPDATE ${prefix}_appHomepage
         <set>
             <if test ='null != page'>`page` = #{page},</if>

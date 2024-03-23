@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.CategoryDao">
+<mapper namespace="com.Fanbbs.dao.CategoryDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Category" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Category" >
         <result column="mid" property="mid" />
         <result column="name" property="name" />
         <result column="slug" property="slug" />
@@ -41,7 +41,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Category">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Category">
         INSERT INTO ${prefix}_metas
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != mid'>
@@ -154,7 +154,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Category">
+    <update id="update" parameterType="com.Fanbbs.entity.Category">
         UPDATE ${prefix}_metas
         <set>
             <if test ='name!=null'>`name` = #{name},</if>

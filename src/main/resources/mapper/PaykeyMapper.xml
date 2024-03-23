@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.PaykeyDao">
+<mapper namespace="com.Fanbbs.dao.PaykeyDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Paykey" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Paykey" >
         <result column="id" property="id" />
         <result column="value" property="value" />
         <result column="price" property="price" />
@@ -25,7 +25,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Paykey">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Paykey">
         INSERT INTO ${prefix}_paykey
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -92,7 +92,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Paykey">
+    <update id="update" parameterType="com.Fanbbs.entity.Paykey">
         UPDATE ${prefix}_paykey
         <set>
             <if test ='null != value'>`value` = #{value},</if>

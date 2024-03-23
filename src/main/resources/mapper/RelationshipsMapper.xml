@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.RelationshipsDao">
+<mapper namespace="com.Fanbbs.dao.RelationshipsDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Relationships" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Relationships" >
         <result column="cid" property="cid" />
         <result column="mid" property="mid" />
-        <collection property="contents" ofType="com.TypeApi.entity.Article">
+        <collection property="contents" ofType="com.Fanbbs.entity.Article">
             <id  property="cid"  column="cid" />
             <result column="title" property="title" />
             <result column="slug" property="slug" />
@@ -58,7 +58,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Relationships">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Relationships">
         INSERT INTO ${prefix}_relationships
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != cid'>
@@ -90,7 +90,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Relationships">
+    <update id="update" parameterType="com.Fanbbs.entity.Relationships">
         UPDATE ${prefix}_relationships
         <set>
             <if test ='null != mid'>`mid` = #{mid}</if>

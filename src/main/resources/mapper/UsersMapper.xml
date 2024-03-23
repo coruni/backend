@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.UsersDao">
+<mapper namespace="com.Fanbbs.dao.UsersDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Users" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Users" >
         <result column="uid" property="uid" />
         <result column="name" property="name" />
         <result column="password" property="password" />
@@ -63,7 +63,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Users" keyProperty="uid" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Users" keyProperty="uid" useGeneratedKeys="true">
         INSERT INTO ${prefix}_users
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != uid'>
@@ -193,7 +193,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Users">
+    <update id="update" parameterType="com.Fanbbs.entity.Users">
         UPDATE ${prefix}_users
         <set>
             <if test ='null != name'>`name` = #{name},</if>

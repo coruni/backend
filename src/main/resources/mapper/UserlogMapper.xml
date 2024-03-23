@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.UserlogDao">
+<mapper namespace="com.Fanbbs.dao.UserlogDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Userlog" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Userlog" >
         <result column="id" property="id" />
         <result column="uid" property="uid" />
         <result column="cid" property="cid" />
@@ -23,7 +23,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Userlog">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Userlog">
         INSERT INTO ${prefix}_userlog
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -74,7 +74,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Userlog">
+    <update id="update" parameterType="com.Fanbbs.entity.Userlog">
         UPDATE ${prefix}_userlog
         <set>
             <if test ='null != uid'>`uid` = #{uid},</if>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.ExchangeDao">
+<mapper namespace="com.Fanbbs.dao.ExchangeDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Exchange" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Exchange" >
         <result column="id" property="id" />
         <result column="name" property="name" />
         <result column="type" property="type" />
@@ -22,7 +22,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Exchange" keyProperty="id" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Exchange" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO ${prefix}_exchange
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -82,7 +82,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Exchange">
+    <update id="update" parameterType="com.Fanbbs.entity.Exchange">
         UPDATE ${prefix}_exchange
         <set>
             <if test ='null != id'>`id` = #{id},</if>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.ApiconfigDao">
+<mapper namespace="com.Fanbbs.dao.ApiconfigDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Apiconfig">
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Apiconfig">
         <result column="id" property="id"/>
         <result column="webinfoTitle" property="webinfoTitle"/>
         <result column="webinfoUrl" property="webinfoUrl"/>
@@ -215,7 +215,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Apiconfig">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Apiconfig">
         INSERT INTO ${prefix}_apiconfig
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test='null != id'>
@@ -793,7 +793,7 @@
 
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Apiconfig">
+    <update id="update" parameterType="com.Fanbbs.entity.Apiconfig">
         UPDATE ${prefix}_apiconfig
         <set>
             <if test='null != webinfoTitle'>`webinfoTitle` = #{webinfoTitle},</if>

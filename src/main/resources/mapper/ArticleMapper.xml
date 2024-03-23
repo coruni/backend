@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.ArticleDao">
+<mapper namespace="com.Fanbbs.dao.ArticleDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Article" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Article" >
         <result column="cid" property="cid" />
         <result column="title" property="title" />
         <result column="slug" property="slug" />
@@ -71,7 +71,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Article" keyProperty="cid" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Article" keyProperty="cid" useGeneratedKeys="true">
         INSERT INTO ${prefix}_contents
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != mid'>
@@ -263,7 +263,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Article">
+    <update id="update" parameterType="com.Fanbbs.entity.Article">
         UPDATE ${prefix}_contents
         <set>
             <if test ='null != mid'>`mid` = #{mid},</if>

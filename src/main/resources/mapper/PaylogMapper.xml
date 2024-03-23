@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.PaylogDao">
+<mapper namespace="com.Fanbbs.dao.PaylogDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Paylog" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Paylog" >
         <result column="pid" property="pid" />
         <result column="subject" property="subject" />
         <result column="total_amount" property="totalAmount" />
@@ -30,7 +30,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Paylog">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Paylog">
         INSERT INTO ${prefix}_paylog
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != pid'>
@@ -118,7 +118,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Paylog">
+    <update id="update" parameterType="com.Fanbbs.entity.Paylog">
         UPDATE ${prefix}_paylog
         <set>
             <if test ='null != subject'>`subject` = #{subject},</if>

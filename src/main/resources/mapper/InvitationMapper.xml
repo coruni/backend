@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.InvitationDao">
+<mapper namespace="com.Fanbbs.dao.InvitationDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Invitation" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Invitation" >
         <result column="id" property="id" />
         <result column="code" property="code" />
         <result column="created" property="created" />
@@ -20,7 +20,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Invitation">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Invitation">
         INSERT INTO ${prefix}_invitation
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -73,7 +73,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Invitation">
+    <update id="update" parameterType="com.Fanbbs.entity.Invitation">
         UPDATE ${prefix}_invitation
         <set>
             <if test ='null != code'>`code` = #{code},</if>

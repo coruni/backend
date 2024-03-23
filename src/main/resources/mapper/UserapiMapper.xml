@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.UserapiDao">
+<mapper namespace="com.Fanbbs.dao.UserapiDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Userapi" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Userapi" >
         <result column="id" property="id" />
         <result column="headImgUrl" property="headImgUrl" />
         <result column="openId" property="openId" />
@@ -22,7 +22,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Userapi">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Userapi">
         INSERT INTO ${prefix}_userapi
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -82,7 +82,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Userapi">
+    <update id="update" parameterType="com.Fanbbs.entity.Userapi">
         UPDATE ${prefix}_userapi
         <set>
             <if test ='null != headImgUrl'>`headImgUrl` = #{headImgUrl},</if>

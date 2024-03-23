@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.TypeApi.dao.ChatDao">
+<mapper namespace="com.Fanbbs.dao.ChatDao">
 
-    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Chat" >
+    <resultMap id="BaseResultMap" type="com.Fanbbs.entity.Chat" >
         <result column="id" property="id" />
         <result column="sender_id" property="sender_id" />
         <result column="receiver_id" property="receiver_id" />
@@ -26,7 +26,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Chat" keyProperty="id" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.Fanbbs.entity.Chat" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO ${prefix}_chat
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -101,7 +101,7 @@
     </insert>
 
     <!-- 更新 -->
-    <update id="update" parameterType="com.TypeApi.entity.Chat">
+    <update id="update" parameterType="com.Fanbbs.entity.Chat">
         UPDATE ${prefix}_chat
         <set>
             <if test ='null != sender_id'>`sender_id` = #{sender_id},</if>
