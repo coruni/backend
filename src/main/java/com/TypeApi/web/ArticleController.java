@@ -13,9 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
@@ -100,7 +98,7 @@ public class ArticleController {
     /***
      * 文章详情
      */
-    @RequestMapping(value = "/info")
+    @GetMapping(value = "/info")
     @ResponseBody
     public String info(@RequestParam(value = "id") Integer id,
                        HttpServletRequest request) {
@@ -209,7 +207,7 @@ public class ArticleController {
     /***
      * 文章列表
      */
-    @RequestMapping(value = "/articleList")
+    @GetMapping(value = "/articleList")
     @ResponseBody
     public String articleList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                               @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
@@ -337,7 +335,7 @@ public class ArticleController {
     /***
      * 发布文章
      */
-    @RequestMapping(value = "/articleAdd")
+    @PostMapping(value = "/articleAdd")
     @ResponseBody
     @XssCleanIgnore
     public String articleAdd(@RequestParam(value = "title") String title,
@@ -453,7 +451,7 @@ public class ArticleController {
      * 文章更新
      */
 
-    @RequestMapping(value = "/update")
+    @PostMapping(value = "/update")
     @ResponseBody
     @XssCleanIgnore
     public String update(@RequestParam(value = "id") Integer id,
@@ -516,7 +514,7 @@ public class ArticleController {
     }
 
 
-    @RequestMapping(value = "/delete")
+    @PostMapping(value = "/delete")
     @ResponseBody
     public String delete(@RequestParam(value = "id") Integer id,
                          HttpServletRequest request) {
@@ -557,7 +555,7 @@ public class ArticleController {
     /***
      * 文章审核
      */
-    @RequestMapping(value = "/audit")
+    @PostMapping(value = "/audit")
     @ResponseBody
     public String audit(@RequestParam(value = "id") Integer id,
                         @RequestParam(value = "type") Integer type,
@@ -605,7 +603,7 @@ public class ArticleController {
     /***
      * 文章操作
      */
-    @RequestMapping(value = "/action")
+    @PostMapping(value = "/action")
     @ResponseBody
     public String action(@RequestParam(value = "id") int id,
                          @RequestParam(value = "type") String type,
@@ -645,7 +643,7 @@ public class ArticleController {
     /**
      * 购买文章隐藏内容
      */
-    @RequestMapping(value = "/buy")
+    @PostMapping(value = "/buy")
     @ResponseBody
     public String buy(HttpServletRequest request,
                       @RequestParam(value = "id") int id) {
@@ -729,7 +727,7 @@ public class ArticleController {
     }
 
 
-    @RequestMapping(value = "/rewardList")
+    @GetMapping(value = "/rewardList")
     @ResponseBody
     public String rewardList(@RequestParam(value = "page", required = false, defaultValue = "1") int page,
                              @RequestParam(value = "limit", required = false, defaultValue = "10") int limit,
@@ -768,7 +766,7 @@ public class ArticleController {
         }
     }
 
-    @RequestMapping(value = "/reward")
+    @PostMapping(value = "/reward")
     @ResponseBody
     public String reward(@RequestParam(value = "id") int id,
                          @RequestParam(value = "num") int num,
@@ -826,7 +824,7 @@ public class ArticleController {
     /***
      * 全站统计
      */
-    @RequestMapping(value = "/allData")
+    @GetMapping(value = "/allData")
     @ResponseBody
     public String allData(HttpServletRequest request) {
         String token = request.getHeader("Authorization");
@@ -889,7 +887,7 @@ public class ArticleController {
     /***
      * 关注用户的文章
      */
-    @RequestMapping(value = "/follow")
+    @GetMapping(value = "/follow")
     @ResponseBody
     public String follow(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                          @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
@@ -992,7 +990,7 @@ public class ArticleController {
      * @return
      */
 
-    @RequestMapping(value = "/like")
+    @PostMapping(value = "/like")
     @ResponseBody
     public String like(@RequestParam(value = "id") Integer id,
                        HttpServletRequest request) {
@@ -1043,7 +1041,7 @@ public class ArticleController {
         }
     }
 
-    @RequestMapping(value = "/mark")
+    @PostMapping(value = "/mark")
     @ResponseBody
     public String mark(@RequestParam(value = "id") Integer id,
                        HttpServletRequest request) {
@@ -1092,7 +1090,7 @@ public class ArticleController {
         }
     }
 
-    @RequestMapping(value = "/markList")
+    @GetMapping(value = "/markList")
     @ResponseBody
     public String markList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                            @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
