@@ -75,28 +75,22 @@ public class UploadController {
         String image = null;
         List<Object> imageList = new ArrayList<>();
 
-        // 遍历Map中的所有文件
         for (MultipartFile file : files.values()) {
             if (file != null && !file.isEmpty()) {
                 Object result = handleSingleFile(file, user, this.dataprefix, apiconfigService, redisTemplate);
                 if (result != null) {
-                    if (files.size() == 1) {
-                        image = (String) result;
-                    } else {
-                        imageList.add(result);
-                    }
+                    imageList.add(result);
                 }
             }
         }
 
-        if (image == null && imageList.isEmpty()) {
+        if (imageList.isEmpty()) {
             return Result.getResultJson(201, "请上传文件", null);
         }
 
-        if (image != null) {
-            data.put("url", image);
-        }
-        if (!imageList.isEmpty()) {
+        if (imageList.size() == 1) {
+            data.put("url", imageList.get(0));
+        } else {
             data.put("urls", imageList);
         }
 
