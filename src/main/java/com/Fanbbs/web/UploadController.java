@@ -80,7 +80,7 @@ public class UploadController {
             if (file != null && !file.isEmpty()) {
                 Object result = handleSingleFile(file, user, this.dataprefix, apiconfigService, redisTemplate);
                 if (result != null) {
-                    if (image == null) {
+                    if (files.size() == 1) {
                         image = (String) result;
                     } else {
                         imageList.add(result);
@@ -102,6 +102,7 @@ public class UploadController {
 
         return Result.getResultJson(200, "上传成功", data);
     }
+
     private Object handleSingleFile(MultipartFile file, Users user, String dataprefix, ApiconfigService apiconfigService, RedisTemplate<String, String> redisTemplate) throws IOException {
         Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
         Integer fileUploadLevel = apiconfig.getUploadLevel();
