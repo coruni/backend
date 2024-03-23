@@ -153,21 +153,14 @@ public class ArticleController {
                 tagsQuery.setType("tag");
                 List<Category> tagInfo = metasService.selectList(tagsQuery);
                 if (!tagInfo.isEmpty()) {
-                    Object tagObject = tagInfo.get(0);
-                    if (tagObject instanceof String) {
-                        JSONObject tagJsonObject = JSONObject.parseObject((String) tagObject);
-                        Map<String, Object> tagData = JSONObject.toJavaObject(tagJsonObject, Map.class);
-                        // 格式化opt
-                        JSONObject tagOpt = tagJsonObject.getJSONObject("opt");
-                        tagData.put("opt", tagOpt);
-                        tagDataList.add(tagData);
-                    } else if (tagObject instanceof JSONObject) {
-                        JSONObject tagJsonObject = (JSONObject) tagObject;
-                        Map<String, Object> tagData = JSONObject.toJavaObject(tagJsonObject, Map.class);
-                        // 格式化opt
-                        JSONObject tagOpt = tagJsonObject.getJSONObject("opt");
-                        tagData.put("opt", tagOpt);
-                        tagDataList.add(tagData);
+                    Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo), Map.class);
+                    // 格式化opt
+                    if (tagData.get("opt") != null) {
+                        try {
+                            JSONObject.parseObject(tagData.get("opt").toString());
+                        } catch (Exception ignored) {
+                            tagData.put("opt", null);
+                        }
                     }
                 }
             }
@@ -282,21 +275,14 @@ public class ArticleController {
                     tagsQuery.setType("tag");
                     List<Category> tagInfo = metasService.selectList(tagsQuery);
                     if (!tagInfo.isEmpty()) {
-                        Object tagObject = tagInfo.get(0);
-                        if (tagObject instanceof String) {
-                            JSONObject tagJsonObject = JSONObject.parseObject((String) tagObject);
-                            Map<String, Object> tagData = JSONObject.toJavaObject(tagJsonObject, Map.class);
-                            // 格式化opt
-                            JSONObject tagOpt = tagJsonObject.getJSONObject("opt");
-                            tagData.put("opt", tagOpt);
-                            tagDataList.add(tagData);
-                        } else if (tagObject instanceof JSONObject) {
-                            JSONObject tagJsonObject = (JSONObject) tagObject;
-                            Map<String, Object> tagData = JSONObject.toJavaObject(tagJsonObject, Map.class);
-                            // 格式化opt
-                            JSONObject tagOpt = tagJsonObject.getJSONObject("opt");
-                            tagData.put("opt", tagOpt);
-                            tagDataList.add(tagData);
+                        Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo), Map.class);
+                        // 格式化opt
+                        if (tagData.get("opt") != null) {
+                            try {
+                                JSONObject.parseObject(tagData.get("opt").toString());
+                            } catch (Exception ignored) {
+                                tagData.put("opt", null);
+                            }
                         }
                     }
                 }
