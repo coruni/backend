@@ -153,7 +153,7 @@ public class ArticleController {
                 tagsQuery.setType("tag");
                 List<Category> tagInfo = metasService.selectList(tagsQuery);
                 if (!tagInfo.isEmpty()) {
-                    Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo), Map.class);
+                    Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
                     // 格式化opt
                     if (tagData.get("opt") != null) {
                         try {
@@ -275,7 +275,7 @@ public class ArticleController {
                     tagsQuery.setType("tag");
                     List<Category> tagInfo = metasService.selectList(tagsQuery);
                     if (!tagInfo.isEmpty()) {
-                        Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo), Map.class);
+                        Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
                         // 格式化opt
                         if (tagData.get("opt") != null) {
                             try {
