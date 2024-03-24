@@ -101,7 +101,7 @@ public class ArticleUtils {
         hotScore += 12; // 这个值可以根据需要调整
         hotScoreCache.put(article.getCid(), hotScore);
         allArticles.add(0, article); // 将新文章添加到 allArticles 列表的开头
-        updateArticleListAsync(article);
+//        updateArticleListAsync(article);
         redisHelp.updateMapInRedis("hot_score_cache", hotScoreCache, redisTemplate);
     }
 
@@ -149,22 +149,7 @@ public class ArticleUtils {
             }
             hotPosts.add(article);
         }
-        hotPosts.sort((a1, a2) -> {
-            // 比较文章的创建时间
-            long timeDiff = a2.getCreated() - a1.getCreated();
-            if (timeDiff != 0) {
-                return Long.compare(timeDiff, 0);
-            } else {
-                // 如果创建时间相同，则比较热度分数
-                int hotScoreComparison = Double.compare(a2.getHotScore(), a1.getHotScore());
-                if (hotScoreComparison != 0) {
-                    return hotScoreComparison;
-                } else {
-                    // 如果热度分数也相同，则比较文章的唯一标识
-                    return Integer.compare(a2.getCid(), a1.getCid());
-                }
-            }
-        });
+        hotPosts.sort(Comparator.comparingDouble(Article::getHotScore).reversed());
         // 在获取热门文章列表之后对 allArticles 进行随机打乱
         Collections.shuffle(allArticles);
         return hotPosts;
