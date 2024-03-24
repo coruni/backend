@@ -114,7 +114,7 @@ public class ArticleUtils {
             allArticles.set(index, article);
         }
 //        Collections.shuffle(allArticles);
-        updateArticleListAsync(article);
+//        updateArticleListAsync(article);
         redisHelp.updateMapInRedis("hot_score_cache", hotScoreCache, redisTemplate);
     }
 
