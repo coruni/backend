@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.Fanbbs.entity.*;
@@ -13,6 +14,7 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Component
 public class ArticleUtils {
@@ -53,6 +55,19 @@ public class ArticleUtils {
         }
         redisHelp.saveMapToRedis("hot_score_cache", hotScoreCache, redisTemplate, 24 * 60 * 60);
     }
+
+    @Async
+    public CompletableFuture<Void> updateArticleListAsync(Article article) {
+        return CompletableFuture.runAsync(() -> {
+            int index = allArticles.indexOf(article);
+            if (index >= 0) {
+                allArticles.set(index, article);
+            } else {
+                allArticles.add(article);
+            }
+//            Collections.shuffle(allArticles);
+        });
+    }
     // 定期计算和缓存所有文章的热度分数
 //    @Scheduled(fixedRate = 24 * 60 * 60 * 1000) // 每24小时执行一次
 //    public void cacheAllPostHotScores() {
@@ -87,6 +102,7 @@ public class ArticleUtils {
         hotScoreCache.put(article.getCid(), hotScore);
         allArticles.add(article);
 //        Collections.shuffle(allArticles);
+        updateArticleListAsync(article);
         redisHelp.updateMapInRedis("hot_score_cache", hotScoreCache, redisTemplate);
     }
 
@@ -99,6 +115,7 @@ public class ArticleUtils {
             allArticles.set(index, article);
         }
 //        Collections.shuffle(allArticles);
+        updateArticleListAsync(article);
         redisHelp.updateMapInRedis("hot_score_cache", hotScoreCache, redisTemplate);
     }
 
