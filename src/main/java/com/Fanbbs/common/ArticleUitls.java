@@ -112,7 +112,7 @@ public class ArticleUitls {
         }
 
         // 在获取热门文章列表之前对 allArticles 进行随机打乱
-        Collections.shuffle(allArticles);
+        // Collections.shuffle(allArticles);
 
         int startIndex = (page - 1) * size;
         int endIndex = startIndex + size;
@@ -137,4 +137,5 @@ public class ArticleUitls {
         }
 
         return hotPosts;
-    }}
+    }
+}
