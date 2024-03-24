@@ -128,9 +128,6 @@ public class ArticleUtils {
             hotScoreCache = redisHelp.getMapFromRedis("hot_score_cache", redisTemplate);
         }
 
-        // 在获取热门文章列表之前对 allArticles 进行随机打乱
-        // Collections.shuffle(allArticles);
-
         int startIndex = (page - 1) * size;
         int endIndex = startIndex + size;
 
@@ -168,6 +165,8 @@ public class ArticleUtils {
                 }
             }
         });
+        // 在获取热门文章列表之后对 allArticles 进行随机打乱
+        Collections.shuffle(allArticles);
         return hotPosts;
     }
 }
