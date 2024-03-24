@@ -216,7 +216,7 @@ public class ArticleController {
                 PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random, tagId);
                 articleList = articlePage.getList();
             } else {
-                articleList = articleUitls.getHotArticleList(query, page, limit, searchKey, order, random, tagId);
+                articleList = articleUitls.getHotArticleList(page, limit,query.getMid());
             }
             List dataList = new ArrayList<>();
             for (Article article : articleList) {
