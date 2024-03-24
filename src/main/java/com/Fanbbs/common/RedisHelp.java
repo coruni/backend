@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public  class RedisHelp {
 
@@ -57,6 +58,22 @@ public  class RedisHelp {
     public  void delete(String key,RedisTemplate redisTemplate) {
         // 通过key执行批量删除操作时先序列化template
         redisTemplate.delete(key);
+    }
+
+    public Set<Integer> getSetFromRedis(String key, RedisTemplate<String, String> redisTemplate) {
+        Set<String> stringSet = redisTemplate.opsForSet().members(key);
+        return stringSet.stream().map(Integer::valueOf).collect(Collectors.toSet());
+    }
+
+    public void saveSetToRedis(String key, Set<Integer> set, RedisTemplate<String, String> redisTemplate, long expireSeconds) {
+        Set<String> stringSet = set.stream().map(String::valueOf).collect(Collectors.toSet());
+        redisTemplate.opsForSet().add(key, stringSet.toArray(new String[0]));
+        redisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
+    }
+
+    public void updateSetInRedis(String key, Set<String> set, RedisTemplate<String, Object> redisTemplate) {
+        redisTemplate.opsForSet().remove(key);
+        redisTemplate.opsForSet().add(key, set.toArray(new String[0]));
     }
     //数据列表的操作，优化文章性能
     /**

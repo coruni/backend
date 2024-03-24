@@ -38,7 +38,7 @@ public class ArticleController {
     ArticleService service;
 
     @Autowired
-    ArticleUitls articleUitls;
+    ArticleUtils articleUtils;
 
     @Autowired
     private ShopService shopService;
@@ -216,7 +216,7 @@ public class ArticleController {
                 PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random, tagId);
                 articleList = articlePage.getList();
             } else {
-                articleList = articleUitls.getHotArticleList(page, limit,query.getMid());
+                articleList = articleUtils.getHotArticleList(page, limit,query.getMid());
             }
             List dataList = new ArrayList<>();
             for (Article article : articleList) {
@@ -263,6 +263,7 @@ public class ArticleController {
                 data.put("showText", showText);
                 // 移除信息
                 data.remove("passowrd");
+                data.remove("hotScore");
                 Optional<JSONObject> objectOptional = Optional.ofNullable(opt)
                         .map(o -> o.getJSONArray("files"))
                         .filter(filesArray -> filesArray != null && !filesArray.isEmpty())

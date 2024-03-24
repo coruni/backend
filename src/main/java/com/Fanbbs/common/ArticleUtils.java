@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.*;
 
 @Component
-public class ArticleUitls {
+public class ArticleUtils {
     private final ArticleService articleService;
     @Autowired
     private RedisTemplate redisTemplate;
@@ -23,7 +23,7 @@ public class ArticleUitls {
     private final Map<Integer, Double> hotScoreCache = new HashMap<>();
     private List<Article> allArticles = new ArrayList<>();
 
-    public ArticleUitls(ArticleService articleService) {
+    public ArticleUtils(ArticleService articleService) {
         this.articleService = articleService;
     }
 
@@ -86,7 +86,7 @@ public class ArticleUitls {
         double hotScore = calculateHotScore(article);
         hotScoreCache.put(article.getCid(), hotScore);
         allArticles.add(article);
-        Collections.shuffle(allArticles);
+//        Collections.shuffle(allArticles);
         redisHelp.updateMapInRedis("hot_score_cache", hotScoreCache, redisTemplate);
     }
 
@@ -98,7 +98,7 @@ public class ArticleUitls {
         if (index >= 0) {
             allArticles.set(index, article);
         }
-        Collections.shuffle(allArticles);
+//        Collections.shuffle(allArticles);
         redisHelp.updateMapInRedis("hot_score_cache", hotScoreCache, redisTemplate);
     }
 
@@ -136,7 +136,7 @@ public class ArticleUitls {
             }
             hotPosts.add(article);
         }
-        hotPosts.sort((a, b) -> Double.compare(b.getHotScore(), a.getHotScore())); // 按热度分数降序排序
+        hotPosts.sort(Comparator.comparingDouble(Article::getHotScore).reversed());
         return hotPosts;
     }
 }
