@@ -34,6 +34,17 @@ public  class RedisHelp {
         return  redisTemplate.opsForHash().entries(key);
     }
 
+    public void saveMapToRedis(String key, Map<Integer, Double> map,RedisTemplate redisTemplate,  int expireSeconds) {
+        redisTemplate.opsForHash().putAll(key, map);
+        redisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
+    }
+    public Map<Integer, Double> getMapFromRedis(String key ,RedisTemplate redisTemplate) {
+        return redisTemplate.opsForHash().entries(key);
+    }
+
+    public void updateMapInRedis(String key, Map<Integer, Double> map, RedisTemplate redisTemplate) {
+        redisTemplate.opsForHash().putAll(key, map);
+    }
     public  Object getValue(String key, String hashKey,RedisTemplate redisTemplate) {
         return  redisTemplate.opsForHash().get(key, hashKey);
     }

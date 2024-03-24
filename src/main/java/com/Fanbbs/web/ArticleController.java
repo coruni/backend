@@ -38,6 +38,9 @@ public class ArticleController {
     ArticleService service;
 
     @Autowired
+    ArticleUitls articleUitls;
+
+    @Autowired
     private ShopService shopService;
 
     @Autowired
@@ -132,36 +135,14 @@ public class ArticleController {
             // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
             Boolean showText = showText(user, article, category);
             if (!showText && !permission) {
-                if (article.getType().equals("photo")) {
-                    images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
-                } else if (!article.getType().equals("video")) {
+                images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
+               if (!article.getType().equals("video")) {
                     text = "";
                 } else {
                     videos = new ArrayList<>();
                 }
             }
-            // 标签
-            Relationships tagQuery = new Relationships();
-            tagQuery.setCid(article.getCid());
-            List<Relationships> tagList = relationshipsService.selectList(tagQuery);
-            JSONArray tagDataList = new JSONArray();
-            for (Relationships tag : tagList) {
-                Category tagsQuery = new Category();
-                tagsQuery.setMid(tag.getMid());
-                tagsQuery.setType("tag");
-                List<Category> tagInfo = metasService.selectList(tagsQuery);
-                if (!tagInfo.isEmpty()) {
-                    Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
-                    // 格式化opt
-                    if (tagData.get("opt") != null) {
-                        try {
-                            JSONObject.parseObject(tagData.get("opt").toString());
-                        } catch (Exception ignored) {
-                            tagData.put("opt", null);
-                        }
-                    }
-                }
-            }
+            List tagDataList = getTags(article);
             // 获取作者信息
             Map<String, Object> authorInfo = getAuthorInfo(user_id, article);
             // 返回信息
@@ -216,6 +197,7 @@ public class ArticleController {
                               @RequestParam(value = "searchKey", required = false) String searchKey,
                               @RequestParam(value = "tag", required = false) Integer tagId,
                               @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
+                              @RequestParam(value = "newArticle", required = false, defaultValue = "0") Integer newArticle,
                               HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -229,9 +211,13 @@ public class ArticleController {
                 query.setStatus("publish");
             }
             if (permission) query.setStatus(null);
-
-            PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random, tagId);
-            List<Article> articleList = articlePage.getList();
+            List<Article> articleList = new ArrayList<>();
+            if (newArticle.equals(1)) {
+                PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random, tagId);
+                articleList = articlePage.getList();
+            } else {
+                articleList = articleUitls.getHotArticleList(query, page, limit, searchKey, order, random, tagId);
+            }
             List dataList = new ArrayList<>();
             for (Article article : articleList) {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
@@ -254,36 +240,14 @@ public class ArticleController {
                 // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
                 Boolean showText = showText(user, article, category);
                 if (!showText && !permission) {
-                    if (article.getType().equals("photo")) {
-                        images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
-                    } else if (!article.getType().equals("video")) {
+                    images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
+                    if (!article.getType().equals("video")) {
                         text = "";
                     } else {
                         videos = new ArrayList<>();
                     }
                 }
-                // 标签
-                Relationships tagQuery = new Relationships();
-                tagQuery.setCid(article.getCid());
-                List<Relationships> tagList = relationshipsService.selectList(tagQuery);
-                JSONArray tagDataList = new JSONArray();
-                for (Relationships tag : tagList) {
-                    Category tagsQuery = new Category();
-                    tagsQuery.setMid(tag.getMid());
-                    tagsQuery.setType("tag");
-                    List<Category> tagInfo = metasService.selectList(tagsQuery);
-                    if (!tagInfo.isEmpty()) {
-                        Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
-                        // 格式化opt
-                        if (tagData.get("opt") != null) {
-                            try {
-                                JSONObject.parseObject(tagData.get("opt").toString());
-                            } catch (Exception ignored) {
-                                tagData.put("opt", null);
-                            }
-                        }
-                    }
-                }
+                List tagDataList = getTags(article);
                 // 获取作者信息
                 Map<String, Object> authorInfo = getAuthorInfo(user_id, article);
                 // 加入信息
@@ -1403,4 +1367,30 @@ public class ArticleController {
         return postersList;
     }
 
+    private List getTags(Article article) {
+        // 标签
+        Relationships tagQuery = new Relationships();
+        tagQuery.setCid(article.getCid());
+        List<Relationships> tagList = relationshipsService.selectList(tagQuery);
+        JSONArray tagDataList = new JSONArray();
+        for (Relationships tag : tagList) {
+            Category tagsQuery = new Category();
+            tagsQuery.setMid(tag.getMid());
+            tagsQuery.setType("tag");
+            List<Category> tagInfo = metasService.selectList(tagsQuery);
+            if (!tagInfo.isEmpty()) {
+                Map<String, Object> tagData = JSONObject.parseObject(JSONObject.toJSONString(tagInfo.get(0)), Map.class);
+                // 格式化opt
+                if (tagData.get("opt") != null) {
+                    try {
+                        JSONObject.parseObject(tagData.get("opt").toString());
+                    } catch (Exception ignored) {
+                        tagData.put("opt", null);
+                    }
+                }
+                tagDataList.add(tagData);
+            }
+        }
+        return tagDataList;
+    }
 }

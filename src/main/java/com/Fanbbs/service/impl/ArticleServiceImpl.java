@@ -3,8 +3,12 @@ package com.Fanbbs.service.impl;
 import com.Fanbbs.entity.*;
 import com.Fanbbs.common.PageList;
 import com.Fanbbs.dao.*;
+import com.Fanbbs.event.NewArticleEvent;
+import com.Fanbbs.event.UpdateArticleEvent;
 import com.Fanbbs.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,8 +25,13 @@ public class ArticleServiceImpl implements ArticleService {
 	@Autowired
 	ArticleDao dao;
 
+	@Autowired
+	private ApplicationEventPublisher eventPublisher;
+
 	@Override
 	public int insert(Article article) {
+		NewArticleEvent newArticleEvent = new NewArticleEvent(article);
+		eventPublisher.publishEvent(newArticleEvent);
 		return dao.insert(article);
 	}
 
@@ -33,6 +42,8 @@ public class ArticleServiceImpl implements ArticleService {
 
 	@Override
 	public int update(Article article) {
+		UpdateArticleEvent updateArticleEvent = new UpdateArticleEvent(article);
+		eventPublisher.publishEvent(updateArticleEvent);
 		return dao.update(article);
 	}
 

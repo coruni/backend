@@ -483,12 +483,12 @@
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`title`, '')) LIKE CONCAT('%', #{searchKey}, '%')
             </if>
-            <if test ='0 != random'>
-                and cid >= (SELECT FLOOR( MAX(cid) * RAND()) FROM `${prefix}_contents` )
-            </if>
         </where>
-        <if test ='"" != order'>
-            order by ${order}
+        <if test="random == 1">
+            ORDER BY RAND()
+        </if>
+        <if test="random != 1 and order != null and order != ''">
+            ORDER BY ${order}
         </if>
         limit ${page}, ${pageSize}
     </select>

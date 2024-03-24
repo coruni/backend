@@ -167,4 +167,7 @@ public class Article implements Serializable {
      */
     private Integer isCircleTop;
 
+
+    private double hotScore;
+
 }
