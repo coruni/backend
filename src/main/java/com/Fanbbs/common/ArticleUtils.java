@@ -1,8 +1,6 @@
 package com.Fanbbs.common;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.ApplicationEventMulticaster;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -57,8 +55,8 @@ public class ArticleUtils {
     }
 
     @Async
-    public CompletableFuture<Void> updateArticleListAsync(Article article) {
-        return CompletableFuture.runAsync(() -> {
+    public void updateArticleListAsync(Article article) {
+        CompletableFuture.runAsync(() -> {
             int index = allArticles.indexOf(article);
             if (index >= 0) {
                 allArticles.set(index, article);
@@ -99,9 +97,10 @@ public class ArticleUtils {
     // 新文章发布时计算热度分数并加入缓存
     public void handleNewArticle(Article article) {
         double hotScore = calculateHotScore(article);
+        // 给新文章赋予较高的初始热度分数
+        hotScore += 12; // 这个值可以根据需要调整
         hotScoreCache.put(article.getCid(), hotScore);
-        allArticles.add(article);
-//        Collections.shuffle(allArticles);
+        allArticles.add(0, article); // 将新文章添加到 allArticles 列表的开头
         updateArticleListAsync(article);
         redisHelp.updateMapInRedis("hot_score_cache", hotScoreCache, redisTemplate);
     }
@@ -153,7 +152,22 @@ public class ArticleUtils {
             }
             hotPosts.add(article);
         }
-        hotPosts.sort(Comparator.comparingDouble(Article::getHotScore).reversed());
+        hotPosts.sort((a1, a2) -> {
+            // 比较文章的创建时间
+            long timeDiff = a2.getCreated() - a1.getCreated();
+            if (timeDiff != 0) {
+                return Long.compare(timeDiff, 0);
+            } else {
+                // 如果创建时间相同，则比较热度分数
+                int hotScoreComparison = Double.compare(a2.getHotScore(), a1.getHotScore());
+                if (hotScoreComparison != 0) {
+                    return hotScoreComparison;
+                } else {
+                    // 如果热度分数也相同，则比较文章的唯一标识
+                    return Integer.compare(a2.getCid(), a1.getCid());
+                }
+            }
+        });
         return hotPosts;
     }
 }
