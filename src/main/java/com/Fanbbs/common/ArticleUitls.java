@@ -35,15 +35,16 @@ public class ArticleUitls {
         } else {
             List<Article> articles = articleService.selectList(new Article());
             allArticles.addAll(articles);
-            Collections.shuffle(allArticles);
+            // Collections.shuffle(allArticles);
         }
     }
 
+    @Scheduled(fixedRate = 24 * 60 * 60)
     public void rebuildCache() {
         List<Article> articles = articleService.selectList(new Article());
         allArticles.clear();
         allArticles.addAll(articles);
-        Collections.shuffle(allArticles);
+        //Collections.shuffle(allArticles);
 
         Map<Integer, Double> hotScoreCache = new HashMap<>();
         for (Article article : allArticles) {
@@ -135,7 +136,7 @@ public class ArticleUitls {
             }
             hotPosts.add(article);
         }
-
+        hotPosts.sort((a, b) -> Double.compare(b.getHotScore(), a.getHotScore())); // 按热度分数降序排序
         return hotPosts;
     }
 }
