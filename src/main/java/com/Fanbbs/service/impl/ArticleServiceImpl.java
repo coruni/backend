@@ -3,8 +3,6 @@ package com.Fanbbs.service.impl;
 import com.Fanbbs.entity.*;
 import com.Fanbbs.common.PageList;
 import com.Fanbbs.dao.*;
-import com.Fanbbs.event.NewArticleEvent;
-import com.Fanbbs.event.UpdateArticleEvent;
 import com.Fanbbs.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,12 +29,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public int insert(Article article) {
-        int result = dao.insert(article); // 执行插入操作
-        if (result > 0) { // 如果插入成功才发布事件
-            NewArticleEvent newArticleEvent = new NewArticleEvent(article);
-            eventPublisher.publishEvent(newArticleEvent);
-        }
-        return result; // 返回插入结果
+        return dao.insert(article);
     }
 
     @Override
@@ -46,8 +39,6 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public int update(Article article) {
-        UpdateArticleEvent updateArticleEvent = new UpdateArticleEvent(article);
-        eventPublisher.publishEvent(updateArticleEvent);
         return dao.update(article);
     }
 

@@ -37,8 +37,6 @@ public class ArticleController {
     @Autowired
     ArticleService service;
 
-    @Autowired
-    ArticleUtils articleUtils;
 
     @Autowired
     private ShopService shopService;
@@ -211,13 +209,9 @@ public class ArticleController {
                 query.setStatus("publish");
             }
             if (permission) query.setStatus(null);
-            List<Article> articleList = new ArrayList<>();
-            if (newArticle.equals(1)) {
-                PageList<Article> articlePage = service.selectPage(query, page, limit, searchKey, order, random, tagId);
-                articleList = articlePage.getList();
-            } else {
-                articleList = articleUtils.getHotArticleList(page, limit,query.getMid());
-            }
+            PageList<Article> articlePageList = service.selectPage(query, page, limit, searchKey, order, random, tagId);
+            List<Article> articleList = articlePageList.getList();
+
             List dataList = new ArrayList<>();
             for (Article article : articleList) {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
