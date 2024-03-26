@@ -134,7 +134,7 @@ public class ArticleController {
             Boolean showText = showText(user, article, category);
             if (!showText && !permission) {
                 images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
-               if (!article.getType().equals("video")) {
+                if (!article.getType().equals("video")) {
                     text = "";
                 } else {
                     videos = new ArrayList<>();
@@ -207,7 +207,7 @@ public class ArticleController {
             if (params != null && !params.isEmpty()) {
                 query = JSONObject.parseObject(params, Article.class);
             }
-            query.setStatus(permission?null:"publish");
+            query.setStatus(permission ? null : "publish");
             System.out.println(query);
             PageList<Article> articlePageList = service.selectPage(query, page, limit, searchKey, order, random, tagId);
             List<Article> articleList = articlePageList.getList();
@@ -328,7 +328,7 @@ public class ArticleController {
             article.setOpt(opt);
             article.setVideos(videos);
             article.setCreated(Integer.parseInt(String.valueOf(System.currentTimeMillis() / 1000)));
-            if (apiconfig.getContentAuditlevel().equals(1) &&!permission) article.setStatus("waiting");
+            if (apiconfig.getContentAuditlevel().equals(1) && !permission) article.setStatus("waiting");
             if (apiconfig.getContentAuditlevel().equals(2)) article.setStatus("waiting");
 
 
@@ -1258,7 +1258,20 @@ public class ArticleController {
 
     private Map<String, Object> getAuthorInfo(Integer user_id, Article article) {
         Users author = usersService.selectByKey(article.getAuthorId());
-        Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(author), Map.class);
+        Map<String, Object> data = new HashMap<>();
+
+        if (author == null) {
+            // 作者不存在的默认信息
+            data.put("screenName", "用户已注销");
+            data.put("isFollow", false);
+            data.put("level", 0);
+            data.put("nextLevel", 0);
+            data.put("isVip", false);
+            return data;
+        }
+
+        // 作者存在的情况下，继续处理作者信息
+        data = JSONObject.parseObject(JSONObject.toJSONString(author), Map.class);
         List levelResult = baseFull.getLevel(author.getExperience(), dataprefix, apiconfigService, redisTemplate);
         int level = (int) levelResult.get(0);
         int nextLevel = (int) levelResult.get(1);
@@ -1272,9 +1285,8 @@ public class ArticleController {
             fan.setUid(user_id);
             fan.setTouid(article.getAuthorId());
             if (fanService.total(fan) > 0) isFollow = true;
-            if (author.getStatus().equals(0)) data.put("screenName", "用户已注销");
         }
-        //加入信息
+
         data.put("isFollow", isFollow);
         data.put("level", level);
         data.put("nextLevel", nextLevel);
@@ -1282,19 +1294,13 @@ public class ArticleController {
             data.put("opt", JSONObject.parseObject(author.getOpt()));
         }
         data.put("isVip", isVip);
+
         // 移除敏感信息
         data.remove("address");
         data.remove("mail");
         data.remove("assets");
         data.remove("password");
 
-        if (author.getUid() == null) {
-            data.put("isFollow", 0);
-            data.put("level", 0);
-            data.put("nextLevel", 0);
-            data.put("isVip", 0);
-            data.put("screenName", "用户不存在");
-        }
         return data;
     }
 
