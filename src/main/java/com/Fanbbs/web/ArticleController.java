@@ -195,33 +195,31 @@ public class ArticleController {
                               @RequestParam(value = "searchKey", required = false) String searchKey,
                               @RequestParam(value = "tag", required = false) Integer tagId,
                               @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
-                              @RequestParam(value = "newArticle", required = false, defaultValue = "0") Integer newArticle,
                               HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             Users user = getUser(token);
-            Boolean permission = permission(user);
+            boolean permission = permission(user);
+            System.out.println(permission);
             int user_id = 0;
             if (user.getUid() != null) user_id = user.getUid();
             Article query = new Article();
             if (params != null && !params.isEmpty()) {
                 query = JSONObject.parseObject(params, Article.class);
-                query.setStatus("publish");
             }
-            if (permission) query.setStatus(null);
+            query.setStatus(permission?null:"publish");
+            System.out.println(query);
             PageList<Article> articlePageList = service.selectPage(query, page, limit, searchKey, order, random, tagId);
             List<Article> articleList = articlePageList.getList();
-
             List dataList = new ArrayList<>();
             for (Article article : articleList) {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-                //格式化数据
-                JSONObject opt = article.getOpt() != null && !article.getOpt().isEmpty() ? JSONObject.parseObject(article.getOpt()) : null;
                 // 取出内容中的图片
                 List<String> images = baseFull.getImageSrc(article.getText());
                 if (article.getImages() != null && !article.getImages().isEmpty())
                     images = JSONArray.parseArray(article.getImages(), String.class);
                 // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
+                images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
                 Boolean isReply = hasComment(user, article);
                 Boolean isPaid = hasPay(user, article);
                 Boolean isLike = hasLike(user, article);
@@ -233,21 +231,12 @@ public class ArticleController {
                 Map<String, Object> category = getCategory(article.getMid());
                 // 根据分类是否设置会员可见和用户是否是会员来决定内容是否可见
                 Boolean showText = showText(user, article, category);
-                if (!showText && !permission) {
-                    images = images.subList(0, Math.min(images.size(), 10)); // 获取前 10 张图片
-                    if (!article.getType().equals("video")) {
-                        text = "";
-                    } else {
-                        videos = new ArrayList<>();
-                    }
-                }
                 List tagDataList = getTags(article);
                 // 获取作者信息
                 Map<String, Object> authorInfo = getAuthorInfo(user_id, article);
                 // 加入信息
                 data.put("images", images);
                 data.put("videos", videos);
-                data.put("opt", opt);
                 data.put("text", text);
                 data.put("category", category);
                 data.put("tag", tagDataList);
@@ -258,21 +247,8 @@ public class ArticleController {
                 // 移除信息
                 data.remove("passowrd");
                 data.remove("hotScore");
-                Optional<JSONObject> objectOptional = Optional.ofNullable(opt)
-                        .map(o -> o.getJSONArray("files"))
-                        .filter(filesArray -> filesArray != null && !filesArray.isEmpty())
-                        .map(filesArray -> JSONObject.parseObject(filesArray.get(0).toString()));
-                JSONObject object = new JSONObject();
-                if (objectOptional.isPresent()) {
-                    object = objectOptional.get();
-                }
-                // 判断是是否是隐藏内容
-                if (!article.getAuthorId().equals(user_id) && !isPaid && article.getPrice() != 0 && object.containsKey("link") && !permission) {
-                    data.put("opt", null);
-                    data.put("isHide", 1);
-                } else {
-                    data.put("isHide", 0);
-                }
+                data.remove("opt");
+                data.remove("videos");
                 dataList.add(data);
             }
             // 返回信息
@@ -352,10 +328,9 @@ public class ArticleController {
             article.setOpt(opt);
             article.setVideos(videos);
             article.setCreated(Integer.parseInt(String.valueOf(System.currentTimeMillis() / 1000)));
-            if (apiconfig.getContentAuditlevel().equals(1)) article.setStatus("waiting");
-            if (apiconfig.getContentAuditlevel().equals(2)) {
-                if (!permission) article.setStatus("waiting");
-            }
+            if (apiconfig.getContentAuditlevel().equals(1) &&!permission) article.setStatus("waiting");
+            if (apiconfig.getContentAuditlevel().equals(2)) article.setStatus("waiting");
+
 
             // 判断redis是否有缓存
             String redisKey = "articleAdd_" + user.getName();
@@ -1126,7 +1101,7 @@ public class ArticleController {
      * @return
      */
     private boolean permission(Users user) {
-        if (user.getUid() == null || user.getUid().equals(0)) return false;
+        if (user.getUid() == null || user.toString().isEmpty()) return false;
         if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) return true;
         return false;
     }

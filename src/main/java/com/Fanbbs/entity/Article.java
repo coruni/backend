@@ -48,11 +48,6 @@ public class Article implements Serializable {
     private String text;
 
     /**
-     * order  
-     */
-    private Integer orderKey;
-
-    /**
      * authorId  
      */
     private Integer authorId;
@@ -72,10 +67,6 @@ public class Article implements Serializable {
      */
     private String status;
 
-    /**
-     * password  
-     */
-    private String password;
 
     /**
      * commentsNum  
@@ -96,16 +87,6 @@ public class Article implements Serializable {
      * allowComment  
      */
     private String allowComment;
-
-    /**
-     * allowPing  
-     */
-    private String allowPing;
-
-    /**
-     * allowFeed  
-     */
-    private String allowFeed;
 
     /**
      * parent  
