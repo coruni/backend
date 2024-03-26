@@ -1718,6 +1718,7 @@ public class UsersController {
             Users toFanUser = service.selectByKey(id);
             if (toFanUser == null || toFanUser.toString().isEmpty())
                 return Result.getResultJson(201, "用户不存在", null);
+            if(user.getUid().equals(id)) return Result.getResultJson(201,"无法关注自己",null);
             // 查询是否关注过该用户
             Fan fan = new Fan();
             fan.setUid(user.getUid());
