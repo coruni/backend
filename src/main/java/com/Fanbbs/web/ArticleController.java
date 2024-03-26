@@ -1218,10 +1218,17 @@ public class ArticleController {
     private Map<String, Object> getCategory(Integer id) {
         // 获取分类和tag
         Category category = metasService.selectByKey(id);
+
+        if (category == null) {
+            return new HashMap<>();
+        }
+
         Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
+
         if (category.getOpt() != null) {
             data.put("opt", JSONObject.parseObject(category.getOpt()));
         }
+
         return data;
     }
 
