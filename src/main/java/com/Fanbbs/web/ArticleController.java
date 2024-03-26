@@ -1239,12 +1239,20 @@ public class ArticleController {
      * @return
      */
     private Boolean showText(Users user, Article article, Map<String, Object> category) {
-        if (category.get("isvip").equals(0)) return true;
-        if (user.getUid() != null && !user.getUid().equals(0)) {
-            if ((category.get("isvip").equals(1) && (user.getVip() > System.currentTimeMillis() / 1000)) || article.getAuthorId().equals(user.getUid())) {
+        if (category == null || category.isEmpty()) {
+            return true;
+        }
+
+        if (category.containsKey("isvip") && category.get("isvip").equals(0)) {
+            return true;
+        }
+
+        if (user.getUid() != null && user.getUid() != 0) {
+            if (category.containsKey("isvip") && category.get("isvip").equals(1) && (user.getVip() > System.currentTimeMillis() / 1000 || article.getAuthorId().equals(user.getUid()))) {
                 return true;
             }
         }
+
         return false;
     }
 
