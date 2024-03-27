@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.Fanbbs.entity.*;
 import com.Fanbbs.service.*;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.mysql.cj.jdbc.ha.BalanceStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -280,6 +281,33 @@ public class HeadpictureController {
 
             service.delete(headpicture.getId());
             return Result.getResultJson(200, "删除成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    @RequestMapping(value = "/update")
+    @ResponseBody
+    public String update(@RequestParam(value = "id") Integer id,
+                         @RequestParam(value = "link") String link,
+                         @RequestParam(value = "name") String name,
+                         @RequestParam(value = "permission") Integer permission,
+                         @RequestParam(value = "status") Integer status,
+                         @RequestParam(value = "type") Integer type,
+                         HttpServletRequest request) {
+        try {
+            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            Headpicture headpicture = service.selectByKey(id);
+            if (headpicture.getId() == null) return Result.getResultJson(201, "数据不存在", null);
+            headpicture.setStatus(status);
+            headpicture.setName(name);
+            headpicture.setPermission(permission);
+            headpicture.setType(type);
+
+            service.update(headpicture);
+            return Result.getResultJson(200, "修改成功", null);
+
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
