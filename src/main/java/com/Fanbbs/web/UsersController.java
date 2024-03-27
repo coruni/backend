@@ -435,6 +435,7 @@ public class UsersController {
                     user.setScreenName(info.get("nickname").toString());
                     user.setName(userInfo.get("openid").toString().substring(0, 8));
                     user.setSex(info.get("gender").toString());
+                    user.setGroup("contributor");
                     service.insert(user);
                     userapi.setAppLoginType(provider);
                     userapi.setOpenId(openid);

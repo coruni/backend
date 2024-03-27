@@ -139,7 +139,7 @@ public class InstallController {
                     + "`url` varchar(200) DEFAULT NULL COMMENT '链接',"
                     + "`clientId` varchar(255) DEFAULT NULL COMMENT '客户端ID',"
                     + "`status` int(1) NOT NULL DEFAULT '1' COMMENT '状态',"
-                    + "`group` varchar(16) DEFAULT 'visitor' COMMENT '用户组',"
+                    + "`group` varchar(16) DEFAULT 'contributor' COMMENT '用户组',"
                     + "`authCode` varchar(64) DEFAULT NULL COMMENT '授权码',"
                     + "`rank` longtext NULL COMMENT '头衔',"
                     + "`opt` longtext COMMENT '用户配置',"

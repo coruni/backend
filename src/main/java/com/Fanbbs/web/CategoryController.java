@@ -13,14 +13,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Component
@@ -298,9 +297,9 @@ public class CategoryController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user == null || user.toString().isEmpty())
-                    return Result.getResultJson(201, "用户不存在,请重新登录", null);
             }
+            if (user == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在,请重新登录", null);
             System.out.println(user + "草");
             Category category = service.selectByKey(id);
             if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
@@ -331,4 +330,44 @@ public class CategoryController {
         }
     }
 
-}
+    @RequestMapping(value = "/followList")
+    @ResponseBody
+    public String followList(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = null;
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            }
+            if (user.getUid() == null || user.toString().isEmpty())
+                return Result.getResultJson(201, "用户不存在,请重新登录", null);
+
+            // 获取用户数据
+            Userlog userlog = new Userlog();
+            userlog.setType("category");
+            userlog.setUid(user.getUid());
+            List<Userlog> userlogList = userlogService.selectList(userlog);
+
+            // 去除重复的分类数据
+            Set<Integer> categoryIds = new HashSet<>();
+            List<Category> dataList = new ArrayList<>();
+            for (Userlog _userlog : userlogList) {
+                // 查询分类数据
+                Category category = service.selectByKey(_userlog.getNum());
+                if (category.getMid() != null && categoryIds.add(category.getMid())) {
+                    category.setOpt(null);
+                    dataList.add(category);
+                }
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("data", dataList);
+            data.put("count", dataList.size());
+            return Result.getResultJson(200, "获取成功", data);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }}
