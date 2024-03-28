@@ -99,6 +99,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/article/info")
                 .excludePathPatterns("/article/articleList")
                 .excludePathPatterns("/category/list")
+                .excludePathPatterns("/rank/list")
                 .excludePathPatterns("/category/info");
     }
 }
