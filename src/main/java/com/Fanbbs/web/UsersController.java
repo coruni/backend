@@ -138,14 +138,15 @@ public class UsersController {
             if (StringUtils.isNotBlank(params)) {
                 query = JSONObject.parseObject(params, Users.class);
             }
-            //查询
+
+            // 查询数据
             PageList<Users> userPage = service.selectPage(query, page, limit, searchKey, order, random);
             List<Users> userList = userPage.getList();
+            // 处理用户数据并返回结果
             JSONArray dataList = new JSONArray();
             for (Users item : userList) {
                 // 转Map数据
-                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(item), new TypeReference<Map<String, Object>>() {
-                });
+                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(item),Map.class);
                 // 格式化数据
                 JSONObject opt = new JSONObject();
                 JSONArray head_pircture = new JSONArray();
@@ -159,14 +160,16 @@ public class UsersController {
                 Integer nextLevel = (Integer) result.get(1);
 
                 // 处理会员
-                Integer isVip = 0;
+                int isVip = 0;
                 if (System.currentTimeMillis() / 1000 > item.getVip()) isVip = 1;
 
                 // 处理关注
                 Userlog userlog = new Userlog();
                 userlog.setUid(user.getUid());
                 userlog.setToid(item.getUid());
-                Integer isFollow = userlogService.total(userlog);
+                int isFollow = 0;
+                if(userlogService.total(userlog)>0) isFollow =1;
+
 
                 // 加入数据
                 data.put("address", address);
@@ -306,7 +309,7 @@ public class UsersController {
             // 移除敏感数据
             data.remove("password");
 
-            if(user.getUid()==null ||!user.getUid().equals(own.getUid())) data.remove("address");
+            if (user.getUid() == null || !user.getUid().equals(own.getUid())) data.remove("address");
 
             data.remove("mail");
 
@@ -1575,7 +1578,7 @@ public class UsersController {
                             articleData.put("title", article.getTitle());
                             articleData.put("authorId", article.getAuthorId());
                             articleData.put("id", article.getCid());
-                            articleData.put("type",article.getType());
+                            articleData.put("type", article.getType());
                         } else {
                             articleData.put("title", "文章已被删除");
                             articleData.put("id", 0);
@@ -1719,7 +1722,7 @@ public class UsersController {
             Users toFanUser = service.selectByKey(id);
             if (toFanUser == null || toFanUser.toString().isEmpty())
                 return Result.getResultJson(201, "用户不存在", null);
-            if(user.getUid().equals(id)) return Result.getResultJson(201,"无法关注自己",null);
+            if (user.getUid().equals(id)) return Result.getResultJson(201, "无法关注自己", null);
             // 查询是否关注过该用户
             Fan fan = new Fan();
             fan.setUid(user.getUid());

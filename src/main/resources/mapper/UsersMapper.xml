@@ -345,8 +345,8 @@
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`name`, ''), IFNULL(`screenName`, ''), IFNULL(`uid`, ''), IFNULL(`mail`, '')) LIKE CONCAT('%', #{searchKey}, '%')
             </if>
-            <if test ='0 != random'>
-                and uid >= (SELECT FLOOR( MAX(uid) * RAND()) FROM `${prefix}_users` )
+            <if test="random != null and random == 1">
+                AND uid >= (SELECT FLOOR( MAX(uid) * RAND()) FROM `${prefix}_users`)
             </if>
 
         </where>

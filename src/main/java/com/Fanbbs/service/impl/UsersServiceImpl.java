@@ -58,27 +58,25 @@ public class UsersServiceImpl implements UsersService {
 	}
 
 	@Override
-	public PageList<Users> selectPage(Users users, Integer offset, Integer pageSize , String searchKey, String order,Integer random) {
+	public PageList<Users> selectPage(Users users, Integer offset, Integer pageSize, String searchKey, String order, Integer random) {
 		PageList<Users> pageList = new PageList<>();
 
-		int total = this.total(users,searchKey);
+		int total = this.total(users, searchKey);
 
 		int totalPage;
 		if (total % pageSize != 0) {
-			totalPage = (total /pageSize) + 1;
+			totalPage = (total / pageSize) + 1;
 		} else {
-			totalPage = total /pageSize;
+			totalPage = total / pageSize;
 		}
 
 		int page = (offset - 1) * pageSize;
 
-		List<Users> list = dao.selectPage(users, page, pageSize,searchKey,order,random);
+		List<Users> list = dao.selectPage(users, page, pageSize, searchKey, order, random);
 
 		pageList.setList(list);
 		pageList.setStartPageNo(offset);
 		pageList.setPageSize(pageSize);
-		pageList.setSearchKey(searchKey);
-		pageList.setOrder(order);
 		pageList.setTotalCount(total);
 		pageList.setTotalPageCount(totalPage);
 		return pageList;
