@@ -30,12 +30,12 @@ public class RankController {
     @RequestMapping(value = "/add")
     @ResponseBody
     public String rankAdd(@RequestParam(value = "name") String name,
-                            @RequestParam(value = "type") Integer type,
-                            @RequestParam(value = "image", required = false) String image,
-                            @RequestParam(value = "color", required = false) String color,
-                            @RequestParam(value = "background", required = false) String background,
-                            @RequestParam(value = "permission", required = false) Integer permission,
-                            HttpServletRequest request) {
+                          @RequestParam(value = "type") Integer type,
+                          @RequestParam(value = "image", required = false) String image,
+                          @RequestParam(value = "color", required = false) String color,
+                          @RequestParam(value = "background", required = false) String background,
+                          @RequestParam(value = "permission", required = false) Integer permission,
+                          HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             Users user = getUser(token);
@@ -46,10 +46,10 @@ public class RankController {
             }
             if (name == null || name.isEmpty())
                 return Result.getResultJson(201, "请输入头衔名称", null);
-            if(type != 0&&type != 1){
+            if (type != 0 && type != 1) {
                 return Result.getResultJson(201, "头衔类型错误", null);
             }
-            if(type == 1 && image == null){
+            if (type == 1 && image == null) {
                 return Result.getResultJson(201, "请设置图片", null);
             }
             long timestamp = System.currentTimeMillis();
@@ -97,12 +97,12 @@ public class RankController {
     @RequestMapping(value = "/update")
     @ResponseBody
     public String rankUpdate(@RequestParam(value = "id") Integer id,
-                               @RequestParam(value = "name", required = false) String name,
-                               @RequestParam(value = "type", required = false) Integer type,
-                               @RequestParam(value = "image", required = false) String image,
-                               @RequestParam(value = "color", required = false) String color,
-                               @RequestParam(value = "background", required = false) String background,
-                               HttpServletRequest request) {
+                             @RequestParam(value = "name", required = false) String name,
+                             @RequestParam(value = "type", required = false) Integer type,
+                             @RequestParam(value = "image", required = false) String image,
+                             @RequestParam(value = "color", required = false) String color,
+                             @RequestParam(value = "background", required = false) String background,
+                             HttpServletRequest request) {
         try {
 
             String token = request.getHeader("Authorization");
@@ -116,9 +116,9 @@ public class RankController {
                 return Result.getResultJson(201, "ID不能为空", null);
             if (name == null || name.isEmpty())
                 return Result.getResultJson(201, "请输入头衔名称", null);
-            if (type !=0 && type != 1)
+            if (type != 0 && type != 1)
                 return Result.getResultJson(201, "头衔类型错误", null);
-            if(type == 1 && image == null){
+            if (type == 1 && image == null) {
                 return Result.getResultJson(201, "请设置图片", null);
             }
             long timestamp = System.currentTimeMillis();
@@ -216,7 +216,8 @@ public class RankController {
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
-                if (user.getUid() == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+                if (user.getUid() == null || user.toString().isEmpty())
+                    return Result.getResultJson(201, "用户不存在", null);
             }
 
             if (user.getOpt() != null && !user.getOpt().toString().isEmpty()) {
@@ -231,6 +232,40 @@ public class RankController {
             }
 
             return Result.getResultJson(200, "已取消头衔", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    @RequestMapping(value = "/give")
+    @ResponseBody
+    public String give(@RequestParam(value = "id") Integer id,
+                       @RequestParam(value = "user_id") Integer user_id,
+                       HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = getUser(token);
+            if (!permission(user)) return Result.getResultJson(201, "无权限", null);
+
+            // 查询用户是否存在
+            Users giveUser = usersService.selectByKey(user_id);
+            if (giveUser.getUid() == null)
+                return Result.getResultJson(201, "用户不存在", null);
+            if (rankService.selectByKey(id).getId() == null) return Result.getResultJson(201, "数据不存在", null);
+
+            // 格式化用户的rank字段
+            JSONArray rank = new JSONArray();
+            if (giveUser.getRank() != null && !giveUser.getRank().isEmpty()) {
+                rank = JSONArray.parseArray(giveUser.getRank());
+                if (rank.contains(id)) return Result.getResultJson(201, "用户已存在该头衔", null);
+                rank.add(id);
+            } else {
+                rank.add(id);
+            }
+            giveUser.setRank(rank.toString());
+            usersService.update(giveUser);
+            return Result.getResultJson(200, "赋予成功", null);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);

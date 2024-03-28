@@ -86,6 +86,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
                 .addPathPatterns("/raffle/add")
                 .addPathPatterns("/raffle/update")
                 .addPathPatterns("/raffle/delete")
+                .addPathPatterns("/rank/**")
                 .excludePathPatterns("/user/login")
                 .excludePathPatterns("/user/userRegister")
                 .excludePathPatterns("/user/userInfo")
