@@ -24,6 +24,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 控制层
@@ -225,31 +227,56 @@ public class CommentsController {
     }
 
     // 辅助函数，从评论对象中获取图片信息
-    private List getImagesFromComments(Comments _comments) {
-        List images;
+    private List<String> getImagesFromComments(Comments _comments) {
+        List<String> images;
+
         if (_comments.getImages() != null && !_comments.getImages().isEmpty()) {
-            Object imagesData = _comments.getImages();
-            if (imagesData instanceof String) {
-                // 如果是 String 类型，解析成数组后返回
-                String imageString = (String) imagesData;
-                images = new ArrayList<>();
-                String[] links = imageString.split("\\s+"); // 假设链接之间用空格分隔
-                for (String link : links) {
-                    if (link.startsWith("https://") || link.startsWith("http://")) {
-                        images.add(link.trim()); // 添加链接到 List 中
-                    }
-                }
-            } else {
-                // 其他类型，置为 null
-                images = (List) imagesData;
+            String imagesData = _comments.getImages();
+
+            // 尝试解析为JSON数组
+            try {
+                JSONArray jsonArray = JSONArray.parseArray(imagesData);
+                images = extractUrlsFromJsonArray(jsonArray);
+            } catch (Exception e) {
+                // 解析失败，则尝试提取单个URL
+                images = extractUrlsFromString(imagesData);
             }
         } else {
             images = null;
         }
+
         return images;
     }
 
-    // 辅助函数，构建文章数据对象
+    // 从JSON数组中提取URL
+    private List<String> extractUrlsFromJsonArray(JSONArray jsonArray) {
+        List<String> urls = new ArrayList<>();
+        for (Object obj : jsonArray) {
+            String url = obj.toString();
+            if (isValidUrl(url)) {
+                urls.add(url);
+            }
+        }
+        return urls;
+    }
+
+    // 从字符串中提取URL
+    private List<String> extractUrlsFromString(String text) {
+        List<String> urls = new ArrayList<>();
+        Pattern pattern = Pattern.compile("https?://\\S+");
+        Matcher matcher = pattern.matcher(text);
+        while (matcher.find()) {
+            String url = matcher.group();
+            urls.add(url);
+        }
+        return urls;
+    }
+
+    // 检查URL的有效性
+    private boolean isValidUrl(String url) {
+        return url.startsWith("https://") || url.startsWith("http://");
+    }    // 辅助函数，构建文章数据对象
+
     private Map<String, Object> getArticleData(Article article) {
         Map<String, Object> articleData = new HashMap<>();
         if (article == null || article.toString().isEmpty()) {
@@ -287,7 +314,7 @@ public class CommentsController {
         Comments subComments = new Comments();
         subComments.setAll(_comments.getId());
         PageList<Comments> subCommentsPageList = service.selectPage(subComments, 1, 2, null, "created desc");
-        List<Comments> subCommentsList  = subCommentsPageList.getList();
+        List<Comments> subCommentsList = subCommentsPageList.getList();
         JSONArray subDataList = new JSONArray();
         Integer total = service.total(subComments, null);
         for (Comments _subComments : subCommentsList) {
@@ -296,29 +323,9 @@ public class CommentsController {
             Map<String, Object> subDataUser = JSONObject.parseObject(JSONObject.toJSONString(subCommentUser));
             subDataUser.remove("password");
             subDataUser.remove("address");
-
             JSONObject opt = subCommentUser.getOpt() != null && !subCommentUser.getOpt().isEmpty() ? JSON.parseObject(subCommentUser.getOpt()) : null;
 
             List images;
-            if (_subComments.getImages() != null && !_subComments.getImages().isEmpty()) {
-                Object imagesData = _subComments.getImages();
-                if (imagesData instanceof JSONArray) {
-                    images = (JSONArray) imagesData;
-                } else if (imagesData instanceof String) {
-                    String imageString = (String) imagesData;
-                    images = new JSONArray();
-                    String[] links = imageString.split("\\s+");
-                    for (String link : links) {
-                        if (link.startsWith("https://") || link.startsWith("http://")) {
-                            images.add(link.trim());
-                        }
-                    }
-                } else {
-                    images = null;
-                }
-            } else {
-                images = null;
-            }
 
             Map<String, Object> subArticleData = new HashMap<>();
             if (article == null || article.toString().isEmpty()) {
@@ -333,9 +340,8 @@ public class CommentsController {
                 subArticleData.remove("opt");
                 subArticleData.remove("isswiper");
                 subArticleData.remove("hotScore");
-                subArticleData.remove("hotScore");
             }
-
+            subData.put("images",getImagesFromComments(_subComments));
             subData.put("userInfo", subDataUser);
             subData.put("article", subArticleData);
             subDataList.add(subData);
