@@ -244,14 +244,14 @@ public class UsersController {
             address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : new JSONObject();
 
             // 处理会员
-            if (user != null && user.getVip() != null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
+            if (user.getUid() != null && user.getVip() != null && user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
 
             // 处理等级
             List levelInfo = baseFull.getLevel(user.getExperience(), dataprefix, apiconfigService, redisTemplate);
             Integer level = Integer.parseInt(levelInfo.get(0).toString());
             Integer nextExp = Integer.parseInt(levelInfo.get(1).toString());
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
-            if (user != null && !user.toString().isEmpty()) {
+            if (user.getUid() != null && !user.toString().isEmpty()) {
                 // 获取文章数量
                 Article article = new Article();
                 article.setAuthorId(user.getUid());
@@ -274,7 +274,7 @@ public class UsersController {
                 log.setType("clock");
                 List<Userlog> logList = userlogService.selectList(log);
                 Integer clock = 0;
-                if (logList.size() > 0) {
+                if (!logList.isEmpty()) {
                     log = logList.get(0);
                     Long timeStmap = System.currentTimeMillis();
                     Long clockTime = Long.valueOf(log.getCreated());
@@ -291,7 +291,18 @@ public class UsersController {
                 Comments comment = new Comments();
                 comment.setUid(user.getUid());
                 Integer comments = commentsService.total(comment, null);
+
+                // 格式化rank
+                JSONArray rank = new JSONArray();
+                if(user.getRank()!=null) rank = JSONArray.parseArray(user.getRank());
+
+                // 格式化rank
+                JSONArray head_pcture = new JSONArray();
+                if(user.getHead_picture()!=null) head_pcture = JSONArray.parseArray(user.getRank());
+
                 // 加入数据
+                data.put("rank",rank);
+                data.put("head_picture",head_pcture);
                 data.put("articles", articleNum);
                 data.put("fans", fans);
                 data.put("follows", follows);
