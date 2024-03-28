@@ -287,6 +287,7 @@ public class HeadpictureController {
         }
     }
 
+
     @RequestMapping(value = "/update")
     @ResponseBody
     public String update(@RequestParam(value = "id") Integer id,
