@@ -229,10 +229,7 @@ public class CommentsController {
         List images;
         if (_comments.getImages() != null && !_comments.getImages().isEmpty()) {
             Object imagesData = _comments.getImages();
-            if (imagesData instanceof JSONArray) {
-                // 如果是 JSONArray 类型，直接转换为 List
-                images = (List) imagesData;
-            } else if (imagesData instanceof String) {
+            if (imagesData instanceof String) {
                 // 如果是 String 类型，解析成数组后返回
                 String imageString = (String) imagesData;
                 images = new ArrayList<>();
@@ -244,7 +241,7 @@ public class CommentsController {
                 }
             } else {
                 // 其他类型，置为 null
-                images = null;
+                images = (List) imagesData;
             }
         } else {
             images = null;
