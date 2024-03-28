@@ -30,6 +30,7 @@
         <result column="medal" property="medal" />
         <result column="status" property="status" />
         <result column="head_picture" property="head_picture" />
+        <result column="rank" property="rank" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -59,6 +60,7 @@
         `status`,
         `opt`,
         `medal`,
+        `rank`,
         `head_picture`
     </sql>
 
@@ -111,6 +113,9 @@
             <if test ='null != status'>
                 `status`,
             </if>
+            <if test ='null != rank'>
+                `rank`,
+            </if>
             <if test ='null != bantime'>
                 `bantime`
             </if>
@@ -161,6 +166,9 @@
             </if>
             <if test ='null != status'>
                 #{status},
+            </if>
+            <if test ='null != rank'>
+                #{rank},
             </if>
             <if test ='null != bantime'>
                 #{bantime}
@@ -220,6 +228,7 @@
             <if test ='null != sex'>`sex` = #{sex},</if>
             <if test ='null != medal'>`medal` = #{medal},</if>
             <if test ='null != opt'>`opt` = #{opt},</if>
+            <if test ='null != rank'>`rank` = #{rank},</if>
             <if test ='null != status'>`status` = #{status},</if>
             <if test ='null != head_picture'>`head_picture` = #{head_picture}</if>
         </set>
